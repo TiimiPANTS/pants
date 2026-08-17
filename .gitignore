@@ -1,0 +1,13 @@
+# Postman local files
+.postman/
+postman/globals/
+
+# VS Code local settings
+.vscode/
+
+# Maven build output
+target/
+
+# OS files
+.DS_Store
+Thumbs.db
