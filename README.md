@@ -7,7 +7,7 @@
 - Arttu Inkala
 - Ngan Tran
 - Thomas Obeng
-- Sara
+- Sara Junnila
 
 ---
 
