@@ -3,11 +3,11 @@
 ## Pants
 
 **Jäsenet**
-- Phong Nguyen
-- Arttu Inkala
-- Ngan Tran
-- Thomas Obeng
-- Sara Junnila
+- Phong Nguyen (PhongNgvyen)
+- Arttu Inkala (archiartt)
+- Ngan Tran (ng4nt)
+- Thomas Obeng (bhu629)
+- Sara Junnila (sawasda)
 
 ---
 
@@ -38,6 +38,11 @@ Asiakas pystyy tekemään pöytävarauksen helposti verkossa, ja ravintola pysty
 - Backend: Java Spring Boot
 - Tietokanta: PostgreSQL
 - Deployment: Render tai muu
+
+- Node 24
+- Java 21
+- Postman
+- npm
 
 ---
 
@@ -101,6 +106,7 @@ Ensimmäiseen versioon kuuluu:
 - Riittävät värikontrastit
 - Selkeä navigointi
 - Helppokäyttöiset lomakkeet
+- Mobile first approach
 
 ---
 
