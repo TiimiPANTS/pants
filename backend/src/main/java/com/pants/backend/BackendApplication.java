@@ -1,13 +1,13 @@
-package hh.pants.projekti2;
+package com.pants.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class Projekti2Application {
+public class BackendApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(Projekti2Application.class, args);
+		SpringApplication.run(BackendApplication.class, args);
 	}
 
 }
