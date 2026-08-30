@@ -1,10 +1,10 @@
-package hh.pants.projekti2;
+package com.pants.backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class Projekti2ApplicationTests {
+class BackendApplicationTests {
 
 	@Test
 	void contextLoads() {
