@@ -1,5 +1,7 @@
 package com.pants.backend.entity;
 
+// Ei tarvii vielä, mutta voidaan pitää
+
 import java.util.List;
 
 import jakarta.persistence.Entity;
