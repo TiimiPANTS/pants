@@ -9,6 +9,8 @@
 - Thomas Obeng (bhu629)
 - Sara Junnila (sawasda)
 
+  Projektin backlog: https://github.com/orgs/TiimiPANTS/projects/1
+
 ---
 
 ## Projektin kuvaus
