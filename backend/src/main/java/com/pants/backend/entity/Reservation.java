@@ -1,5 +1,7 @@
 package com.pants.backend.entity;
 
+// Täytyy korjaa kentät
+
 import java.time.LocalDateTime;
 
 import jakarta.persistence.Entity;
