@@ -1,5 +1,7 @@
 package com.pants.backend.entity;
 
+// Täytyy korjaa kentät ja taulun nimi
+
 import jakarta.persistence.*;
 
 @Entity
