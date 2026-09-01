@@ -2,13 +2,10 @@ package com.pants.backend.entity;
 
 // Ei tarvii vielä, mutta voidaan pitää
 
-import java.util.List;
-
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
-import jakarta.persistence.OneToMany;
 
 @Entity
 public class Restaurant {
@@ -24,9 +21,6 @@ private String address;     // Ravintolan osoite
 private String phone;       // Ravintolan puhelinnumero
 
 private String email;       // Ravintolan sähköposti
-
-@OneToMany (mappedBy = "restaurant")
-private List <RestaurantTable> tables;
 
 public Long getId() {
     return id;
@@ -66,13 +60,5 @@ public String getEmail() {
 
 public void setEmail(String email) {
     this.email = email;
-}
-
-public List<RestaurantTable> getTables() {
-    return tables;
-}
-
-public void setTables(List<RestaurantTable> tables) {
-    this.tables = tables;
 }
 }
