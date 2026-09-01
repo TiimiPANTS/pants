@@ -1,22 +1,25 @@
 package com.pants.backend.entity;
 
-// Täytyy korjaa kentät ja taulun nimi
-
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "TABLES")
 public class RestaurantTable {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @Column(name = "table_id")
     private Long id;
 
+    @Column(name = "table_number")
     private int tableNumber;
+
+    @Column(name = "capacity")
     private int capacity;
 
-    @ManyToOne
-    @JoinColumn(name = "restaurant_id")
-    private Restaurant restaurant;
+    // @ManyToOne
+    // @JoinColumn(name = "tstatus_id")
+    // private TStatus status; // TStatus herjaa, koska table status entity tekemättä
 
     public Long getId() {
         return id;
@@ -42,11 +45,11 @@ public class RestaurantTable {
         this.capacity = capacity;
     }
 
-    public Restaurant getRestaurant() {
-        return restaurant;
-    }
+    // public TStatus getStatus() {     // TStatus herjaa, koska table status entity tekemättä
+    //     return status;
+    // }
 
-    public void setRestaurant(Restaurant restaurant) {
-        this.restaurant = restaurant;
-    }
+    // public void setStatus(TStatus status) {      // TStatus herjaa, koska table status entity tekemättä
+    //     this.status = status;
+    // }
 }
