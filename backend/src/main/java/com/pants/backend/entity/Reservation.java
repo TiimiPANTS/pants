@@ -12,6 +12,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 @Entity
 @Table(name = "RESERVATIONS")
 public class Reservation {
@@ -25,90 +27,80 @@ public class Reservation {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
+    @Schema(type = "string", example = "18:00:00")
     @Column(name = "starttime")
-    private LocalTime starttime;
+    private LocalTime startTime;
 
+    @Schema(type = "string", example = "20:00:00")
     @Column(name = "endtime")
-    private LocalTime endtime;
+    private LocalTime endTime;
 
+    @Schema(type = "string", example = "2026-09-03T18:00:00")
     @Column(name = "datetime")
     private LocalDateTime datetime;
 
     @Column(name = "party_size")
-    private Integer partysize;
+    private Integer partySize;
 
     @Column(name = "details")
     private String details;
 
-    // @ManyToOne
-    // @JoinColumn(name ="status_id")
-    // private RStatus status; // RStatus herjaa, koska reservation status entity tekemättä
-
-    public Reservation(){
+    public Reservation() {
     }
 
-    public Long reservationId(){
+    public Long getReservationId() {
         return reservationId;
     }
 
-    public void setReservationId(Long reservationId){
+    public void setReservationId(Long reservationId) {
         this.reservationId = reservationId;
     }
 
-    public Customer getCustomer(){
+    public Customer getCustomer() {
         return customer;
     }
 
-    public void setCustomer(Customer customer){
+    public void setCustomer(Customer customer) {
         this.customer = customer;
     }
 
-    public LocalTime getStartTime(){
-        return starttime;
+    public LocalTime getStartTime() {
+        return startTime;
     }
 
-    public void setStarttime(LocalTime starttime){
-        this.starttime = starttime;
+    public void setStartTime(LocalTime startTime) {
+        this.startTime = startTime;
     }
 
-    public LocalTime getEndTime(){
-        return endtime;
+    public LocalTime getEndTime() {
+        return endTime;
     }
 
-    public void setEndtime(LocalTime endtime){
-        this.endtime = endtime;
+    public void setEndTime(LocalTime endTime) {
+        this.endTime = endTime;
     }
 
-    public LocalDateTime getDatetime(){
+    public LocalDateTime getDatetime() {
         return datetime;
     }
 
-    public void setDatetime(LocalDateTime datetime){
+    public void setDatetime(LocalDateTime datetime) {
         this.datetime = datetime;
     }
 
-    public Integer getPartySize(){
-        return partysize;
+    public Integer getPartySize() {
+        return partySize;
     }
 
-    public void setPartySize(Integer partysize){
-        this.partysize = partysize;
+    public void setPartySize(Integer partySize) {
+        this.partySize = partySize;
     }
 
-    public String getDetails(){
+    public String getDetails() {
         return details;
     }
 
-    public void setDetails(String details){
+    public void setDetails(String details) {
         this.details = details;
     }
-
-    // public RStatus getStatus(){     // RStatus herjaa, koska reservation status entity tekemättä
-    //     return status;
-    // }
-
-    // public void setStatus(RStatus status){      // RStatus herjaa, koska reservation status entity tekemättä
-    //     this.status = status;
-    // }
-
 }
