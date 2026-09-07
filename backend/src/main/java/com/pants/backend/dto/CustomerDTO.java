@@ -1,18 +1,24 @@
-package com.pants.backend.entity;
+package com.pants.backend.dto;
 
-import jakarta.persistence.*;
+import io.swagger.v3.oas.annotations.media.Schema;
 
-@Entity
-public class Customer {
+public class CustomerDTO {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "customer_id")
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Integer id;
-
     private String firstname;
     private String lastname;
     private String email;
+
+    public CustomerDTO() {
+    }
+
+    public CustomerDTO(Integer id, String firstname, String lastname, String email) {
+        this.id = id;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.email = email;
+    }
 
     public Integer getId() {
         return id;
@@ -45,5 +51,4 @@ public class Customer {
     public void setEmail(String email) {
         this.email = email;
     }
-
 }

@@ -14,10 +14,14 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pants.backend.dto.ErrorResponse;
+import com.pants.backend.entity.Reservation;
+import com.pants.backend.entity.Table;
 import com.pants.backend.entity.TableList;
 import com.pants.backend.entity.TableList.TableListId;
 import com.pants.backend.repository.ReservationRepository;
 import com.pants.backend.repository.TableListRepository;
+import com.pants.backend.repository.TableRepository;
+import com.pants.backend.service.TableService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -26,19 +30,26 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-// validoin TABLE idn jossain vaiheesm kun se controller ja entity on tehty
-
 @RestController
-@RequestMapping("/tablelist")
+@RequestMapping("/api/tablelists")
 @Tag(name = "TableList API", description = "Endpoints for managing tables within a reservation")
 public class TableListController {
 
     private final TableListRepository tableListRepository;
     private final ReservationRepository reservationRepository;
+    private final TableRepository tableRepository;
+    private final TableService tableService;
 
-    public TableListController(TableListRepository tableListRepository, ReservationRepository reservationRepository) {
+    public TableListController(
+            TableListRepository tableListRepository,
+            ReservationRepository reservationRepository,
+            TableRepository tableRepository,
+            TableService tableService
+    ) {
         this.tableListRepository = tableListRepository;
         this.reservationRepository = reservationRepository;
+        this.tableRepository = tableRepository;
+        this.tableService = tableService;
     }
 
     @Operation(summary = "Get all tablelists", description = "Returns all tablelist records")
@@ -79,26 +90,47 @@ public class TableListController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "201", description = "Tablelist created successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = TableList.class))),
             @ApiResponse(responseCode = "400", description = "Invalid tablelist data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
-            @ApiResponse(responseCode = "404", description = "Reservation not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))) })
+            @ApiResponse(responseCode = "404", description = "Reservation or table not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Table already reserved for that time", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))) })
     @PostMapping
     public ResponseEntity<?> create(@RequestBody TableList tableList) {
 
-        Integer reservationId = tableList.getId().getReservationId();
-
         // muutetaan datatyyppi Integer, kosk primary key on vaan numeroit. Tää tekee
         // postgrest nopeemmaan
-        // if (!reservationRepository.existsById(reservationId)) {
-        Long reservationIdLong = reservationId.longValue();
+        Integer reservationId = tableList.getId().getReservationId();
+        Integer tableId = tableList.getId().getTableId();
 
-        if (!reservationRepository.existsById(reservationIdLong)) {
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
+
+        if (reservation == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse(404, "Reservation with id " + reservationId + " does not exist"));
+        }
+
+        Table table = tableRepository.findById(tableId).orElse(null);
+
+        if (table == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse(404, "Table with id " + tableId + " does not exist"));
         }
 
         if (tableListRepository.existsById(tableList.getId())) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body(new ErrorResponse(400, "Tablelist already exists"));
 
+        }
+
+        if (!tableService.hasCapacityFor(table, reservation.getPartySize())) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(new ErrorResponse(400,
+                            "Table with id " + tableId + " does not have enough capacity for party size "
+                                    + reservation.getPartySize()));
+        }
+
+        if (!tableService.isAvailable(table.getId(), reservation.getDatetime(), reservation.getStartTime(),
+                reservation.getEndTime())) {
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse(409, "Table with id " + tableId + " is already reserved for that time"));
         }
 
         TableList saved = tableListRepository.save(tableList);
