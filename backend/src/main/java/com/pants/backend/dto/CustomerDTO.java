@@ -1,18 +1,21 @@
-package com.pants.backend.entity;
+package com.pants.backend.dto;
 
-import jakarta.persistence.*;
+public class CustomerDTO {
 
-@Entity
-public class Customer {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "customer_id")
     private Integer id;
-
     private String firstname;
     private String lastname;
     private String email;
+
+    public CustomerDTO() {
+    }
+
+    public CustomerDTO(Integer id, String firstname, String lastname, String email) {
+        this.id = id;
+        this.firstname = firstname;
+        this.lastname = lastname;
+        this.email = email;
+    }
 
     public Integer getId() {
         return id;
@@ -45,5 +48,4 @@ public class Customer {
     public void setEmail(String email) {
         this.email = email;
     }
-
 }

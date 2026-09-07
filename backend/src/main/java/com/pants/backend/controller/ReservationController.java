@@ -218,7 +218,7 @@ public class ReservationController {
                     .body(new ErrorResponse(400, "Customer is required"));
         }
 
-        Long customerId = reservation.getCustomer().getId();
+        Integer customerId = reservation.getCustomer().getId();
 
         if (customerId == null) {
             return ResponseEntity
