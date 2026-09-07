@@ -100,7 +100,7 @@ public class TableListController {
         Integer reservationId = tableList.getId().getReservationId();
         Integer tableId = tableList.getId().getTableId();
 
-        Reservation reservation = reservationRepository.findById(reservationId.longValue()).orElse(null);
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
 
         if (reservation == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

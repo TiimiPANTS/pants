@@ -1,7 +1,10 @@
 package com.pants.backend.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class CustomerDTO {
 
+    @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Integer id;
     private String firstname;
     private String lastname;

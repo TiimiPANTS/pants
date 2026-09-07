@@ -34,7 +34,7 @@ public class ReceiptController {
     }
 
     @PostMapping("/{reservationId}")
-    public Receipt createReceipt(@PathVariable Long reservationId) {
+    public Receipt createReceipt(@PathVariable Integer reservationId) {
 
         Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
 

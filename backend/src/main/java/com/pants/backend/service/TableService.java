@@ -61,7 +61,7 @@ public class TableService {
         for (TableList assignment : assignments) {
             Integer reservationId = assignment.getId().getReservationId();
 
-            Reservation reservation = reservationRepository.findById(reservationId.longValue()).orElse(null);
+            Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
 
             if (reservation != null && overlaps(reservation, datetime, startTime, endTime)) {
                 return false;

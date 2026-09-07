@@ -82,7 +82,7 @@ public class ReservationController {
     })
 
     @GetMapping("/{id}")
-    public ResponseEntity<?> getReservationById(@PathVariable Long id) {
+    public ResponseEntity<?> getReservationById(@PathVariable Integer id) {
         return reservationRepository.findById(id)
                 .map(reservation -> ResponseEntity.ok((Object) reservation))
                 .orElseGet(() -> ResponseEntity
@@ -148,7 +148,7 @@ public class ReservationController {
     })
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
-            @PathVariable Long id,
+            @PathVariable Integer id,
             @RequestBody Reservation reservation
     ) {
         Reservation existingReservation = reservationRepository.findById(id).orElse(null);
@@ -192,7 +192,7 @@ public class ReservationController {
 
     })
     @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteReservationById(@PathVariable Long id) {
+    public ResponseEntity<?> deleteReservationById(@PathVariable Integer id) {
         if (reservationRepository.existsById(id)) {
             reservationRepository.deleteById(id);
 
