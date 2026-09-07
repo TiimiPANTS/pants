@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.entity.Reservation;
-import com.pants.backend.entity.RestaurantTable;
+import com.pants.backend.entity.Table;
 import com.pants.backend.entity.TableList;
 import com.pants.backend.entity.TableList.TableListId;
 import com.pants.backend.repository.ReservationRepository;
@@ -107,7 +107,7 @@ public class TableListController {
                     .body(new ErrorResponse(404, "Reservation with id " + reservationId + " does not exist"));
         }
 
-        RestaurantTable table = tableRepository.findById(tableId.longValue()).orElse(null);
+        Table table = tableRepository.findById(tableId).orElse(null);
 
         if (table == null) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)

@@ -7,7 +7,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import com.pants.backend.entity.Reservation;
-import com.pants.backend.entity.RestaurantTable;
+import com.pants.backend.entity.Table;
 import com.pants.backend.entity.TableList;
 import com.pants.backend.repository.ReservationRepository;
 import com.pants.backend.repository.TableListRepository;
@@ -33,7 +33,7 @@ public class TableService {
     }
 
     // Palauttaa pöydät, joiden kapasiteetti riittää seuralle ja jotka ovat vapaana annetulle ajalle
-    public List<RestaurantTable> findAvailableTables(
+    public List<Table> findAvailableTables(
             int partySize,
             LocalDateTime datetime,
             LocalTime startTime,
@@ -45,18 +45,18 @@ public class TableService {
     }
 
     // Riittääkö pöydän kapasiteetti annetulle henkilömäärälle?
-    public boolean hasCapacityFor(RestaurantTable table, int partySize) {
+    public boolean hasCapacityFor(Table table, int partySize) {
         return table.getCapacity() >= partySize;
     }
 
     // Onko pöytä vapaana annettuna päivänä ja kellonaikana, eli ei päällekkäistä varausta
     public boolean isAvailable(
-            Long tableId,
+            Integer tableId,
             LocalDateTime datetime,
             LocalTime startTime,
             LocalTime endTime
     ) {
-        List<TableList> assignments = tableListRepository.findByIdTableId(tableId.intValue());
+        List<TableList> assignments = tableListRepository.findByIdTableId(tableId);
 
         for (TableList assignment : assignments) {
             Integer reservationId = assignment.getId().getReservationId();
