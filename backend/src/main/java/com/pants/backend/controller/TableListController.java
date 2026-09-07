@@ -31,7 +31,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
 @RestController
-@RequestMapping("/tablelist")
+@RequestMapping("/api/tablelists")
 @Tag(name = "TableList API", description = "Endpoints for managing tables within a reservation")
 public class TableListController {
 
