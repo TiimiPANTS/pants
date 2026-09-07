@@ -15,7 +15,7 @@ import com.pants.backend.repository.ReceiptRepository;
 import com.pants.backend.repository.ReservationRepository;
 
 @RestController
-@RequestMapping("/receipts")
+@RequestMapping("/api/receipts")
 public class ReceiptController {
 
     private final ReceiptRepository receiptRepository;
@@ -36,8 +36,7 @@ public class ReceiptController {
     @PostMapping("/{reservationId}")
     public Receipt createReceipt(@PathVariable Long reservationId) {
 
-        Reservation reservation =
-                reservationRepository.findById(reservationId).orElse(null);
+        Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
 
         if (reservation == null) {
             return null;

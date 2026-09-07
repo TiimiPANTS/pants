@@ -29,7 +29,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 // validoin TABLE idn jossain vaiheesm kun se controller ja entity on tehty
 
 @RestController
-@RequestMapping("/tablelist")
+@RequestMapping("/api/tablelists")
 @Tag(name = "TableList API", description = "Endpoints for managing tables within a reservation")
 public class TableListController {
 
