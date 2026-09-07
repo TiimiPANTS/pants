@@ -21,7 +21,7 @@ public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "reservation_id")
-    private Long reservationId;
+    private Integer reservationId;
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
@@ -48,11 +48,11 @@ public class Reservation {
     public Reservation() {
     }
 
-    public Long getReservationId() {
+    public Integer getReservationId() {
         return reservationId;
     }
 
-    public void setReservationId(Long reservationId) {
+    public void setReservationId(Integer reservationId) {
         this.reservationId = reservationId;
     }
 
