@@ -3,13 +3,13 @@ package com.pants.backend.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "TABLES")
-public class RestaurantTable {
+@jakarta.persistence.Table(name = "TABLES")
+public class Table {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "table_id")
-    private Long id;
+    private Integer id;
 
     @Column(name = "table_number")
     private int tableNumber;
@@ -21,11 +21,11 @@ public class RestaurantTable {
     // @JoinColumn(name = "tstatus_id")
     // private TStatus status; // TStatus herjaa, koska table status entity tekemättä
 
-    public Long getId() {
+    public Integer getId() {      
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
