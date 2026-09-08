@@ -17,11 +17,11 @@ public class Table {
     @Column(name = "capacity")
     private int capacity;
 
-    // @ManyToOne
-    // @JoinColumn(name = "tstatus_id")
-    // private TStatus status; // TStatus herjaa, koska table status entity tekemättä
+    @ManyToOne
+    @JoinColumn(name = "tstatus_id")
+    private TStatus status;
 
-    public Integer getId() {      
+    public Integer getId() {
         return id;
     }
 
@@ -45,11 +45,12 @@ public class Table {
         this.capacity = capacity;
     }
 
-    // public TStatus getStatus() {     // TStatus herjaa, koska table status entity tekemättä
-    //     return status;
-    // }
+    public TStatus getStatus() {
+        return status;
+    }
 
-    // public void setStatus(TStatus status) {      // TStatus herjaa, koska table status entity tekemättä
-    //     this.status = status;
-    // }
+    public void setStatus(TStatus status) {
+        this.status = status;
+    }
+
 }

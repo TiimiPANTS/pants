@@ -26,9 +26,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-// REST-controller asiakkaille, kuuntelee osoitetta /customers
 @RestController
-@RequestMapping("/customers")
+@RequestMapping("/api/customers")
 @Tag(name = "Customer API", description = "Endpoints for managing customers")
 public class CustomerController {
 
@@ -38,8 +37,6 @@ public class CustomerController {
     public CustomerController(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
     }
-
-    // GET /customers - Get all customers
 
     @Operation(summary = "Get all customers", description = "Returns a list of all customers")
     @ApiResponses(value = {
@@ -67,8 +64,6 @@ public class CustomerController {
         return ResponseEntity.ok(customerDTOs);
     }
 
-    // GET /customers/{id} - Get customer by ID
-
     @Operation(summary = "Get customer by ID", description = "Returns a single customer by its ID")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Customer found",
@@ -87,8 +82,6 @@ public class CustomerController {
                         .body(new ErrorResponse(404, "Customer not found"))
                 );
     }
-
-    // POST /customers - Create a new customer
 
     @Operation(summary = "Create a new customer", description = "Adds a new customer to the system")
     @ApiResponses(value = {
@@ -127,8 +120,6 @@ public class CustomerController {
                     ));
         }
     }
-
-    // PUT /customers/{id} - Update an existing customer
 
     @Operation(summary = "Update an existing customer", description = "Updates information for an existing customer")
     @ApiResponses(value = {
@@ -169,8 +160,6 @@ public class CustomerController {
 
         return ResponseEntity.ok(toDto(updatedCustomer));
     }
-
-    // DELETE /customers/{id} - Delete customer by ID
 
     @Operation(summary = "Delete customer by ID", description = "Deletes a single customer by its ID")
     @ApiResponses(value = {
