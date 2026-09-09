@@ -1,8 +1,10 @@
 package com.pants.backend.entity;
+import jakarta.persistence.Table;
 
 import jakarta.persistence.*;
 
 @Entity
+@Table(name = "CUSTOMERS")
 public class Customer {
 
     @Id

@@ -3,6 +3,7 @@ package com.pants.backend.entity;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -11,8 +12,6 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-
-import io.swagger.v3.oas.annotations.media.Schema;
 
 @Entity
 @Table(name = "RESERVATIONS")
@@ -44,6 +43,10 @@ public class Reservation {
 
     @Column(name = "details")
     private String details;
+
+    @ManyToOne
+    @JoinColumn(name = "rstatus_id")
+    private RStatus status;
 
     public Reservation() {
     }
@@ -102,5 +105,13 @@ public class Reservation {
 
     public void setDetails(String details) {
         this.details = details;
+    }
+
+    public RStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RStatus status) {
+        this.status = status;
     }
 }
