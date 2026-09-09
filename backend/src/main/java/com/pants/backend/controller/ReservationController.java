@@ -15,10 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pants.backend.dto.ErrorResponse;
+import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.entity.Customer;
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.repository.CustomerRepository;
 import com.pants.backend.repository.ReservationRepository;
+import com.pants.backend.service.ReservationService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,13 +36,16 @@ public class ReservationController {
 
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
+    private final ReservationService reservationService;
 
     public ReservationController(
             ReservationRepository reservationRepository,
-            CustomerRepository customerRepository
+            CustomerRepository customerRepository,
+            ReservationService reservationService
     ) {
         this.reservationRepository = reservationRepository;
         this.customerRepository = customerRepository;
+        this.reservationService = reservationService;
     }
 
     // GET /api/reservations - Get all reservations
@@ -105,17 +110,9 @@ public class ReservationController {
     })
 
     @PostMapping
-    public ResponseEntity<?> createReservation(@RequestBody Reservation reservation) {
+    public ResponseEntity<?> createReservation(@RequestBody ReservationDTO reservationDTO) {
         try {
-            ResponseEntity<?> customerValidation = validateAndAttachCustomer(reservation);
-
-            if (customerValidation != null) {
-                return customerValidation;
-            }
-
-            reservation.setReservationId(null);
-
-            Reservation savedReservation = reservationRepository.save(reservation);
+            Reservation savedReservation = reservationService.createReservation(reservationDTO);
 
             return ResponseEntity
                     .status(HttpStatus.CREATED)
