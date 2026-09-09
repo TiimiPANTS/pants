@@ -13,6 +13,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
+import org.hibernate.annotations.CreationTimestamp;
+
 @Entity
 @Table(name = "RESERVATIONS")
 public class Reservation {
@@ -34,6 +36,7 @@ public class Reservation {
     @Column(name = "endtime")
     private LocalTime endTime;
 
+    @CreationTimestamp
     @Schema(type = "string", example = "2026-09-03T18:00:00")
     @Column(name = "datetime")
     private LocalDateTime datetime;
