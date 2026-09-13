@@ -2,7 +2,6 @@ package com.pants.backend.controller;
 
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.entity.Table;
 import com.pants.backend.repository.TableRepository;
