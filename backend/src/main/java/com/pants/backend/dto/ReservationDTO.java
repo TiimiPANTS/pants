@@ -1,13 +1,20 @@
 package com.pants.backend.dto;
 
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 
 public class ReservationDTO {
 
     private CustomerDTO customer;
+
     private LocalTime startTime;
+
     private LocalTime endTime;
+
+    private LocalDateTime datetime;
+
     private Integer partySize;
+
     private String details;
 
     public ReservationDTO() {
@@ -35,6 +42,14 @@ public class ReservationDTO {
 
     public void setEndTime(LocalTime endTime) {
         this.endTime = endTime;
+    }
+
+    public LocalDateTime getDatetime() {
+        return datetime;
+    }
+
+    public void setDatetime(LocalDateTime datetime) {
+        this.datetime = datetime;
     }
 
     public Integer getPartySize() {
