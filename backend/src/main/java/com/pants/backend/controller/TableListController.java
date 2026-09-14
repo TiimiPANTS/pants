@@ -58,8 +58,7 @@ public class TableListController {
             @ApiResponse(responseCode = "404", description = "No tablelists found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
     @GetMapping
-    public ResponseEntity<?> getAll() {
-
+        public ResponseEntity<?> getAll() {
         List<TableList> tableLists = tableListRepository.findAll();
 
         if (tableLists.isEmpty()) {
@@ -93,8 +92,7 @@ public class TableListController {
             @ApiResponse(responseCode = "404", description = "Reservation or table not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Table already reserved for that time", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))) })
     @PostMapping
-    public ResponseEntity<?> create(@RequestBody TableList tableList) {
-
+        public ResponseEntity<?> create(@RequestBody TableList tableList) {
         // muutetaan datatyyppi Integer, kosk primary key on vaan numeroit. Tää tekee
         // postgrest nopeemmaan
         Integer reservationId = tableList.getId().getReservationId();
@@ -135,8 +133,7 @@ public class TableListController {
 
         TableList saved = tableListRepository.save(tableList);
 
-        return ResponseEntity
-                .status(HttpStatus.CREATED).body(saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @Operation(summary = "Delete tablelist by ID", description = "Deletes a tablelist by reservationId and tableId")
@@ -147,7 +144,6 @@ public class TableListController {
     public ResponseEntity<?> delete(
             @PathVariable Integer reservationId,
             @PathVariable Integer tableId) {
-
         TableListId id = new TableListId(reservationId, tableId);
 
         if (tableListRepository.existsById(id)) {
@@ -156,7 +152,6 @@ public class TableListController {
             return ResponseEntity.ok(Map.of("message", "Tablelist deleted successfully"));
         }
 
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(404, "Tablelist not found"));
-
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new ErrorResponse(404, "Tablelist not found"));
     }
 }
