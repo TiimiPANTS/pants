@@ -18,7 +18,7 @@ public class Receipt {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "receipt_id")
-    private Long receiptId;
+    private Integer receiptId;
 
     @OneToOne
     @JoinColumn(name = "reservation_id")
@@ -27,11 +27,11 @@ public class Receipt {
     @Column(name = "issued")
     private LocalDateTime issued;
 
-    public Long getReceiptId() {
+    public Integer getReceiptId() {
         return receiptId;
     }
 
-    public void setReceiptId(Long receiptId) {
+    public void setReceiptId(Integer receiptId) {
         this.receiptId = receiptId;
     }
 

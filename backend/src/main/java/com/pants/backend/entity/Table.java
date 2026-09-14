@@ -3,13 +3,13 @@ package com.pants.backend.entity;
 import jakarta.persistence.*;
 
 @Entity
-@Table(name = "TABLES")
-public class RestaurantTable {
+@jakarta.persistence.Table(name = "TABLES")
+public class Table {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "table_id")
-    private Long id;
+    private Integer id;
 
     @Column(name = "table_number")
     private int tableNumber;
@@ -17,15 +17,15 @@ public class RestaurantTable {
     @Column(name = "capacity")
     private int capacity;
 
-    // @ManyToOne
-    // @JoinColumn(name = "tstatus_id")
-    // private TStatus status; // TStatus herjaa, koska table status entity tekemättä
+    @ManyToOne
+    @JoinColumn(name = "tstatus_id")
+    private TStatus status;
 
-    public Long getId() {
+    public Integer getId() {
         return id;
     }
 
-    public void setId(Long id) {
+    public void setId(Integer id) {
         this.id = id;
     }
 
@@ -45,11 +45,12 @@ public class RestaurantTable {
         this.capacity = capacity;
     }
 
-    // public TStatus getStatus() {     // TStatus herjaa, koska table status entity tekemättä
-    //     return status;
-    // }
+    public TStatus getStatus() {
+        return status;
+    }
 
-    // public void setStatus(TStatus status) {      // TStatus herjaa, koska table status entity tekemättä
-    //     this.status = status;
-    // }
+    public void setStatus(TStatus status) {
+        this.status = status;
+    }
+
 }

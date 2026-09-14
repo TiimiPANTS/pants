@@ -3,6 +3,7 @@ package com.pants.backend.entity;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -12,7 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
-import io.swagger.v3.oas.annotations.media.Schema;
+import org.hibernate.annotations.CreationTimestamp;
 
 @Entity
 @Table(name = "RESERVATIONS")
@@ -21,7 +22,7 @@ public class Reservation {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "reservation_id")
-    private Long reservationId;
+    private Integer reservationId;
 
     @ManyToOne
     @JoinColumn(name = "customer_id")
@@ -35,6 +36,7 @@ public class Reservation {
     @Column(name = "endtime")
     private LocalTime endTime;
 
+    @CreationTimestamp
     @Schema(type = "string", example = "2026-09-03T18:00:00")
     @Column(name = "datetime")
     private LocalDateTime datetime;
@@ -45,14 +47,18 @@ public class Reservation {
     @Column(name = "details")
     private String details;
 
+    @ManyToOne
+    @JoinColumn(name = "rstatus_id")
+    private RStatus status;
+
     public Reservation() {
     }
 
-    public Long getReservationId() {
+    public Integer getReservationId() {
         return reservationId;
     }
 
-    public void setReservationId(Long reservationId) {
+    public void setReservationId(Integer reservationId) {
         this.reservationId = reservationId;
     }
 
@@ -102,5 +108,13 @@ public class Reservation {
 
     public void setDetails(String details) {
         this.details = details;
+    }
+
+    public RStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(RStatus status) {
+        this.status = status;
     }
 }
