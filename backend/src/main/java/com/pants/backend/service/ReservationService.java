@@ -33,44 +33,79 @@ public class ReservationService {
     }
 
     public Reservation createReservation(ReservationDTO reservationDTO) {
+
         Reservation reservation = new Reservation();
 
         reservation.setStartTime(reservationDTO.getStartTime());
         reservation.setEndTime(reservationDTO.getEndTime());
+        reservation.setDatetime(reservationDTO.getDatetime());
         reservation.setPartySize(reservationDTO.getPartySize());
         reservation.setDetails(reservationDTO.getDetails());
 
         Customer customer = new Customer();
 
-        customer.setFirstname(reservationDTO.getCustomer().getFirstname());
-        customer.setLastname(reservationDTO.getCustomer().getLastname());
-        customer.setEmail(reservationDTO.getCustomer().getEmail());
+        customer.setFirstname(
+            reservationDTO.getCustomer().getFirstname()
+        );
 
-        Customer savedCustomer = customerRepository.save(customer);
+        customer.setLastname(
+            reservationDTO.getCustomer().getLastname()
+        );
+
+        customer.setEmail(
+            reservationDTO.getCustomer().getEmail()
+        );
+
+        Customer savedCustomer =
+            customerRepository.save(customer);
 
         reservation.setCustomer(savedCustomer);
 
         return reservationRepository.save(reservation);
     }
 
-    public Reservation updateReservation(Integer id, Reservation reservation) {
-        Reservation existingReservation = reservationRepository.findById(id).orElse(null);
+    public Reservation updateReservation(
+        Integer id,
+        Reservation reservation
+    ) {
+        Reservation existingReservation =
+            reservationRepository.findById(id).orElse(null);
 
         if (existingReservation == null) {
             return null;
         }
 
-        existingReservation.setCustomer(reservation.getCustomer());
-        existingReservation.setStartTime(reservation.getStartTime());
-        existingReservation.setEndTime(reservation.getEndTime());
-        existingReservation.setDatetime(reservation.getDatetime());
-        existingReservation.setPartySize(reservation.getPartySize());
-        existingReservation.setDetails(reservation.getDetails());
+        existingReservation.setCustomer(
+            reservation.getCustomer()
+        );
 
-        return reservationRepository.save(existingReservation);
+        existingReservation.setStartTime(
+            reservation.getStartTime()
+        );
+
+        existingReservation.setEndTime(
+            reservation.getEndTime()
+        );
+
+        existingReservation.setDatetime(
+            reservation.getDatetime()
+        );
+
+        existingReservation.setPartySize(
+            reservation.getPartySize()
+        );
+
+        existingReservation.setDetails(
+            reservation.getDetails()
+        );
+
+        return reservationRepository.save(
+            existingReservation
+        );
     }
 
     public boolean deleteReservation(Integer id) {
+
         if (!reservationRepository.existsById(id)) {
             return false;
         }
