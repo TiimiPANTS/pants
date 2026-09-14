@@ -66,10 +66,12 @@ public class TableList {
 
         @Override
         public boolean equals(Object o) {
-            if (this == o)
+            if (this == o) {
                 return true;
-            if (!(o instanceof TableListId))
+            }
+            if (!(o instanceof TableListId)) {
                 return false;
+            }
 
             TableListId that = (TableListId) o;
 
