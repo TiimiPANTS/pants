@@ -247,7 +247,19 @@ function App() {
         );
       }
 
+      
+      //Receipt
       const createdReservation = await response.json();
+      const receiptResponse = await fetch(
+        `http://localhost:8080/api/receipts/${createdReservation.reservationId}`,
+        {
+          method: "POST",
+        }
+      );
+
+      if (!receiptResponse.ok) {
+        throw new Error("Receipt creation failed");
+      }
 
       console.log("Reservation created:", createdReservation);
 
