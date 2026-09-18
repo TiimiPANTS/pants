@@ -112,7 +112,10 @@ public class ReceiptService {
                 reservation.getStartTime(),
                 reservation.getEndTime(),
                 reservation.getPartySize(),
-                reservation.getStatus().getName(),
+                //Use PENDING as a fallback if reservation status is not set yet
+                reservation.getStatus() != null
+                    ? reservation.getStatus().getName()
+                    : "PENDING",
                 reservation.getDetails());
     }
 }
