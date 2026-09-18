@@ -9,7 +9,20 @@
 - Thomas Obeng (bhu629)
 - Sara Junnila (sawasda)
 
-  Projektin backlog: https://github.com/orgs/TiimiPANTS/projects/1
+---
+
+- Projektin backlog: https://github.com/orgs/TiimiPANTS/projects/1
+
+- Projektin retrot: https://miro.com/app/board/uXjVHqNZkTk=/?share_link_id=954013309038
+
+- Swagger API dokumentaatio: http://localhost:8080/swagger-ui/index.html#/
+
+---
+Backend käynnistys: `mvnw.cmd spring-boot:run`
+
+Frontend käynnistys
+- Vain ensimmäisellä kerralla: `npm install` ja sitten `npm run dev`
+- Seuraavan kerran aina: `npm run dev`
 
 ---
 
