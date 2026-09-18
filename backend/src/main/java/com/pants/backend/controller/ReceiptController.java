@@ -248,6 +248,7 @@ public ResponseEntity<?> getReceiptById(
 
         reservationDTO.setStartTime(reservation.getStartTime());
         reservationDTO.setEndTime(reservation.getEndTime());
+        reservationDTO.setDatetime(reservation.getDatetime());
         reservationDTO.setPartySize(reservation.getPartySize());
         reservationDTO.setDetails(reservation.getDetails());
 
