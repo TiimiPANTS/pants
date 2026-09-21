@@ -108,6 +108,7 @@ export function useReservation() {
                 specialRequests: "",
             });
             setGuestCount(2);
+            return createdReservation;
         } catch (error) {
             if (error instanceof Error) {
                 setError(error.message);
