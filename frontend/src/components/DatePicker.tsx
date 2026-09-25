@@ -1,7 +1,7 @@
 import type { FC } from "react";
 import { useState } from "react";
-import { DayPicker } from "@daypicker/react";
 import "@daypicker/react/style.css";
+import { DayPicker, DayButton, type DayButtonProps } from "@daypicker/react";
 
 type DatePickerProps = {
   selectedDay: Date | undefined;
@@ -16,7 +16,6 @@ export const DatePicker: FC<DatePickerProps> = ({
 }) => {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  //const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   const goToPreviousMonth = () => {
     setCurrentMonth(
@@ -51,6 +50,27 @@ export const DatePicker: FC<DatePickerProps> = ({
         day
       )
   );
+
+  const CustomDayButton = (props: DayButtonProps) => {
+    const isBooked = props.modifiers.booked;
+    if (isBooked) {
+      return (
+        <DayButton
+          {...props}
+          className="min-h-[44px] min-w-[60px] relative flex flex-col items-center justify-center rounded-lg bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40"
+        >
+          <span className="text-xs line-through">
+            {props.day.date.getDate()}
+          </span>
+
+          <span className="text-[10px] font-bold text-rose-400 absolute top-0.5 right-1">
+            ✕
+          </span>
+        </DayButton>
+      );
+    }
+    return <DayButton {...props} />;
+  };
 
   return (
     <section>
@@ -89,13 +109,6 @@ export const DatePicker: FC<DatePickerProps> = ({
           mode="single"
           month={currentMonth}
           onMonthChange={setCurrentMonth}
-          // selected={selectedDate}
-          // onSelect={(date) => {
-          //   setSelectedDate(date);
-          //   if (date) {
-          //     setSelectedDay(date.getDate());
-          //   }
-          // }}
           selected={selectedDay}
           onSelect={(date) => {
             if (date) {
@@ -111,10 +124,6 @@ export const DatePicker: FC<DatePickerProps> = ({
             { before: new Date() },
             ...bookedDates,
           ]}
-          modifiersClassNames={{
-            booked:
-              "bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40 rounded-lg",
-          }}
           classNames={{
             month_caption: "hidden",
             button_previous: "hidden",
@@ -124,6 +133,9 @@ export const DatePicker: FC<DatePickerProps> = ({
             today: "text-white font-bold bg-zinc-800 rounded-lg",
             selected: "min-h-[44px] min-w-[60px] flex items-center justify-center text-sm font-bold text-white !bg-wine rounded-lg shadow-md ring-2 ring-wine-light/60",
             day_button: "text-sm min-w-[60px] min-h-[44px] aria-disabled:line-through",
+          }}
+          components={{
+            DayButton: CustomDayButton,
           }}
         />
 
