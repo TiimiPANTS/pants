@@ -1,16 +1,13 @@
 import type { FC } from "react";
 import { useState } from "react";
-// import { DayPicker } from "@daypicker/react";
-// import "@daypicker/react/style.css";
+import { DayPicker } from "@daypicker/react";
+import "@daypicker/react/style.css";
 
 type DatePickerProps = {
-  selectedDay: number;
-  setSelectedDay: (day: number) => void;
+  selectedDay: Date | undefined;
+  setSelectedDay: (date: Date) => void;
   bookedDays: Set<number>;
 };
-
-const dayButtonClass =
-  "min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-semibold text-[#F4F4F5] hover:bg-zinc-800 hover:text-white rounded-lg transition-colors focus:ring-2 focus:ring-wine focus:outline-none";
 
 export const DatePicker: FC<DatePickerProps> = ({
   selectedDay,
@@ -19,6 +16,7 @@ export const DatePicker: FC<DatePickerProps> = ({
 }) => {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  //const [selectedDate, setSelectedDate] = useState<Date | undefined>();
 
   const goToPreviousMonth = () => {
     setCurrentMonth(
@@ -44,6 +42,15 @@ export const DatePicker: FC<DatePickerProps> = ({
     month: "long",
     year: "numeric",
   });
+
+  const bookedDates = Array.from(bookedDays).map(
+    (day) =>
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth(),
+        day
+      )
+  );
 
   return (
     <section>
@@ -78,61 +85,48 @@ export const DatePicker: FC<DatePickerProps> = ({
           </button>
         </div>
 
-        <div className="grid grid-cols-7 gap-1 text-center mb-1.5">
-          {["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"].map((day) => (
-            <span key={day} className="text-xs font-bold text-zinc-400 py-1">
-              {day}
-            </span>
-          ))}
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 text-center">
-          <span className="min-h-[44px] min-w-[44px] flex items-center justify-center text-xs text-zinc-600">
-            31
-          </span>
-
-          {Array.from({ length: 30 }, (_, index) => index + 1).map((day) => {
-            if (bookedDays.has(day)) {
-              return (
-                <div
-                  key={day}
-                  className="min-h-[44px] min-w-[44px] relative flex flex-col items-center justify-center rounded-lg bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40"
-                >
-                  <span className="text-xs line-through">{day}</span>
-                  <span className="text-[10px] font-bold text-rose-400 absolute top-0.5 right-1">
-                    ✕
-                  </span>
-                </div>
-              );
+        <DayPicker
+          mode="single"
+          month={currentMonth}
+          onMonthChange={setCurrentMonth}
+          // selected={selectedDate}
+          // onSelect={(date) => {
+          //   setSelectedDate(date);
+          //   if (date) {
+          //     setSelectedDay(date.getDate());
+          //   }
+          // }}
+          selected={selectedDay}
+          onSelect={(date) => {
+            if (date) {
+              setSelectedDay(date);
             }
+          }}
+          showOutsideDays
+          weekStartsOn={1}
+          modifiers={{
+            booked: bookedDates,
+          }}
+          disabled={[
+            { before: new Date() },
+            ...bookedDates,
+          ]}
+          modifiersClassNames={{
+            booked:
+              "bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40 rounded-lg",
+          }}
+          classNames={{
+            month_caption: "hidden",
+            button_previous: "hidden",
+            button_next: "hidden",
 
-            const isSelected = day === selectedDay;
+            outside: "text-zinc-600",
+            today: "text-white font-bold bg-zinc-800 rounded-lg",
+            selected: "min-h-[44px] min-w-[60px] flex items-center justify-center text-sm font-bold text-white !bg-wine rounded-lg shadow-md ring-2 ring-wine-light/60",
+            day_button: "text-sm min-w-[60px] min-h-[44px] aria-disabled:line-through",
+          }}
+        />
 
-            return (
-              <button
-                key={day}
-                type="button"
-                onClick={() => setSelectedDay(day)}
-                className={
-                  isSelected
-                    ? "min-h-[44px] min-w-[44px] flex items-center justify-center text-sm font-bold text-white bg-wine rounded-lg shadow-md ring-2 ring-wine-light/60"
-                    : dayButtonClass
-                }
-              >
-                {day}
-              </button>
-            );
-          })}
-
-          {[1, 2, 3, 4].map((day) => (
-            <span
-              key={`oct-${day}`}
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-xs text-zinc-600"
-            >
-              {day}
-            </span>
-          ))}
-        </div>
       </div>
     </section>
   );
