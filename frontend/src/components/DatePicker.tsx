@@ -1,4 +1,7 @@
 import type { FC } from "react";
+import { useState } from "react";
+// import { DayPicker } from "@daypicker/react";
+// import "@daypicker/react/style.css";
 
 type DatePickerProps = {
   selectedDay: number;
@@ -14,6 +17,34 @@ export const DatePicker: FC<DatePickerProps> = ({
   setSelectedDay,
   bookedDays,
 }) => {
+
+  const [currentMonth, setCurrentMonth] = useState(new Date());
+
+  const goToPreviousMonth = () => {
+    setCurrentMonth(
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() - 1,
+        1
+      )
+    );
+  };
+
+  const goToNextMonth = () => {
+    setCurrentMonth(
+      new Date(
+        currentMonth.getFullYear(),
+        currentMonth.getMonth() + 1,
+        1
+      )
+    );
+  };
+
+  const monthYear = currentMonth.toLocaleDateString("en-US", {
+    month: "long",
+    year: "numeric",
+  });
+
   return (
     <section>
       <div className="flex items-center justify-between mb-3">
@@ -22,7 +53,7 @@ export const DatePicker: FC<DatePickerProps> = ({
           1. Select Date
         </h2>
         <span className="text-sm font-semibold text-zinc-300">
-          September 2026
+          {monthYear}
         </span>
       </div>
 
@@ -31,15 +62,17 @@ export const DatePicker: FC<DatePickerProps> = ({
           <button
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             type="button"
+            onClick={goToPreviousMonth}
           >
             ‹
           </button>
           <span className="text-base font-semibold text-white tracking-wide">
-            September 2026
+            {monthYear}
           </span>
           <button
             className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
             type="button"
+            onClick={goToNextMonth}
           >
             ›
           </button>
