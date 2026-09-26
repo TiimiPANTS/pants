@@ -3,6 +3,8 @@ package com.pants.backend.entity;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -16,6 +18,10 @@ import jakarta.persistence.Table;
 @Entity
 @Table(name = "RESERVATIONS")
 public class Reservation {
+
+    @JsonIgnore
+    @Column(name = "edit_token", unique = true, length = 64)
+    private String editToken;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -113,5 +119,13 @@ public class Reservation {
 
     public void setStatus(RStatus status) {
         this.status = status;
+    }
+
+    public String getEditToken() {
+    return editToken;
+    }
+
+    public void setEditToken(String editToken) {
+    this.editToken = editToken;
     }
 }

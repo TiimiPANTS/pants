@@ -3,18 +3,25 @@ package com.pants.backend.dto;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class ReservationDTO {
 
     private CustomerDTO customer;
 
+    @Schema(type = "string", example = "19:00:00")
     private LocalTime startTime;
 
+    @Schema(type = "string", example = "21:00:00")
     private LocalTime endTime;
 
+    @Schema(type = "string", example = "2026-12-01T19:00:00")
     private LocalDateTime datetime;
 
+    @Schema(example = "2")
     private Integer partySize;
 
+    @Schema(example = "Window seat please")
     private String details;
 
     public ReservationDTO() {
