@@ -1,135 +1,67 @@
-# Ravintolan pöytävarausjärjestelmä
+# Ohjelmistoprojekti 2 -kurssityö syksy 2026
 
-## Pants
+📋 **Backlog:** https://github.com/orgs/TiimiPANTS/projects/1
 
-**Jäsenet**
-- Phong Nguyen (PhongNgvyen)
-- Arttu Inkala (archiartt)
-- Ngan Tran (ng4nt)
-- Thomas Obeng (bhu629)
-- Sara Junnila (sawasda)
+🎯 **Retrospektit Miro-taulu:** https://miro.com/app/board/uXjVHqNZkTk=/?share_link_id=954013309038
 
----
+**Swagger API dokumentaatio:** http://localhost:8080/swagger-ui/index.html#/
 
-- Projektin backlog: https://github.com/orgs/TiimiPANTS/projects/1
-
-- Projektin retrot: https://miro.com/app/board/uXjVHqNZkTk=/?share_link_id=954013309038
-
-- Swagger API dokumentaatio: http://localhost:8080/swagger-ui/index.html#/
-
----
-Backend käynnistys: `mvnw.cmd spring-boot:run`
-
-Frontend käynnistys
-- Vain ensimmäisellä kerralla: `npm install` ja sitten `npm run dev`
-- Seuraavan kerran aina: `npm run dev`
+Alkuperäinen porjektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
 
 ---
 
-## Projektin kuvaus
+👖 **Ryhmä:** Pants
+- Phong Nguyen ([PhongNgvyen](https://github.com/PhongNgvyen))
+- Arttu Inkala ([archiartt](https://github.com/archiartt))
+- Ngan Tran ([ng4nt](https://github.com/ng4nt))
+- Thomas Obeng ([bhu629](https://github.com/bhu629))
+- Sara Junnila ([sawasda](https://github.com/sawasda))
 
-### Ongelma / Tarve
-
-Monissa ravintoloissa pöytävarauksia tehdään edelleen puhelimitse tai useiden eri kanavien kautta, mikä vie henkilökunnan aikaa ja lisää virheiden mahdollisuutta.
-
-### Kohderyhmä
-
-- Ravintoloiden asiakkaat
-- Ravintoloiden henkilökunta ja ylläpitäjät
-
-### Ratkaisu
-
-Toteutetaan verkkopohjainen pöytävarausjärjestelmä, jonka avulla asiakkaat voivat tarkistaa vapaat ajat ja tehdä, muokata tai perua varauksia ilman henkilökunnan apua.
-
-### Tavoiteltu lopputulos
-
-Asiakas pystyy tekemään pöytävarauksen helposti verkossa, ja ravintola pystyy hallitsemaan varauksiaan tehokkaammin. Järjestelmä vähentää manuaalista työtä ja parantaa asiakaskokemusta.
+*Suluissa Github-nimet ja hyperlinkit profiileihin*
 
 ---
 
-## Teknologiat
+**Projektin nimi:** Ravintolan pöytävarausjärjestelmä
 
-- Frontend: React
+**Kuvaus:** Toteutamme kuvitteelliselle Le Pants -ravintolalle pöytävarausjärjestelmän websovelluksen muodossa noudatten Scrum-viitekehystä.
+
+**Tavoite:** Toteutettava sovellus on verkkopohjainen pöytävarausjärjestelmä, jonka avulla asiakkaat voivat tarkistaa vapaat ajat sekä tehdä, muokata ja perua varauksia itsenäisesti ilman ravintolan henkilökunnan apua. Järjestelmän tavoitteena on vähentää puhelimitse ja muiden kanavien kautta tehtävää manuaalista työtä, ehkäistä virheitä ja parantaa yleistä asiakaskokemusta tehostamalla varausten hallintaa.
+
+**Tärkeimmät ominaisuudet:**
+Sovelluksen ensimmäisessä versiossa (MVP) käyttäjä voi tehdä seuraavia asioita.
+- Tarkastella ravintolan tietoja, aukioloaikoja ja yhteystietoja.  
+- Nähdä ravintolan vapaat varausajat, jotta sopivan ajankohdan valitseminen on helppoa.   
+- Varata pöydän valitulle henkilömäärälle. 
+- Muokata tekemäänsä varausta ennen varauksen ajankohtaa suunnitelmien muuttuessa.  
+- Peruuttaa varauksensa, jolloin aika vapautuu muiden käyttöön.  
+- Vastaanottaa onnistuneesta varauksesta sähköpostivahvistuksen.  
+
+---
+
+**Toteutusteknologiat**
+- Frontend: React Framework Typescript
+    - Node 24
 - Backend: Java Spring Boot
+    - Java 21
 - Tietokanta: PostgreSQL
+- Testaus: Postman, Swagger, Mockito, Github Actions
+- Sähköpostitestaus: Mailtrap
+- Paketinhallinta: npm
 - Deployment: Render tai muu
 
-- Node 24
-- Java 21
-- Postman
-- npm
 
 ---
+**Lokaalin projektin käynnistys**
 
-## Rajoitteet
+Backend käynnistys http://localhost:8080/
+1. `cd backend`
+2. `mvnw.cmd spring-boot:run`
 
-- Web-sovellus
-- Responsiivinen käyttöliittymä (desktop + mobiili)
-- Toteutus MVP-periaatteella
+Frontend käynnistys http://localhost:5173/
+1. `cd frontend`
+2. `npm install` 
+3. `npm run dev`
+*HUOM! npm install ajetaan vain ensimmäisellä kerralla. Sen jälkeen aina npm run dev.*
 
----
-
-## Käyttäjäryhmät
-
-### Asiakas
-
-- Tekee pöytävarauksia
-- Muokkaa varauksia
-- Peruu varauksia
-- Tarkastelee ravintolan tietoja
-
-### Ravintolan ylläpitäjä
-
-- Näkee varaukset
-- Hallitsee ravintolan tietoja
-- Hallitsee aukioloaikoja
-
----
-
-## Oleellisimmat toiminnallisuudet
-
-### Käyttäjätarinat
-
-1. Käyttäjänä haluan nähdä ravintolan vapaat ajat, jotta voin valita minulle sopivan ajankohdan.
-
-2. Käyttäjänä haluan varata pöydän haluamalleni henkilömäärälle, jotta voin suunnitella ravintolakäyntini.
-
-3. Käyttäjänä haluan muokata varaustani ennen varauksen ajankohtaa, jotta voin tehdä muutoksia suunnitelmien muuttuessa.
-
-4. Käyttäjänä haluan perua varaukseni, jotta voin vapauttaa ajan muiden käyttöön.
-
-5. Käyttäjänä haluan saada sähköpostivahvistuksen varauksestani, jotta tiedän varauksen onnistuneen.
-
-6. Käyttäjänä haluan nähdä ravintolan aukioloajat ja yhteystiedot, jotta löydän tarvitsemani tiedot helposti.
-
----
-
-## MVP
-
-Ensimmäiseen versioon kuuluu:
-
-- Ravintolan tietojen näyttäminen
-- Vapaiden aikojen näyttäminen
-- Pöytävarauksen tekeminen
-- Varauksen muokkaaminen
-- Varauksen peruuttaminen
-- Sähköpostivahvistus
-- Responsiivinen käyttöliittymä
-
-### Saavutettavuus
-
-- Riittävät värikontrastit
-- Selkeä navigointi
-- Helppokäyttöiset lomakkeet
-- Mobile first approach
-
----
-
-## Mahdollisia jatkokehitysideoita
-
-- Useiden ravintoloiden tuki
-- Ravintoloiden karttanäkymä
-- Käyttäjätilit ja autentikointi
-- Ravintoloiden arvostelut ja kommentit
-- Varauksen uudelleenvaraus
-- Muistutussähköpostit
+Perus application.properties on kytketty vain H2-tietokantaan ja ei ole kytketty Mailtrapiin. 
+Kysy admineiltä application-local.properties tiedostoa, jos tarvitset.

@@ -1,0 +1,1 @@
+Varsinainen vaatimusmäärittely dokumentti eli PRD (Product Requirements Document) tulee tänne. Tehdään vaikka taulukkona tänne.
