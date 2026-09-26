@@ -3,7 +3,9 @@ import type { ChangeEvent } from "react";
 import type { ReservationForm, ReservationTime } from "../types/reservation";
 
 export function useReservation() {
-    const [selectedDay, setSelectedDay] = useState<number>(21);
+    const [selectedDay, setSelectedDay] = useState<Date | undefined>(
+        undefined
+    );
     const [selectedTime, setSelectedTime] = useState<ReservationTime>("19:30");
     const [guestCount, setGuestCount] = useState<number>(2);
 
@@ -54,7 +56,19 @@ export function useReservation() {
     const handleSubmit = async () => {
         setError(null);
         setMessage(null);
+
+        if (!selectedDay) {
+            setError("Please select a date.");
+            return;
+        }
+
         setIsSubmitting(true);
+
+        const datetime =
+            `${selectedDay.getFullYear()}-` +
+            `${String(selectedDay.getMonth() + 1).padStart(2, "0")}-` +
+            `${String(selectedDay.getDate()).padStart(2, "0")}` +
+            `T${selectedTime}:00`;
 
         const reservationData = {
             customer: {
@@ -62,10 +76,7 @@ export function useReservation() {
                 lastname: form.lastName,
                 email: form.email,
             },
-            datetime: `2026-09-${String(selectedDay).padStart(
-                2,
-                "0"
-            )}T${selectedTime}:00`,
+            datetime,
             startTime: `${selectedTime}:00`,
             endTime: calculateEndTime(selectedTime),
             partySize: guestCount,
@@ -73,22 +84,27 @@ export function useReservation() {
         };
 
         try {
-            const response = await fetch("http://localhost:8080/api/reservations", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(reservationData),
-            });
+            const response = await fetch(
+                "http://localhost:8080/api/reservations",
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify(reservationData),
+                }
+            );
 
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(
-                    errorData.message || `Reservation failed: ${response.status}`
+                    errorData.message ||
+                    `Reservation failed: ${response.status}`
                 );
             }
 
             const createdReservation = await response.json();
+
             const receiptResponse = await fetch(
                 `http://localhost:8080/api/receipts/${createdReservation.reservationId}`,
                 {
@@ -101,13 +117,16 @@ export function useReservation() {
             }
 
             setMessage("Reservation created successfully!");
+
             setForm({
                 firstName: "",
                 lastName: "",
                 email: "",
                 specialRequests: "",
             });
+
             setGuestCount(2);
+
             return createdReservation;
         } catch (error) {
             if (error instanceof Error) {
