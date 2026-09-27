@@ -4,7 +4,7 @@ import type { ReservationForm, ReservationTime } from "../types/reservation";
 
 export function useReservation() {
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
-        undefined
+        new Date()
     );
     const [selectedTime, setSelectedTime] = useState<ReservationTime>("19:30");
     const [guestCount, setGuestCount] = useState<number>(2);
