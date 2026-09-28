@@ -6,7 +6,7 @@ import {
     type ReservationTime,
 } from "../types/reservation";
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 const emptyForm: ReservationForm = {
     firstName: "",
