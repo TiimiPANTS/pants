@@ -13,3 +13,4 @@ target/
 Thumbs.db
 
 .env
+.env.production
