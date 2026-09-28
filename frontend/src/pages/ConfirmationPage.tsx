@@ -11,6 +11,7 @@ type Customer = {
 
 type Reservation = {
   reservationId: number;
+  editToken: string;
   customer: Customer;
   startTime: string;
   endTime: string;
@@ -325,6 +326,16 @@ Reference: ${bookingReference}
             className="w-full py-3.5 px-6 rounded-xl bg-[#8B1E3F] hover:bg-[#9E2248] text-white font-semibold text-base"
           >
             Exit
+          </button>
+
+          <button
+            type="button"
+            onClick={() =>
+              navigate(`/reserve/${reservation.editToken}`)
+            }
+            className="w-full py-3 px-6 rounded-xl bg-[#1A1B20] hover:bg-[#23252C] border border-[#8B1E3F] text-white font-semibold text-sm"
+          >
+            Edit Reservation
           </button>
 
           <div className="grid grid-cols-2 gap-3">

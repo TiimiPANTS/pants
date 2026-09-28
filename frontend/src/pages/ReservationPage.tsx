@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 
 import { useReservation } from "../hooks/useReservation";
 
@@ -26,8 +26,11 @@ const bookedDays = new Set([
 
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
+  const { token } = useParams();
 
   const {
+    isEditMode,
+    isLoading,
     selectedDay,
     setSelectedDay,
     selectedTime,
@@ -41,7 +44,7 @@ export const ReservationPage: FC = () => {
     handleGuestChange,
     handleInputChange,
     handleSubmit,
-  } = useReservation();
+  } = useReservation(token);
 
   const submitReservation = async () => {
     const createdReservation = await handleSubmit();
@@ -56,6 +59,14 @@ export const ReservationPage: FC = () => {
       },
     });
   };
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center">
+        Loading reservation...
+      </div>
+    );
+  }
 
   return (
     <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
@@ -73,6 +84,12 @@ export const ReservationPage: FC = () => {
             submitReservation();
           }}
         >
+          {isEditMode && (
+            <h2 className="text-lg font-bold text-white">
+              Edit your reservation
+            </h2>
+          )}
+
           <DatePicker
             selectedDay={selectedDay}
             setSelectedDay={setSelectedDay}
@@ -113,8 +130,12 @@ export const ReservationPage: FC = () => {
             className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase rounded-xl transition-colors"
           >
             {isSubmitting
-              ? "Creating reservation..."
-              : "Confirm Reservation"}
+              ? isEditMode
+                ? "Updating reservation..."
+                : "Creating reservation..."
+              : isEditMode
+                ? "Update Reservation"
+                : "Confirm Reservation"}
           </button>
         </form>
       </main>
