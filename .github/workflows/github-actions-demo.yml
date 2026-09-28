@@ -14,4 +14,4 @@ jobs:
           cache: maven
       - name: Run backend controller tests
         working-directory: backend
-        run: ./mvnw --batch-mode -Dtest=TableListControllerTest test
+        run: ./mvnw --batch-mode '-Dtest=com.pants.backend.controller.*Test' test
