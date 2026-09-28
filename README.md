@@ -4,7 +4,13 @@
 
 🎯 **Retrospektit Miro-taulu:** https://miro.com/app/board/uXjVHqNZkTk=/?share_link_id=954013309038
 
-**Swagger API dokumentaatio:** http://localhost:8080/swagger-ui/index.html#/
+**Swagger API dokumentaatio:** 
+- http://localhost:8080/swagger-ui/index.html#/
+- https://teampants-git-ohjelmistoprojekti2-teampants.2.rahtiapp.fi/swagger-ui/index.html#
+
+Backend Rahti URL: https://teampants-git-ohjelmistoprojekti2-teampants.2.rahtiapp.fi
+
+Frontend Render URL: https://pants-mir9.onrender.com
 
 Alkuperäinen porjektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
 
