@@ -80,10 +80,10 @@
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-mail</artifactId>
 		</dependency>
-		<!-- BCrypt password hashing -->
+		<!-- Spring Security -->
 		<dependency>
-    		<groupId>org.springframework.security</groupId>
-    		<artifactId>spring-security-crypto</artifactId>
+    		<groupId>org.springframework.boot</groupId>
+    		<artifactId>spring-boot-starter-security</artifactId>
 		</dependency>
 	</dependencies>
 
