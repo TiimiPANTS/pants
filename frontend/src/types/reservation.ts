@@ -1,10 +1,14 @@
 export const availableTimes = [
-  "18:00",
+  
+  "10:00",
+  "10:30",
+  "11:00",
   "18:30",
   "19:00",
   "19:30",
   "20:00",
   "20:30",
+  "21:00",
 ] as const;
 
 export type ReservationTime = (typeof availableTimes)[number];
