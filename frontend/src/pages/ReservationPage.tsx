@@ -103,6 +103,7 @@ export const ReservationPage: FC = () => {
           />
 
           <TimeSlotSelector
+            selectedDay={selectedDay}
             selectedTime={selectedTime}
             setSelectedTime={setSelectedTime}
           />
