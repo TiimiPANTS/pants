@@ -6,8 +6,11 @@ public class CustomerDTO {
 
     @Schema(accessMode = Schema.AccessMode.READ_ONLY)
     private Integer id;
+    @Schema(example = "Testi")
     private String firstname;
+    @Schema(example = "Kayttaja")
     private String lastname;
+    @Schema(example = "testi@mail.fi")
     private String email;
 
     public CustomerDTO() {

@@ -2,6 +2,7 @@ package com.pants.backend.controller;
 
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,10 +18,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.dto.ReservationDTO;
-import com.pants.backend.entity.Customer;
+import com.pants.backend.dto.ReservationResponse;
 import com.pants.backend.entity.Reservation;
-import com.pants.backend.repository.CustomerRepository;
-import com.pants.backend.repository.ReservationRepository;
 import com.pants.backend.service.ReservationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,61 +38,34 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 )
 public class ReservationController {
 
-    private final ReservationRepository reservationRepository;
-    private final CustomerRepository customerRepository;
     private final ReservationService reservationService;
 
     public ReservationController(
-        ReservationRepository reservationRepository,
-        CustomerRepository customerRepository,
         ReservationService reservationService
     ) {
-        this.reservationRepository = reservationRepository;
-        this.customerRepository = customerRepository;
         this.reservationService = reservationService;
     }
 
     // GET /api/reservations
     @Operation(
         summary = "Get all reservations",
-        description = "Returns a list of all reservations"
+        description = "Returns a list of all reservations (empty list if none)"
     )
     @ApiResponses(value = {
         @ApiResponse(
             responseCode = "200",
-            description = "All reservations found successfully",
+            description = "Reservations returned successfully",
             content = @Content(
                 mediaType = "application/json",
                 schema = @Schema(implementation = Reservation.class)
             )
-        ),
-        @ApiResponse(
-            responseCode = "404",
-            description = "No reservations found",
-            content = @Content(
-                mediaType = "application/json",
-                schema = @Schema(implementation = ErrorResponse.class)
-            )
         )
     })
     @GetMapping
-    public ResponseEntity<?> getAllReservations() {
-
-        List<Reservation> reservations =
-            reservationRepository.findAll();
-
-        if (reservations.isEmpty()) {
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(
-                    new ErrorResponse(
-                        404,
-                        "No reservations found"
-                    )
-                );
-        }
-
-        return ResponseEntity.ok(reservations);
+    public ResponseEntity<List<Reservation>> getAllReservations() {
+        return ResponseEntity.ok(
+            reservationService.getAllReservations()
+        );
     }
 
     // GET /api/reservations/{id}
@@ -123,29 +95,59 @@ public class ReservationController {
     public ResponseEntity<?> getReservationById(
         @PathVariable Integer id
     ) {
-        return reservationRepository
-            .findById(id)
-            .map(
-                reservation ->
-                    ResponseEntity.ok((Object) reservation)
+        Reservation reservation =
+            reservationService.getReservationById(id);
+
+        if (reservation == null) {
+            return notFound("Reservation not found");
+        }
+
+        return ResponseEntity.ok(reservation);
+    }
+
+    // GET /api/reservations/manage/{token}
+    @Operation(
+        summary = "Get reservation by edit token",
+        description = "Returns a reservation using the edit token from the confirmation link"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Reservation found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReservationResponse.class)
             )
-            .orElseGet(
-                () ->
-                    ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body(
-                            new ErrorResponse(
-                                404,
-                                "Reservation not found"
-                            )
-                        )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Reservation not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    @GetMapping("/manage/{token}")
+    public ResponseEntity<?> getReservationByToken(
+        @PathVariable String token
+    ) {
+        try {
+            Reservation reservation =
+                reservationService.getReservationByToken(token);
+
+            return ResponseEntity.ok(
+                new ReservationResponse(reservation)
             );
+        } catch (NoSuchElementException e) {
+            return notFound(e.getMessage());
+        }
     }
 
     // POST /api/reservations
     @Operation(
         summary = "Create a new reservation",
-        description = "Adds a new reservation to the system"
+        description = "Adds a new reservation to the system and returns it with an edit token"
     )
     @ApiResponses(value = {
         @ApiResponse(
@@ -153,7 +155,7 @@ public class ReservationController {
             description = "Reservation created successfully",
             content = @Content(
                 mediaType = "application/json",
-                schema = @Schema(implementation = Reservation.class)
+                schema = @Schema(implementation = ReservationResponse.class)
             )
         ),
         @ApiResponse(
@@ -170,7 +172,6 @@ public class ReservationController {
         @RequestBody ReservationDTO reservationDTO
     ) {
         try {
-
             Reservation savedReservation =
                 reservationService.createReservation(
                     reservationDTO
@@ -178,19 +179,9 @@ public class ReservationController {
 
             return ResponseEntity
                 .status(HttpStatus.CREATED)
-                .body(savedReservation);
-
-        } catch (Exception e) {
-
-            return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(
-                    new ErrorResponse(
-                        400,
-                        "Invalid reservation data: "
-                            + e.getMessage()
-                    )
-                );
+                .body(new ReservationResponse(savedReservation));
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
         }
     }
 
@@ -228,64 +219,86 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
         @PathVariable Integer id,
-        @RequestBody Reservation reservation
+        @RequestBody ReservationDTO reservationDTO
     ) {
-
-        Reservation existingReservation =
-            reservationRepository
-                .findById(id)
-                .orElse(null);
-
-        if (existingReservation == null) {
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(
-                    new ErrorResponse(
-                        404,
-                        "Reservation not found"
-                    )
+        try {
+            Reservation updatedReservation =
+                reservationService.updateReservation(
+                    id,
+                    reservationDTO
                 );
+
+            return ResponseEntity.ok(updatedReservation);
+        } catch (NoSuchElementException e) {
+            return notFound(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
         }
+    }
 
-        ResponseEntity<?> customerValidation =
-            validateAndAttachCustomer(reservation);
+    // PUT /api/reservations/manage/{token}
+    @Operation(
+        summary = "Update reservation by edit token",
+        description = "Lets the customer update their reservation using the edit token"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Reservation updated successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReservationResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "400",
+            description = "Invalid reservation data",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Reservation not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Reservation can no longer be modified",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    @PutMapping("/manage/{token}")
+    public ResponseEntity<?> updateReservationByToken(
+        @PathVariable String token,
+        @RequestBody ReservationDTO reservationDTO
+    ) {
+        try {
+            Reservation updatedReservation =
+                reservationService.updateReservationByToken(
+                    token,
+                    reservationDTO
+                );
 
-        if (customerValidation != null) {
-            return customerValidation;
-        }
-
-        existingReservation.setCustomer(
-            reservation.getCustomer()
-        );
-
-        existingReservation.setStartTime(
-            reservation.getStartTime()
-        );
-
-        existingReservation.setEndTime(
-            reservation.getEndTime()
-        );
-
-        existingReservation.setDatetime(
-            reservation.getDatetime()
-        );
-
-        existingReservation.setPartySize(
-            reservation.getPartySize()
-        );
-
-        existingReservation.setDetails(
-            reservation.getDetails()
-        );
-
-        Reservation updatedReservation =
-            reservationRepository.save(
-                existingReservation
+            return ResponseEntity.ok(
+                new ReservationResponse(updatedReservation)
             );
-
-        return ResponseEntity.ok(
-            updatedReservation
-        );
+        } catch (NoSuchElementException e) {
+            return notFound(e.getMessage());
+        } catch (IllegalArgumentException e) {
+            return badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, e.getMessage()));
+        }
     }
 
     // DELETE /api/reservations/{id}
@@ -318,86 +331,27 @@ public class ReservationController {
     public ResponseEntity<?> deleteReservationById(
         @PathVariable Integer id
     ) {
-
-        if (
-            reservationRepository.existsById(id)
-        ) {
-
-            reservationRepository.deleteById(id);
-
-            return ResponseEntity.ok(
-                Map.of(
-                    "message",
-                    "Successfully deleted reservation with id "
-                        + id
-                )
-            );
+        if (!reservationService.deleteReservation(id)) {
+            return notFound("Reservation not found");
         }
 
-        return ResponseEntity
-            .status(HttpStatus.NOT_FOUND)
-            .body(
-                new ErrorResponse(
-                    404,
-                    "Reservation not found"
-                )
-            );
+        return ResponseEntity.ok(
+            Map.of(
+                "message",
+                "Successfully deleted reservation with id " + id
+            )
+        );
     }
 
-    // Customer ID validation for PUT
-    private ResponseEntity<?> validateAndAttachCustomer(
-        Reservation reservation
-    ) {
+    private ResponseEntity<ErrorResponse> notFound(String message) {
+        return ResponseEntity
+            .status(HttpStatus.NOT_FOUND)
+            .body(new ErrorResponse(404, message));
+    }
 
-        if (reservation.getCustomer() == null) {
-            return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(
-                    new ErrorResponse(
-                        400,
-                        "Customer is required"
-                    )
-                );
-        }
-
-        Integer customerId =
-            reservation
-                .getCustomer()
-                .getId();
-
-        if (customerId == null) {
-            return ResponseEntity
-                .status(HttpStatus.BAD_REQUEST)
-                .body(
-                    new ErrorResponse(
-                        400,
-                        "Customer id is required"
-                    )
-                );
-        }
-
-        Customer existingCustomer =
-            customerRepository
-                .findById(customerId)
-                .orElse(null);
-
-        if (existingCustomer == null) {
-            return ResponseEntity
-                .status(HttpStatus.NOT_FOUND)
-                .body(
-                    new ErrorResponse(
-                        404,
-                        "Customer with id "
-                            + customerId
-                            + " does not exist"
-                    )
-                );
-        }
-
-        reservation.setCustomer(
-            existingCustomer
-        );
-
-        return null;
+    private ResponseEntity<ErrorResponse> badRequest(String message) {
+        return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(400, message));
     }
 }
