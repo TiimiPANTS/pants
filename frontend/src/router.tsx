@@ -16,6 +16,10 @@ const router = createBrowserRouter([
     element: <ReservationPage />,
   },
   {
+    path: "/reserve/:token",
+    element: <ReservationPage />,
+  },
+  {
     path: "/confirmation",
     element: <ConfirmationPage />,
   },
