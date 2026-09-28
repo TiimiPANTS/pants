@@ -84,7 +84,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
     public Reservation updateReservationByToken(String token, ReservationDTO dto) {
         Reservation existingReservation = getReservationByToken(token);
 
-        if (existingReservation.getDatetime().isBefore(LocalDateTime.now().plusHours(24))) {
+        if (existingReservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be modified");
         }
 
