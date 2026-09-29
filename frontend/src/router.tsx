@@ -5,6 +5,7 @@ import {
 
 import { ReservationPage } from "./pages/ReservationPage.tsx";
 import ConfirmationPage from "./pages/ConfirmationPage.tsx";
+import { LoginPage } from "./pages/LoginPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -14,6 +15,10 @@ const router = createBrowserRouter([
   {
     path: "/reserve",
     element: <ReservationPage />,
+  },
+  {
+    path: "/login",
+    element: <LoginPage />,
   },
   {
     path: "/reserve/:token",
