@@ -1,6 +1,3 @@
-// lisään validointiin littyvvät jutut myöhemmin ja testidokumentti jutellaa yhes
-// ja fixaan duplikaatit yms helpers ja funktioiks ens kerral
-
 package com.pants.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -38,256 +35,226 @@ import com.pants.backend.service.TableService;
 @ExtendWith(MockitoExtension.class)
 class TableListControllerTest {
 
-    @Mock
-    private TableListRepository tableListRepository;
+        @Mock
+        private TableListRepository tableListRepository;
 
-    @Mock
-    private ReservationRepository reservationRepository;
+        @Mock
+        private ReservationRepository reservationRepository;
 
-    @Mock
-    private TableRepository tableRepository;
+        @Mock
+        private TableRepository tableRepository;
 
-    @Mock
-    private TableService tableService;
+        @Mock
+        private TableService tableService;
 
-    @InjectMocks
-    private TableListController tableListController;
+        @InjectMocks
+        private TableListController tableListController;
 
-    @Test
-    void getAll_whenTableListsExist_returnsOk() {
-        TableList tableList = createTableList();
+        private void mockReservationExists() {
+                when(reservationRepository.findById(1))
+                                .thenReturn(Optional.of(createReservation()));
+        }
 
-        when(tableListRepository.findAll())
-                .thenReturn(List.of(tableList));
+        private void mockReservationExists(int reservationId, Reservation reservation) {
+                when(reservationRepository.findById(reservationId))
+                                .thenReturn(Optional.of(reservation));
+        }
 
-        ResponseEntity<?> response = tableListController.getAll();
+        private void mockTableExists() {
+                when(tableRepository.findById(1))
+                                .thenReturn(Optional.of(createTable()));
+        }
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(List.of(tableList));
-    }
+        private void assertErrorResponse(ResponseEntity<?> response, HttpStatus status, String message) {
+                assertThat(response.getStatusCode()).isEqualTo(status);
 
-    @Test
-    void getAll_whenNoTableListsExist_returnsNotFound() {
-        when(tableListRepository.findAll())
-                .thenReturn(Collections.emptyList());
+                ErrorResponse error = (ErrorResponse) response.getBody();
+                assertThat(error).isNotNull();
+                assertThat(error.getStatus()).isEqualTo(status.value());
+                assertThat(error.getMessage()).isEqualTo(message);
+        }
 
-        ResponseEntity<?> response = tableListController.getAll();
+        @Test
+        void getAll_whenTableListsExist_returnsOk() {
+                TableList tableList = createTableList();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                when(tableListRepository.findAll())
+                                .thenReturn(List.of(tableList));
 
-        ErrorResponse error = (ErrorResponse) response.getBody();
-        assertThat(error.getStatus()).isEqualTo(404);
-        assertThat(error.getMessage()).isEqualTo("No tablelists found");
-    }
+                ResponseEntity<?> response = tableListController.getAll();
 
-    @Test
-    void getById_whenFound_returnsOk() {
-        TableList tableList = createTableList();
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(response.getBody()).isEqualTo(List.of(tableList));
+        }
 
-        when(tableListRepository.findById(tableList.getId()))
-                .thenReturn(Optional.of(tableList));
+        @Test
+        void getAll_whenNoTableListsExist_returnsNotFound() {
+                when(tableListRepository.findAll())
+                                .thenReturn(Collections.emptyList());
 
-        ResponseEntity<?> response = tableListController.getById(1, 1);
+                ResponseEntity<?> response = tableListController.getAll();
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
-        assertThat(response.getBody()).isEqualTo(tableList);
-    }
+                assertErrorResponse(response, HttpStatus.NOT_FOUND, "No tablelists found");
+        }
 
-    @Test
-    void getById_whenNotFound_returnsNotFound() {
-        TableListId id = new TableListId(1, 1);
+        @Test
+        void getById_whenFound_returnsOk() {
+                TableList tableList = createTableList();
 
-        when(tableListRepository.findById(id))
-                .thenReturn(Optional.empty());
+                when(tableListRepository.findById(tableList.getId()))
+                                .thenReturn(Optional.of(tableList));
 
-        ResponseEntity<?> response = tableListController.getById(1, 1);
+                ResponseEntity<?> response = tableListController.getById(1, 1);
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+                assertThat(response.getBody()).isEqualTo(tableList);
+        }
 
-        ErrorResponse error = (ErrorResponse) response.getBody();
-        assertThat(error.getStatus()).isEqualTo(404);
-        assertThat(error.getMessage()).isEqualTo("Tablelist not found");
-    }
+        @Test
+        void getById_whenNotFound_returnsNotFound() {
+                TableListId id = new TableListId(1, 1);
 
-    @Test
-    void create_whenReservationMissing_returnsNotFound() {
-        TableList tableList = createTableList();
+                when(tableListRepository.findById(id))
+                                .thenReturn(Optional.empty());
 
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.empty());
+                ResponseEntity<?> response = tableListController.getById(1, 1);
 
-        ResponseEntity<?> response = tableListController.create(tableList);
+                assertErrorResponse(response, HttpStatus.NOT_FOUND, "Tablelist not found");
+        }
 
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        @Test
+        void create_whenReservationMissing_returnsNotFound() {
+                TableList tableList = createTableList();
 
-        verify(tableRepository, never()).findById(anyInt());
-        verify(tableListRepository, never()).save(any());
-    }
+                when(reservationRepository.findById(1))
+                                .thenReturn(Optional.empty());
 
-    @Test
-    void create_whenTableMissing_returnsNotFound() {
-        TableList tableList = createTableList();
+                ResponseEntity<?> response = tableListController.create(tableList);
 
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.of(createReservation()));
+                assertErrorResponse(response, HttpStatus.NOT_FOUND, "Reservation with id 1 does not exist");
+                verify(tableRepository, never()).findById(anyInt());
+                verify(tableListRepository, never()).save(any());
+        }
 
-        when(tableRepository.findById(1))
-                .thenReturn(Optional.empty());
+        @Test
+        void create_whenTableMissing_returnsNotFound() {
+                TableList tableList = createTableList();
+
+                mockReservationExists();
+                when(tableRepository.findById(1))
+                                .thenReturn(Optional.empty());
+
+                ResponseEntity<?> response = tableListController.create(tableList);
+
+                assertErrorResponse(response, HttpStatus.NOT_FOUND, "Table with id 1 does not exist");
+                verify(tableListRepository, never()).save(any());
+        }
+
+        @Test
+        void create_whenAlreadyExists_returnsBadRequest() {
+                TableList tableList = createTableList();
 
-        ResponseEntity<?> response = tableListController.create(tableList);
-
-        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-
-        verify(tableListRepository, never()).save(any());
-    }
-
-    @Test
-    void create_whenAlreadyExists_returnsBadRequest() {
-        TableList tableList = createTableList();
-
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.of(createReservation()));
-
-        when(tableRepository.findById(1))
-                .thenReturn(Optional.of(createTable()));
-
-        when(tableListRepository.existsById(tableList.getId()))
-                .thenReturn(true);
-
-        ResponseEntity<?> response = tableListController.create(tableList);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
-
-        ErrorResponse error = (ErrorResponse) response.getBody();
-
-        assertThat(error.getStatus()).isEqualTo(400);
-        assertThat(error.getMessage())
-                .isEqualTo("Tablelist already exists");
-
-        verify(tableListRepository, never()).save(any());
-    }
-
-    @Test
-    void create_whenCapacityTooSmall_returnsBadRequest() {
-        TableList tableList = createTableList();
-
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.of(createReservation()));
-
-        when(tableRepository.findById(1))
-                .thenReturn(Optional.of(createTable()));
-
-        when(tableListRepository.existsById(tableList.getId()))
-                .thenReturn(false);
-
-        when(tableService.hasCapacityFor(any(), anyInt()))
-                .thenReturn(false);
-
-        ResponseEntity<?> response = tableListController.create(tableList);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.BAD_REQUEST);
-
-        verify(tableListRepository, never()).save(any());
-    }
-
-    @Test
-    void create_whenUnavailable_returnsConflict() {
-        TableList tableList = createTableList();
-        Reservation reservation = createReservation();
-
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.of(reservation));
-
-        when(tableRepository.findById(1))
-                .thenReturn(Optional.of(createTable()));
-
-        when(tableListRepository.existsById(tableList.getId()))
-                .thenReturn(false);
-
-        when(tableService.hasCapacityFor(any(), anyInt()))
-                .thenReturn(true);
-
-        when(tableService.isAvailable(
-                anyInt(),
-                any(),
-                any(),
-                any()))
-                .thenReturn(false);
-
-        ResponseEntity<?> response = tableListController.create(tableList);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.CONFLICT);
-
-        verify(tableListRepository, never()).save(any());
-    }
-
-    @Test
-    void create_whenValid_returnsCreated() {
-        TableList tableList = createTableList();
-        Reservation reservation = createReservation();
-
-        when(reservationRepository.findById(1))
-                .thenReturn(Optional.of(reservation));
-
-        when(tableRepository.findById(1))
-                .thenReturn(Optional.of(createTable()));
-
-        when(tableListRepository.existsById(tableList.getId()))
-                .thenReturn(false);
-
-        when(tableService.hasCapacityFor(any(), anyInt()))
-                .thenReturn(true);
-
-        when(tableService.isAvailable(
-                anyInt(),
-                any(),
-                any(),
-                any()))
-                .thenReturn(true);
-
-        when(tableListRepository.save(tableList))
-                .thenReturn(tableList);
-
-        ResponseEntity<?> response = tableListController.create(tableList);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.CREATED);
-
-        assertThat(response.getBody())
-                .isEqualTo(tableList);
-
-        verify(tableListRepository).save(tableList);
-    }
-
-    @Test
-    void delete_whenFound_returnsOk() {
-        TableListId id = new TableListId(1, 1);
-
-        when(tableListRepository.existsById(id))
-                .thenReturn(true);
-
-        ResponseEntity<?> response = tableListController.delete(1, 1);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.OK);
-
-        verify(tableListRepository).deleteById(id);
-    }
-
-    @Test
-    void delete_whenNotFound_returnsNotFound() {
-        TableListId id = new TableListId(1, 1);
-
-        when(tableListRepository.existsById(id))
-                .thenReturn(false);
-
-        ResponseEntity<?> response = tableListController.delete(1, 1);
-
-        assertThat(response.getStatusCode())
-                .isEqualTo(HttpStatus.NOT_FOUND);
-    }
+                mockReservationExists();
+                mockTableExists();
+                when(tableListRepository.existsById(tableList.getId()))
+                                .thenReturn(true);
+
+                ResponseEntity<?> response = tableListController.create(tableList);
+
+                assertErrorResponse(response, HttpStatus.BAD_REQUEST, "Tablelist already exists");
+                verify(tableListRepository, never()).save(any());
+        }
+
+        @Test
+        void create_whenCapacityTooSmall_returnsBadRequest() {
+                TableList tableList = createTableList();
+
+                mockReservationExists();
+                mockTableExists();
+                when(tableListRepository.existsById(tableList.getId()))
+                                .thenReturn(false);
+                when(tableService.hasCapacityFor(any(), anyInt()))
+                                .thenReturn(false);
+
+                ResponseEntity<?> response = tableListController.create(tableList);
+
+                assertErrorResponse(response, HttpStatus.BAD_REQUEST,
+                                "Table with id 1 does not have enough capacity for party size 4");
+                verify(tableListRepository, never()).save(any());
+        }
+
+        @Test
+        void create_whenUnavailable_returnsConflict() {
+                TableList tableList = createTableList();
+                Reservation reservation = createReservation();
+
+                mockReservationExists(1, reservation);
+                mockTableExists();
+                when(tableListRepository.existsById(tableList.getId()))
+                                .thenReturn(false);
+                when(tableService.hasCapacityFor(any(), anyInt()))
+                                .thenReturn(true);
+                when(tableService.isAvailable(anyInt(), any(), any(), any()))
+                                .thenReturn(false);
+
+                ResponseEntity<?> response = tableListController.create(tableList);
+
+                assertErrorResponse(response, HttpStatus.CONFLICT, "Table with id 1 is already reserved for that time");
+                verify(tableListRepository, never()).save(any());
+        }
+
+        @Test
+        void create_whenValid_returnsCreated() {
+                TableList tableList = createTableList();
+                Reservation reservation = createReservation();
+
+                mockReservationExists(1, reservation);
+                mockTableExists();
+                when(tableListRepository.existsById(tableList.getId()))
+                                .thenReturn(false);
+                when(tableService.hasCapacityFor(any(), anyInt()))
+                                .thenReturn(true);
+                when(tableService.isAvailable(anyInt(), any(), any(), any()))
+                                .thenReturn(true);
+                when(tableListRepository.save(tableList))
+                                .thenReturn(tableList);
+
+                ResponseEntity<?> response = tableListController.create(tableList);
+
+                assertThat(response.getStatusCode())
+                                .isEqualTo(HttpStatus.CREATED);
+                assertThat(response.getBody())
+                                .isEqualTo(tableList);
+
+                verify(tableListRepository).save(tableList);
+        }
+
+        @Test
+        void delete_whenFound_returnsOk() {
+                TableListId id = new TableListId(1, 1);
+
+                when(tableListRepository.existsById(id))
+                                .thenReturn(true);
+
+                ResponseEntity<?> response = tableListController.delete(1, 1);
+
+                assertThat(response.getStatusCode())
+                                .isEqualTo(HttpStatus.OK);
+
+                verify(tableListRepository).deleteById(id);
+        }
+
+        @Test
+        void delete_whenNotFound_returnsNotFound() {
+                TableListId id = new TableListId(1, 1);
+
+                when(tableListRepository.existsById(id))
+                                .thenReturn(false);
+
+                ResponseEntity<?> response = tableListController.delete(1, 1);
+
+                assertThat(response.getStatusCode())
+                                .isEqualTo(HttpStatus.NOT_FOUND);
+        }
 
 }

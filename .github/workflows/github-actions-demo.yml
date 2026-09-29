@@ -1,7 +1,10 @@
-name: GitHub Actions Demo
-on: [push]
+name: Backend Tests
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 jobs:
-  backend-controller-tests:
+  backend-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -12,6 +15,23 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
-      - name: Run backend controller tests
+      - name: Run backend tests
         working-directory: backend
-        run: ./mvnw --batch-mode '-Dtest=com.pants.backend.controller.*Test' test
+        run: ./mvnw --batch-mode --no-transfer-progress test
+
+      - name: Publish test results
+        if: always()
+        uses: dorny/test-reporter@v2
+        with:
+          name: Backend tests
+          path: backend/target/surefire-reports/*.xml
+          reporter: java-junit
+          fail-on-error: false
+
+      - name: Upload Surefire reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-reports
+          path: backend/target/surefire-reports/
+          if-no-files-found: warn
