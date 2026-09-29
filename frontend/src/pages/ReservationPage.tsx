@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useReservation } from "../hooks/useReservation";
 
@@ -71,6 +71,17 @@ export const ReservationPage: FC = () => {
   return (
     <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
       <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-36 flex flex-col">
+        <div className="mb-4 flex justify-end">
+          <Link
+            to="/login"
+            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+          >
+            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+              login
+            </span>
+            Staff sign in
+          </Link>
+        </div>
         <Header
           logoUrl={LePantsLogo}
           restaurantName="Le Pants"
