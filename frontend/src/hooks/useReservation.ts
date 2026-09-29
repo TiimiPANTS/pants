@@ -6,7 +6,20 @@ import {
     type ReservationTime,
 } from "../types/reservation";
 
-const API_URL = "http://localhost:8080/api";
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+
+// Parse a JSON body without throwing on empty/non-JSON responses
+async function readJson(response: Response) {
+    const text = await response.text();
+    if (!text) {
+        return null;
+    }
+    try {
+        return JSON.parse(text);
+    } catch {
+        return null;
+    }
+}
 
 const emptyForm: ReservationForm = {
     firstName: "",
@@ -47,7 +60,10 @@ export function useReservation(token?: string) {
                     throw new Error("Reservation not found.");
                 }
 
-                const reservation = await response.json();
+                const reservation = await readJson(response);
+                if (!reservation) {
+                    throw new Error("Reservation not found.");
+                }
 
                 setSelectedDay(new Date(reservation.datetime));
 
@@ -156,20 +172,28 @@ export function useReservation(token?: string) {
             );
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errorData = await readJson(response);
                 throw new Error(
-                    errorData.message ||
+                    errorData?.message ||
                     `Reservation failed: ${response.status}`
                 );
             }
 
-            const savedReservation = await response.json();
+            const savedReservation = await readJson(response);
+            if (!savedReservation) {
+                throw new Error(
+                    `Unexpected empty response from server (${response.status})`
+                );
+            }
 
             if (!isEditMode) {
                 const receiptResponse = await fetch(
                     `${API_URL}/receipts/${savedReservation.reservationId}`,
                     {
                         method: "POST",
+                        headers: {
+                            "X-Reservation-Token": savedReservation.editToken,
+                        },
                     }
                 );
 
