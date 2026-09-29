@@ -191,6 +191,9 @@ export function useReservation(token?: string) {
                     `${API_URL}/receipts/${savedReservation.reservationId}`,
                     {
                         method: "POST",
+                        headers: {
+                            "X-Reservation-Token": savedReservation.editToken,
+                        },
                     }
                 );
 
