@@ -12,7 +12,7 @@ Backend Rahti URL: https://teampants-git-ohjelmistoprojekti2-teampants.2.rahtiap
 
 Frontend Render URL: https://pants-mir9.onrender.com
 
-Alkuperäinen porjektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
+Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
 
 ---
 
@@ -50,7 +50,7 @@ Sovelluksen ensimmäisessä versiossa (MVP) käyttäjä voi tehdä seuraavia asi
 - Backend: Java Spring Boot
     - Java 21
 - Tietokanta: PostgreSQL
-- Testaus: Postman, Swagger, Mockito, Github Actions
+- Testaus: Postman, Swagger, JUnit, Mockito, Github Actions, Playwright
 - Sähköpostitestaus: Mailtrap
 - Paketinhallinta: npm
 - Deployment: Render tai muu

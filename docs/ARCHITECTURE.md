@@ -6,162 +6,150 @@ Piirretään projektin arkkitehtuuri diagrammi lopussa. Voidaan selittää se t�
 - Deployment link?
 
 # Class Diagram
-![classDiagram](assets/classDiagram.png)
+![classDiagram](../assets/classDiagram.png)
 
 # ER diagram
-![ERD](assets/ERD.png)
+![ERD](../assets/ERD.png)
+
+assets\classDiagram.png
 
 
 # Data Dictionary
 
-This data dictionary is based on the provided ER diagram.
+This dictionary reflects the PostgreSQL DDL in `backend/src/main/resources/db.sql`. Unquoted table and column names are stored in lowercase by PostgreSQL.
 
-## 1. CUSTOMERS
+**Constraint notation:** `PK` = primary key; `FK` = foreign key; `UQ` = unique; `NN` = not null; `IDENTITY` = generated identity value.
 
-Stores customer information. One customer can have one or more reservations.
+## 1. customers
 
-| Field | Suggested Data Type | Key | Description |
+Stores customer information.
+
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `customer_id` | INT | PK | Unique identifier for each customer |
-| `firstname` | VARCHAR(100) | | Customer's first name |
-| `lastname` | VARCHAR(100) | | Customer's last name |
-| `email` | VARCHAR(255) | | Customer's email address |
+| `customer_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Customer identifier |
+| `firstname` | VARCHAR(100) | NN | Customer's first name |
+| `lastname` | VARCHAR(100) | NN | Customer's last name |
+| `email` | VARCHAR(255) | NN | Customer's email address; not unique in this schema |
 
-## 2. RESERVATIONS
+## 2. reservations
 
-Stores restaurant reservations made by customers.
+Stores restaurant reservations.
 
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `reservation_id` | INT | PK | Unique identifier for each reservation |
-| `customer_id` | INT | FK | References `CUSTOMERS.customer_id` |
-| `starttime` | TIME | | Starting time of the reservation |
-| `endtime` | TIME | | Ending time of the reservation |
-| `datetime` | DATETIME | | Date/time associated with the reservation |
-| `party_size` | INT | | Number of guests in the reservation |
-| `details` | TEXT | | Additional reservation details or notes |
-| `status_id` | INT | FK | References `R_STATUS.rstatus_id` |
+| `reservation_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Reservation identifier |
+| `edit_token` | VARCHAR(64) | UQ; nullable | Unique edit token when present; PostgreSQL permits multiple NULL values |
+| `customer_id` | INTEGER | FK, NN | References `customers.customer_id` |
+| `starttime` | TIME | NN | Reservation start time |
+| `endtime` | TIME | Nullable | Reservation end time |
+| `datetime` | TIMESTAMP | NN | Reservation date/time |
+| `party_size` | INTEGER | NN, CHECK > 0 | Number of guests |
+| `details` | TEXT | Nullable | Additional reservation notes |
+| `rstatus_id` | INTEGER | FK, NN | References `r_status.rstatus_id` |
 
-### Relationships
+The table also has `CHECK (endtime IS NULL OR endtime >= starttime)`. Since `endtime` is nullable, the time-order check applies when an end time is provided. The schema currently has no trigger limiting active reservations per customer.
 
-- Each reservation belongs to 1 customer.
-- Each customer has 1 or more reservations according to the diagram.
-- Each reservation has 1 reservation status.
-- One reservation can be associated with 1 or more tables through `TABLELIST`.
-- A reservation can have 0 or 1 receipt.
+## 3. receipts
 
-## 3. RECEIPT
+Stores receipt information. A reservation can have at most one receipt.
 
-Stores receipt information related to reservations.
-
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `receipt_id` | INT | PK | Unique identifier for each receipt |
-| `reservation_id` | INT | FK | References `RESERVATIONS.reservation_id` |
-| `issued` | DATETIME | | Date/time when the receipt was issued |
+| `receipt_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Receipt identifier |
+| `reservation_id` | INTEGER | FK, NN, UQ | References `reservations.reservation_id`; unique to allow at most one receipt per reservation |
+| `issued` | TIMESTAMP | Nullable | Date/time when the receipt was issued |
 
-**Relationship:** A reservation can have 0 or 1 receipt, while each receipt is associated with 1 reservation.
+## 4. tables
 
-## 4. TABLES
+Stores physical restaurant tables.
 
-Stores information about physical restaurant tables.
-
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `table_id` | INT | PK | Unique identifier for each table |
-| `table_number` | INT | | Restaurant's visible/assigned table number |
-| `capacity` | INT | | Maximum number of guests the table can accommodate |
-| `tstatus_id` | INT | FK | References `T_STATUS.tstatus_id` |
+| `table_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Table identifier |
+| `table_number` | INTEGER | Nullable | Restaurant's visible table number |
+| `capacity` | INTEGER | Nullable | Maximum number of guests the table can accommodate |
+| `tstatus_id` | INTEGER | FK; nullable | References `t_status.tstatus_id` |
 
-### Relationships
+## 5. tablelist
 
-- Each table has 1 table status.
-- A table can appear in 0 or more `TABLELIST` records.
+Associative table linking reservations and tables.
 
-## 5. TABLELIST
-
-Junction/associative table connecting reservations and restaurant tables. This resolves the many-to-many relationship between reservations and tables.
-
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `table_id` | INT | PK, FK | References `TABLES.table_id` |
-| `reservation_id` | INT | PK, FK | References `RESERVATIONS.reservation_id` |
+| `table_id` | INTEGER | PK, FK, NN | References `tables.table_id` |
+| `reservation_id` | INTEGER | PK, FK, NN | References `reservations.reservation_id` |
 
-### Composite Primary Key
+The composite primary key `(table_id, reservation_id)` prevents duplicate assignments of the same table to the same reservation. Neither column is unique on its own.
 
-The primary key is `(table_id, reservation_id)`. This prevents the same table from being assigned to the same reservation more than once.
+## 6. r_status
 
-## 6. R_STATUS
+Lookup table for reservation statuses.
 
-Lookup table containing possible reservation statuses.
-
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `rstatus_id` | INT | PK | Unique identifier for a reservation status |
-| `name` | VARCHAR(50) | | Name of the reservation status |
+| `rstatus_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Reservation status identifier |
+| `name` | VARCHAR(50) | UQ, NN | Unique status name |
 
-Possible values might include `Pending`, `Confirmed`, `Cancelled`, or `Completed`, but these values are not specified in the diagram.
+The seed data inserts `PENDING`, `CONFIRMED`, `CANCELLED`, and `COMPLETED`.
 
-## 7. T_STATUS
+## 7. t_status
 
-Lookup table containing possible statuses for restaurant tables.
+Lookup table for table statuses.
 
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `tstatus_id` | INT | PK | Unique identifier for a table status |
-| `name` | VARCHAR(50) | | Name of the table status |
+| `tstatus_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Table status identifier |
+| `name` | VARCHAR(50) | UQ, NN | Unique status name |
 
-Possible values might include `Available`, `Occupied`, or `Unavailable`, but these values are not specified in the diagram.
+The seed data inserts `AVAILABLE`, `RESERVED`, `OCCUPIED`, and `OUT_OF_SERVICE`.
 
-## 8. USERS
+## 8. users
 
-Stores application user and login information.
+Stores application users and login information.
 
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `user_id` | INT | PK | Unique identifier for each application user |
-| `username` | VARCHAR(100) | | User's login name |
-| `email` | VARCHAR(255) | | User's email address |
-| `passwordhash` | VARCHAR(255) | | Hashed representation of the user's password |
-| `role_id` | INT | FK | References `ROLES.role_id` |
+| `user_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | User identifier |
+| `username` | VARCHAR(100) | Nullable | User's login name |
+| `email` | VARCHAR(255) | Nullable | User's email address |
+| `passwordhash` | VARCHAR(255) | Nullable | Hashed password representation |
+| `role_id` | INTEGER | FK; nullable | References `roles.role_id` |
 
-**Relationship:** Each user belongs to 1 role, while one role can be associated with 0 or more users.
+## 9. roles
 
-## 9. ROLES
+Lookup table for application roles.
 
-Lookup table containing application user roles.
-
-| Field | Suggested Data Type | Key | Description |
+| Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
-| `role_id` | INT | PK | Unique identifier for each role |
-| `name` | VARCHAR(50) | | Name of the role |
+| `role_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Role identifier |
+| `name` | VARCHAR(50) | UQ, NN | Unique role name |
 
-Possible role values might include `Admin`, `Manager`, or `Staff`, but the diagram does not define the actual values.
+## Relationships
 
-# Relationship Summary
-
-| Parent | Child / Junction | Relationship |
+| Parent | Child | Relationship enforced by the schema |
 |---|---|---|
-| `CUSTOMERS` | `RESERVATIONS` | 1 : 1..* |
-| `R_STATUS` | `RESERVATIONS` | 1 : 0..* |
-| `RESERVATIONS` | `RECEIPT` | 1 : 0..1 |
-| `RESERVATIONS` | `TABLELIST` | 1 : 1..* |
-| `TABLES` | `TABLELIST` | 1 : 0..* |
-| `T_STATUS` | `TABLES` | 1 : 0..* |
-| `ROLES` | `USERS` | 1 : 0..* |
+| `customers` | `reservations` | Each reservation has one customer; a customer can have zero or more reservations |
+| `r_status` | `reservations` | Each reservation has one status; a status can be used by zero or more reservations |
+| `reservations` | `receipts` | A receipt has one reservation; a reservation can have zero or one receipt |
+| `reservations` | `tablelist` | A table assignment has one reservation; a reservation can have zero or more assignments |
+| `tables` | `tablelist` | A table assignment has one table; a table can have zero or more assignments |
+| `t_status` | `tables` | A table can have zero or one status; a status can apply to zero or more tables |
+| `roles` | `users` | A user can have zero or one role; a role can be assigned to zero or more users |
 
-# Overall Structure
+## Indexes
 
-The database contains **9 tables** and supports three main areas:
+PostgreSQL automatically creates indexes to enforce primary-key and unique constraints. The SQL also defines these non-unique indexes on foreign-key columns:
 
-1. **Reservation management:** `CUSTOMERS` -> `RESERVATIONS` -> `RECEIPT`
-2. **Table management:** `RESERVATIONS` <-> `TABLELIST` <-> `TABLES`, with `R_STATUS` and `T_STATUS` providing status values
-3. **User management:** `ROLES` -> `USERS`
+| Index | Indexed column | Purpose |
+|---|---|---|
+| `idx_reservations_customer_id` | `reservations.customer_id` | Speeds up finding a customer's reservations and checking the reservation-to-customer foreign key |
+| `idx_reservations_rstatus_id` | `reservations.rstatus_id` | Speeds up filtering or joining reservations by status and checking the status foreign key |
+| `idx_tables_tstatus_id` | `tables.tstatus_id` | Speeds up filtering or joining tables by status and checking the status foreign key |
+| `idx_tablelist_reservation_id` | `tablelist.reservation_id` | Speeds up finding table assignments for a reservation and checking the reservation foreign key |
+| `idx_users_role_id` | `users.role_id` | Speeds up finding users by role and checking the role foreign key |
 
-# Notes
+`tablelist.table_id` is the leading column of the composite primary-key index `(table_id, reservation_id)`, so it does not need a separate index for lookups by table ID.
 
-- **PK** = Primary Key
-- **FK** = Foreign Key
-- Field names and key relationships come from the provided ER diagram.
-- Data types, field lengths, and example lookup values are recommendations because those details are not shown in the diagram.
-- `TABLELIST` uses a composite primary key because both `table_id` and `reservation_id` are marked `pk, fk` in the diagram.
+## Overall Structure
+
+The database contains **9 tables** and supports reservation management (`customers`, `reservations`, `receipts`), table management (`reservations`, `tablelist`, `tables`, `r_status`, `t_status`), and user management (`roles`, `users`).
