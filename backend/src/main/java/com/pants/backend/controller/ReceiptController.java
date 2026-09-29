@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -201,13 +202,14 @@ public ResponseEntity<?> getReceiptById(
 
     @PostMapping("/{reservationId}")
     public ResponseEntity<?> createReceipt(
-            @PathVariable Integer reservationId) {
+                        @PathVariable Integer reservationId,
+                        @RequestHeader(value = "X-Reservation-Token", required = false) String editToken) {
 
         Reservation reservation = reservationRepository
                 .findById(reservationId)
                 .orElse(null);
 
-        if (reservation == null) {
+                if (reservation == null || editToken == null || !editToken.equals(reservation.getEditToken())) {
             return ResponseEntity
                     .status(HttpStatus.NOT_FOUND)
                     .body(new ErrorResponse(404, "Reservation not found"));
