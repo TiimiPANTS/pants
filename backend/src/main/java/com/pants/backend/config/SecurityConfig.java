@@ -33,9 +33,6 @@ public class SecurityConfig {
                                 "/api/auth/login",
                                 "/api/auth/logout",
 
-                                // Allow Spring's error endpoint
-                                "/error",
-
                                 // Swagger
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
