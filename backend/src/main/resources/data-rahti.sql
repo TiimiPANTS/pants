@@ -4,35 +4,54 @@
 -- ============================================
 
 
--- Reservation statuses
+-- ============================================
+-- RESERVATION STATUSES
+-- ============================================
 
 INSERT INTO r_status (name) VALUES
-('PENDING'),
-('CONFIRMED'),
-('CANCELLED'),
-('COMPLETED')
+    ('PENDING'),
+    ('CONFIRMED'),
+    ('CANCELLED'),
+    ('COMPLETED')
 ON CONFLICT (name) DO NOTHING;
 
 
--- Table statuses
+-- ============================================
+-- TABLE STATUSES
+-- ============================================
 
 INSERT INTO t_status (name) VALUES
-('AVAILABLE'),
-('RESERVED'),
-('OCCUPIED'),
-('OUT_OF_SERVICE')
+    ('AVAILABLE'),
+    ('RESERVED'),
+    ('OCCUPIED'),
+    ('OUT_OF_SERVICE')
 ON CONFLICT (name) DO NOTHING;
 
 
--- Demo customers
+-- ============================================
+-- DEMO CUSTOMERS
+-- ============================================
 
-INSERT INTO customers (firstname, lastname, email) VALUES
-('John', 'Doe', 'john@mail.fi'),
-('Jane', 'Doe', 'jane@mail.fi')
-ON CONFLICT (email) DO NOTHING;
+INSERT INTO customers (firstname, lastname, email)
+SELECT 'John', 'Doe', 'john@mail.fi'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM customers
+    WHERE email = 'john@mail.fi'
+);
+
+INSERT INTO customers (firstname, lastname, email)
+SELECT 'Jane', 'Doe', 'jane@mail.fi'
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM customers
+    WHERE email = 'jane@mail.fi'
+);
 
 
--- Demo reservation for John
+-- ============================================
+-- DEMO RESERVATION FOR JOHN
+-- ============================================
 
 INSERT INTO reservations (
     edit_token,
@@ -60,7 +79,9 @@ WHERE c.email = 'john@mail.fi'
 ON CONFLICT (edit_token) DO NOTHING;
 
 
--- Demo reservation for Jane
+-- ============================================
+-- DEMO RESERVATION FOR JANE
+-- ============================================
 
 INSERT INTO reservations (
     edit_token,
