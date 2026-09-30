@@ -164,6 +164,7 @@ export function useReservation(token?: string) {
                     : `${API_URL}/reservations`,
                 {
                     method: isEditMode ? "PUT" : "POST",
+                    credentials: "include",
                     headers: {
                         "Content-Type": "application/json",
                     },
