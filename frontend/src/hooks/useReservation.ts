@@ -44,6 +44,9 @@ export function useReservation(token?: string) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [message, setMessage] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isCancelled, setIsCancelled] = useState(false);
+
 
     useEffect(() => {
         if (!token) {
@@ -64,6 +67,10 @@ export function useReservation(token?: string) {
                 if (!reservation) {
                     throw new Error("Reservation not found.");
                 }
+
+                if (reservation.status?.name === "CANCELLED") {   
+                    setIsCancelled(true);                         
+                }                                                 
 
                 setSelectedDay(new Date(reservation.datetime));
 
@@ -224,6 +231,49 @@ export function useReservation(token?: string) {
         }
     };
 
+        const handleCancel = async () => {
+        if (!token) {
+            return false;
+        }
+
+        setError(null);
+        setMessage(null);
+        setIsCancelling(true);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/reservations/manage/${token}/cancel`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await readJson(response);
+                throw new Error(
+                    errorData?.message ||
+                    `Cancellation failed: ${response.status}`
+                );
+            }
+
+            setIsCancelled(true);
+            setMessage("Your reservation has been cancelled.");
+            return true;
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to cancel reservation."
+            );
+            return false;
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+
+
     return {
         isEditMode,
         isLoading,
@@ -240,5 +290,8 @@ export function useReservation(token?: string) {
         handleGuestChange,
         handleInputChange,
         handleSubmit,
+        isCancelling,
+        isCancelled,
+        handleCancel,
     };
 }

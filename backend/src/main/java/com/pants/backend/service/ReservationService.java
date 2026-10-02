@@ -84,6 +84,9 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
     public Reservation updateReservationByToken(String token, ReservationDTO dto) {
         Reservation existingReservation = getReservationByToken(token);
 
+            if ("CANCELLED".equals(existingReservation.getStatus().getName())) {
+        throw new IllegalStateException("Cancelled reservations cannot be modified");
+        }
         if (existingReservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be modified");
         }
@@ -101,6 +104,26 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
 
         return true;
     }
+// TOKEN
+@Transactional
+public Reservation cancelReservationByToken(String token) {
+    Reservation reservation = getReservationByToken(token);
+
+    if ("CANCELLED".equals(reservation.getStatus().getName())) {
+        throw new IllegalStateException("Reservation is already cancelled");
+    }
+    if (reservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+        throw new IllegalStateException("Reservation can no longer be cancelled");
+    }
+
+    reservation.setStatus(
+        rStatusRepository
+            .findByName("CANCELLED")
+            .orElseThrow(() -> new IllegalStateException("Status CANCELLED missing"))
+    );
+
+    return reservationRepository.save(reservation);
+}
 
        private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);

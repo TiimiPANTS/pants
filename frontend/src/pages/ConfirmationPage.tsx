@@ -309,7 +309,7 @@ Reference: ${bookingReference}
                 Cancellation policy:
               </strong>{" "}
 
-              Free cancellation up to 24 hours before your reservation.
+              Free cancellation up to 1 hours before your reservation.
 
             </div>
 
