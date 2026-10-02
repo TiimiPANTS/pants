@@ -22,6 +22,7 @@ import com.pants.backend.dto.CustomerDTO;
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.dto.ReservationResponse;
+import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.service.ReservationService;
 
@@ -336,6 +337,70 @@ class ReservationControllerTest {
         assertError(response, HttpStatus.CONFLICT, "Reservation can no longer be modified");
 
         verify(reservationService).updateReservationByToken("test-token", dto);
+    }
+
+    // PATCH /api/reservations/manage/{token}/cancel
+
+    @Test
+    void cancelByToken_whenExists_returnsOk() {
+        Reservation cancelledReservation = createReservation();
+        cancelledReservation.setStatus(new RStatus("CANCELLED"));
+
+        when(reservationService.cancelReservationByToken("test-token"))
+                .thenReturn(cancelledReservation);
+
+        ResponseEntity<?> response =
+                reservationController.cancelReservationByToken("test-token");
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isInstanceOf(ReservationResponse.class);
+
+        ReservationResponse body = (ReservationResponse) response.getBody();
+
+        assertThat(body.getReservation()).isEqualTo(cancelledReservation);
+        assertThat(body.getReservation().getStatus().getName()).isEqualTo("CANCELLED");
+        assertThat(body.getEditToken()).isEqualTo("test-token");
+
+        verify(reservationService).cancelReservationByToken("test-token");
+    }
+
+    @Test
+    void cancelByToken_whenNotExists_returnsNotFound() {
+        when(reservationService.cancelReservationByToken("invalid-token"))
+                .thenThrow(new NoSuchElementException("Reservation not found"));
+
+        ResponseEntity<?> response =
+                reservationController.cancelReservationByToken("invalid-token");
+
+        assertError(response, HttpStatus.NOT_FOUND, "Reservation not found");
+
+        verify(reservationService).cancelReservationByToken("invalid-token");
+    }
+
+    @Test
+    void cancelByToken_whenAlreadyCancelled_returnsConflict() {
+        when(reservationService.cancelReservationByToken("test-token"))
+                .thenThrow(new IllegalStateException("Reservation is already cancelled"));
+
+        ResponseEntity<?> response =
+                reservationController.cancelReservationByToken("test-token");
+
+        assertError(response, HttpStatus.CONFLICT, "Reservation is already cancelled");
+
+        verify(reservationService).cancelReservationByToken("test-token");
+    }
+
+    @Test
+    void cancelByToken_whenTooLate_returnsConflict() {
+        when(reservationService.cancelReservationByToken("test-token"))
+                .thenThrow(new IllegalStateException("Reservation can no longer be cancelled"));
+
+        ResponseEntity<?> response =
+                reservationController.cancelReservationByToken("test-token");
+
+        assertError(response, HttpStatus.CONFLICT, "Reservation can no longer be cancelled");
+
+        verify(reservationService).cancelReservationByToken("test-token");
     }
 
     // DELETE /api/reservations/{id}
