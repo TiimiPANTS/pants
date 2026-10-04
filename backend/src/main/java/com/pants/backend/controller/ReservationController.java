@@ -8,6 +8,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -292,6 +293,57 @@ public class ReservationController {
             return notFound(e.getMessage());
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, e.getMessage()));
+        }
+    }
+
+     // PATCH /api/reservations/manage/{token}/cancel
+    @Operation(
+        summary = "Cancel reservation by edit token",
+        description = "Lets the customer cancel their reservation using the edit token"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Reservation cancelled successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReservationResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Reservation not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Reservation already cancelled or can no longer be cancelled",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    @PatchMapping("/manage/{token}/cancel")
+    public ResponseEntity<?> cancelReservationByToken(
+        @PathVariable String token
+    ) {
+        try {
+            Reservation cancelledReservation =
+                reservationService.cancelReservationByToken(token);
+
+            return ResponseEntity.ok(
+                new ReservationResponse(cancelledReservation)
+            );
+        } catch (NoSuchElementException e) {
+            return notFound(e.getMessage());
         } catch (IllegalStateException e) {
             return ResponseEntity
                 .status(HttpStatus.CONFLICT)

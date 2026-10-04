@@ -61,6 +61,12 @@ public class SecurityConfig {
                         )
                         .permitAll()
 
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/reservations/manage/*/cancel"
+                        )
+                        .permitAll()
+
                         // Public receipt creation
                         .requestMatchers(
                                 HttpMethod.POST,
@@ -95,6 +101,10 @@ public class SecurityConfig {
                 || (HttpMethod.PUT.matches(method)
                         && path.startsWith(
                                 "/api/reservations/manage/"
+                        ))
+                || (HttpMethod.PATCH.matches(method)
+                        && path.matches(
+                                "/api/reservations/manage/[^/]+/cancel"
                         ))
                 || (HttpMethod.POST.matches(method)
                         && path.matches(
