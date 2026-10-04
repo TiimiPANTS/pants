@@ -40,6 +40,7 @@ export const ReservationPage: FC = () => {
     form,
     isSubmitting,
     error,
+    validationErrors,
     message,
     handleGuestChange,
     handleInputChange,
@@ -157,6 +158,7 @@ export const ReservationPage: FC = () => {
 
           <ContactDetails
             form={form}
+            validationErrors={validationErrors}
             handleInputChange={handleInputChange}
           />
 
