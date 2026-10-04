@@ -3,6 +3,11 @@ import type { ReservationForm } from "../types/reservation";
 
 type ContactDetailsProps = {
   form: ReservationForm;
+  validationErrors: {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
   handleInputChange: (
     event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => void;
@@ -10,6 +15,7 @@ type ContactDetailsProps = {
 
 export const ContactDetails: FC<ContactDetailsProps> = ({
   form,
+  validationErrors,
   handleInputChange,
 }) => {
   return (
@@ -32,11 +38,16 @@ export const ContactDetails: FC<ContactDetailsProps> = ({
               id="first_name"
               name="firstName"
               type="text"
-              required
               value={form.firstName}
               onChange={handleInputChange}
               className="w-full bg-surface-input border border-zinc-700 rounded-lg px-3.5 py-3 text-white"
             />
+
+            {validationErrors.firstName && (
+              <p className= "mt-1 text-sm text-red-400">
+                {validationErrors.firstName}
+              </p>
+            )}
           </div>
 
           <div>
@@ -50,11 +61,16 @@ export const ContactDetails: FC<ContactDetailsProps> = ({
               id="last_name"
               name="lastName"
               type="text"
-              required
               value={form.lastName}
               onChange={handleInputChange}
               className="w-full bg-surface-input border border-zinc-700 rounded-lg px-3.5 py-3 text-white"
             />
+
+            {validationErrors.lastName && (
+              <p className= "mt-1 text-sm text-red-400">
+                {validationErrors.lastName}
+              </p>
+            )}
           </div>
 
           <div className="sm:col-span-2">
@@ -67,12 +83,17 @@ export const ContactDetails: FC<ContactDetailsProps> = ({
             <input
               id="email"
               name="email"
-              type="email"
-              required
+              type="text"
               value={form.email}
               onChange={handleInputChange}
               className="w-full bg-surface-input border border-zinc-700 rounded-lg px-3.5 py-3 text-white"
             />
+            
+            {validationErrors.email && (
+              <p className="mt-1 text-sm text-red-400">
+                {validationErrors.email}
+              </p>
+            )}
           </div>
         </div>
       </section>
