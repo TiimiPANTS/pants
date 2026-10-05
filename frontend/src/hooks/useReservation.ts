@@ -28,12 +28,19 @@ const emptyForm: ReservationForm = {
     specialRequests: "",
 };
 
+type ValidationErrors = {
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+}
+
+
 // Pass an edit token to load an existing reservation and update it instead of creating a new one
 export function useReservation(token?: string) {
     const isEditMode = Boolean(token);
 
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
-        new Date()
+        undefined
     );
     const [selectedTime, setSelectedTime] = useState<ReservationTime>("19:30");
     const [guestCount, setGuestCount] = useState<number>(2);
@@ -43,7 +50,12 @@ export function useReservation(token?: string) {
     const [isLoading, setIsLoading] = useState(isEditMode);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [validationErrors, setValidationErrors] = 
+        useState<ValidationErrors>({});
     const [message, setMessage] = useState<string | null>(null);
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [isCancelled, setIsCancelled] = useState(false);
+
 
     useEffect(() => {
         if (!token) {
@@ -64,6 +76,10 @@ export function useReservation(token?: string) {
                 if (!reservation) {
                     throw new Error("Reservation not found.");
                 }
+
+                if (reservation.status?.name === "CANCELLED") {   
+                    setIsCancelled(true);                         
+                }                                                 
 
                 setSelectedDay(new Date(reservation.datetime));
 
@@ -135,6 +151,49 @@ export function useReservation(token?: string) {
             setError("Please select a date.");
             return;
         }
+
+        const errors: ValidationErrors = {};
+
+        const namePattern = /^[\p{L} '-]+$/u;
+
+        if (!form.firstName.trim()) {
+            errors.firstName = "First name is required.";
+        } else if (form.firstName.trim().length < 2) {
+            errors.firstName = "First name must be at least 2 characters.";
+        } else if (form.firstName.trim().length > 50) {
+            errors.firstName = "First name must be 50 characters or less.";
+        } else if (!namePattern.test(form.firstName.trim())) {
+            errors.firstName =
+                "First name can only contain letter"
+        }
+
+        if (!form.lastName.trim()) {
+            errors.lastName = "Last name is required.";
+        } else if (form.lastName.trim().length < 2) {
+            errors.lastName = "Last name must be at least 2 characters.";
+        } else if (form.lastName.trim().length > 50) {
+            errors.lastName = "Last name must be 50 characters or less.";
+        } else if (!namePattern.test(form.lastName.trim())) {
+            errors.lastName =
+                "Last name can only contain letter"
+        }
+
+        if (!form.email.trim()) {
+            errors.email = "Email is required.";
+        } else {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(form.email.trim())) {
+                errors.email = "Enter an email like name@example.com";
+            }
+
+    }
+
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+        return;
+    }
 
         setIsSubmitting(true);
 
@@ -224,6 +283,49 @@ export function useReservation(token?: string) {
         }
     };
 
+        const handleCancel = async () => {
+        if (!token) {
+            return false;
+        }
+
+        setError(null);
+        setMessage(null);
+        setIsCancelling(true);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/reservations/manage/${token}/cancel`,
+                {
+                    method: "PATCH",
+                    credentials: "include",
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await readJson(response);
+                throw new Error(
+                    errorData?.message ||
+                    `Cancellation failed: ${response.status}`
+                );
+            }
+
+            setIsCancelled(true);
+            setMessage("Your reservation has been cancelled.");
+            return true;
+        } catch (error) {
+            setError(
+                error instanceof Error
+                    ? error.message
+                    : "Failed to cancel reservation."
+            );
+            return false;
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+
+
     return {
         isEditMode,
         isLoading,
@@ -236,9 +338,13 @@ export function useReservation(token?: string) {
         form,
         isSubmitting,
         error,
+        validationErrors,
         message,
         handleGuestChange,
         handleInputChange,
         handleSubmit,
+        isCancelling,
+        isCancelled,
+        handleCancel,
     };
 }

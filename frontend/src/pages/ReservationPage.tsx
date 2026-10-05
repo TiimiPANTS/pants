@@ -40,10 +40,14 @@ export const ReservationPage: FC = () => {
     form,
     isSubmitting,
     error,
+    validationErrors,
     message,
     handleGuestChange,
     handleInputChange,
     handleSubmit,
+    isCancelling,
+    isCancelled,
+    handleCancel,
   } = useReservation(token);
 
   const submitReservation = async () => {
@@ -60,6 +64,18 @@ export const ReservationPage: FC = () => {
     });
   };
 
+      const cancelReservation = async () => {
+    const confirmed = window.confirm(
+      "Are you sure you want to cancel this reservation?"
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    await handleCancel();
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center">
@@ -67,6 +83,27 @@ export const ReservationPage: FC = () => {
       </div>
     );
   }
+
+    if (isCancelled) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center px-4">
+        <div className="bg-card-bg border border-card-border rounded-2xl p-7 text-center max-w-md w-full space-y-4">
+          <h2 className="text-xl font-bold">Reservation cancelled</h2>
+          <p className="text-zinc-300 text-sm">
+            Your reservation has been cancelled. We hope to see you another time!
+          </p>
+          <button
+            type="button"
+            onClick={() => navigate("/reserve")}
+            className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover text-white font-bold uppercase rounded-xl transition-colors"
+          >
+            Make a new reservation
+          </button>
+        </div>
+      </div>
+    );
+  }
+
 
   return (
     <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
@@ -121,6 +158,7 @@ export const ReservationPage: FC = () => {
 
           <ContactDetails
             form={form}
+            validationErrors={validationErrors}
             handleInputChange={handleInputChange}
           />
 
@@ -149,6 +187,17 @@ export const ReservationPage: FC = () => {
                 ? "Update Reservation"
                 : "Confirm Reservation"}
           </button>
+
+            {isEditMode && (
+            <button
+              type="button"
+              onClick={cancelReservation}
+              disabled={isCancelling || isSubmitting}
+              className="w-full min-h-[48px] px-7 border border-wine text-white font-bold uppercase rounded-xl hover:bg-wine/20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              {isCancelling ? "Cancelling..." : "Cancel Reservation"}
+            </button>
+          )}
         </form>
       </main>
     </div>
