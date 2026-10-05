@@ -14,7 +14,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/reserve",
-    element: <ReservationPage />,
+    element: <ReservationPage key="new" />,
   },
   {
     path: "/login",
@@ -22,7 +22,7 @@ const router = createBrowserRouter([
   },
   {
     path: "/reserve/:token",
-    element: <ReservationPage />,
+    element: <ReservationPage key="edit" />,
   },
   {
     path: "/confirmation",
