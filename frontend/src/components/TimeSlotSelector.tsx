@@ -1,6 +1,6 @@
 import type { FC } from "react";
-import { availableTimes } from "../types/reservation";
-import type { ReservationTime } from "../types/reservation";
+import { getAvailableTimes, type ReservationTime, } from "../types/reservation";
+
 
 type TimeSlotSelectorProps = {
   selectedDay: Date | undefined;
@@ -14,6 +14,8 @@ export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
   setSelectedTime,
 }) => {
   const now = new Date();
+  const availableTimes = getAvailableTimes(selectedDay);
+  
   return (
     <section>
       <h2 className="text-xs uppercase tracking-widest font-bold text-zinc-300 flex items-center gap-2 mb-3">

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
-    availableTimes,
+    getAvailableTimes,
     type ReservationForm,
     type ReservationTime,
 } from "../types/reservation";
@@ -42,7 +42,7 @@ export function useReservation(token?: string) {
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
         undefined
     );
-    const [selectedTime, setSelectedTime] = useState<ReservationTime>("19:30");
+    const [selectedTime, setSelectedTime] = useState<ReservationTime | undefined>(undefined);
     const [guestCount, setGuestCount] = useState<number>(2);
 
     const [form, setForm] = useState<ReservationForm>(emptyForm);
@@ -81,11 +81,14 @@ export function useReservation(token?: string) {
                     setIsCancelled(true);                         
                 }                                                 
 
-                setSelectedDay(new Date(reservation.datetime));
+                const reservationDate = new Date(reservation.datetime);
+                setSelectedDay(reservationDate);
 
                 const time = reservation.startTime.substring(0, 5);
-                if ((availableTimes as readonly string[]).includes(time)) {
-                    setSelectedTime(time as ReservationTime);
+                const availableTimes = getAvailableTimes(reservationDate);
+
+                if (availableTimes.includes(time)) {
+                    setSelectedTime(time);
                 }
 
                 setGuestCount(reservation.partySize);
@@ -149,6 +152,10 @@ export function useReservation(token?: string) {
 
         if (!selectedDay) {
             setError("Please select a date.");
+            return;
+        }
+        if (!selectedTime) {
+            setError("Please select a time.")
             return;
         }
 
