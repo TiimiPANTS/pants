@@ -3,19 +3,24 @@ package com.pants.backend.dto;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 import io.swagger.v3.oas.annotations.media.Schema;
 
 public class ReservationDTO {
 
     private CustomerDTO customer;
 
-    @Schema(type = "string", example = "19:00:00")
+    @Schema(type = "string", example = "19:00")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime startTime;
 
-    @Schema(type = "string", example = "21:00:00")
+    @Schema(type = "string", example = "21:00")
+    @JsonFormat(pattern = "HH:mm")
     private LocalTime endTime;
 
-    @Schema(type = "string", example = "2026-12-01T19:00:00")
+    @Schema(type = "string", example = "01.12.2026 19:00")
+    @JsonFormat(pattern = "dd.MM.yyyy HH:mm")
     private LocalDateTime datetime;
 
     @Schema(example = "2")
