@@ -84,6 +84,12 @@ public class SecurityConfig {
                         // View reservation using edit token
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/api/reservations/availability"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
                                 "/api/reservations/manage/*"
                         )
                         .permitAll()

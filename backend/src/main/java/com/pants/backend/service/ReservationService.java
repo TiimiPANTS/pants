@@ -1,7 +1,11 @@
 package com.pants.backend.service;
 
 import java.security.SecureRandom; 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.LocalTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Base64;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -10,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
 
 import com.pants.backend.dto.CustomerDTO;
+import com.pants.backend.dto.ReservationAvailabilityDTO;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.entity.Customer;
+import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.repository.CustomerRepository;
 import com.pants.backend.repository.RStatusRepository;
@@ -21,6 +27,7 @@ import com.pants.backend.repository.ReservationRepository;
 public class ReservationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
+    private static final int MAX_GUESTS_PER_SLOT = 10;
 
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
@@ -40,6 +47,49 @@ public class ReservationService {
         return reservationRepository.findAll();
     }
 
+    @Transactional(readOnly = true)
+    public List<ReservationAvailabilityDTO> getReservationAvailability(
+        LocalDate from,
+        LocalDate to
+    ) {
+        List<ReservationAvailabilityDTO> availability = new java.util.ArrayList<>();
+        long dayCount = ChronoUnit.DAYS.between(from, to);
+        List<Reservation> existingReservations =
+            reservationRepository.findByDatetimeGreaterThanEqualAndDatetimeLessThan(
+                from.atStartOfDay(),
+                to.plusDays(1).atStartOfDay()
+            );
+
+        for (int offset = 0; offset <= dayCount; offset++) {
+            LocalDate date = from.plusDays(offset);
+            for (LocalTime startTime : getReservationTimes(date)) {
+                availability.add(new ReservationAvailabilityDTO(
+                    date,
+                    startTime,
+                    getRemainingCapacity(date, startTime, existingReservations, null)
+                ));
+            }
+        }
+
+        return availability;
+    }
+
+    private List<LocalTime> getReservationTimes(LocalDate date) {
+        if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            return List.of();
+        }
+
+        int openingHour = date.getDayOfWeek() == DayOfWeek.SATURDAY ? 11 : 10;
+        List<LocalTime> times = new java.util.ArrayList<>();
+        for (int hour = openingHour; hour <= 17; hour++) {
+            times.add(LocalTime.of(hour, 0));
+            if (hour < 17) {
+                times.add(LocalTime.of(hour, 30));
+            }
+        }
+        return times;
+    }
+
     public Reservation getReservationById(Integer id) {
         return reservationRepository.findById(id).orElse(null);
     }
@@ -54,20 +104,17 @@ public class ReservationService {
     @Transactional // varmistaa, että asiakkaan ja varauksen tallennus onnistuvat yhdessä tai epäonnistuvat yhdessä.
     public Reservation createReservation(ReservationDTO dto) {
         validate(dto);
-
+        RStatus confirmedStatus = lockConfirmedReservations();
+        ensureSlotHasCapacity(dto, null);
         Customer customer = findOrCreateCustomer(dto.getCustomer()); // jos sähköposti on jo tietokannassa, käyttää samaa asiakasta, jolloin duplikaatteja ei synny.
 
         Reservation reservation = new Reservation();
         applyDto(reservation, dto);
         reservation.setCustomer(customer);
-        reservation.setStatus(
-            rStatusRepository
-                .findByName("CONFIRMED")
-                .orElseThrow(() -> new IllegalStateException("Status CONFIRMED missing"))
-        );
+        reservation.setStatus(confirmedStatus);
         reservation.setEditToken(generateToken()); // TOKEN
-
-        return reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
+        return savedReservation;
     }
 
     @Transactional 
@@ -76,7 +123,11 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
             .findById(id)
             .orElseThrow(() -> new NoSuchElementException("Reservation not found"));
 
-        return applyUpdate(existingReservation, dto);
+        validate(dto);
+        lockConfirmedReservations();
+        ensureSlotHasCapacity(dto, existingReservation.getReservationId());
+        Reservation updatedReservation = applyUpdate(existingReservation, dto);
+        return updatedReservation;
     }
 
      // TOKEN
@@ -91,7 +142,11 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
             throw new IllegalStateException("Reservation can no longer be modified");
         }
 
-        return applyUpdate(existingReservation, dto);
+        validate(dto);
+        lockConfirmedReservations();
+        ensureSlotHasCapacity(dto, existingReservation.getReservationId());
+        Reservation updatedReservation = applyUpdate(existingReservation, dto);
+        return updatedReservation;
     }
 
     public boolean deleteReservation(Integer id) {
@@ -116,6 +171,7 @@ public Reservation cancelReservationByToken(String token) {
         throw new IllegalStateException("Reservation can no longer be cancelled");
     }
 
+    lockConfirmedReservations();
     reservation.setStatus(
         rStatusRepository
             .findByName("CANCELLED")
@@ -124,6 +180,56 @@ public Reservation cancelReservationByToken(String token) {
 
     return reservationRepository.save(reservation);
 }
+
+    private RStatus lockConfirmedReservations() {
+        return rStatusRepository
+            .findByNameForUpdate("CONFIRMED")
+            .orElseThrow(() -> new IllegalStateException("Status CONFIRMED missing"));
+    }
+
+    private void ensureSlotHasCapacity(ReservationDTO dto, Integer excludedReservationId) {
+        LocalDate date = dto.getDatetime().toLocalDate();
+        List<Reservation> existingReservations =
+            reservationRepository.findByDatetimeGreaterThanEqualAndDatetimeLessThan(
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+            );
+        int remainingCapacity = getRemainingCapacity(
+            date,
+            dto.getStartTime(),
+            existingReservations,
+            excludedReservationId
+        );
+        if (dto.getPartySize() > remainingCapacity) {
+            throw new IllegalStateException(
+                "There is not enough capacity at that time. Please choose another time or reduce your party size."
+            );
+        }
+    }
+
+    private int getRemainingCapacity(
+        LocalDate date,
+        LocalTime startTime,
+        List<Reservation> existingReservations,
+        Integer excludedReservationId
+    ) {
+        int reservedGuests = existingReservations.stream()
+            .filter(reservation ->
+                reservation.getDatetime() != null
+                    && reservation.getDatetime().toLocalDate().equals(date)
+                    && startTime.equals(reservation.getStartTime())
+                    && reservation.getPartySize() != null
+                    && (reservation.getStatus() == null
+                        || !"CANCELLED".equals(reservation.getStatus().getName()))
+                    && !java.util.Objects.equals(
+                        excludedReservationId,
+                        reservation.getReservationId()
+                    )
+            )
+            .mapToInt(Reservation::getPartySize)
+            .sum();
+        return Math.max(0, MAX_GUESTS_PER_SLOT - reservedGuests);
+    }
 
        private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
@@ -163,6 +269,9 @@ public Reservation cancelReservationByToken(String token) {
         }
         if (dto.getPartySize() == null || dto.getPartySize() < 1) {
             throw new IllegalArgumentException("Party size must be at least 1");
+        }
+        if (dto.getPartySize() > 10) {
+            throw new IllegalArgumentException("A reservation cannot exceed 10 guests");
         }
     }
 
