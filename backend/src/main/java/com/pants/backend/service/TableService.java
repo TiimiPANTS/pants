@@ -11,37 +11,21 @@ import com.pants.backend.entity.Table;
 import com.pants.backend.entity.TableList;
 import com.pants.backend.repository.ReservationRepository;
 import com.pants.backend.repository.TableListRepository;
-import com.pants.backend.repository.TableRepository;
 
 // Pöytien kapasiteettiin ja saatavuuteen liittyvä sovelluslogiikka:
 // mikä pöytä sopii tietylle henkilömäärälle ja onko se jo varattu kyseiselle ajalle
 @Service
 public class TableService {
 
-    private final TableRepository tableRepository;
     private final TableListRepository tableListRepository;
     private final ReservationRepository reservationRepository;
 
     public TableService(
-            TableRepository tableRepository,
             TableListRepository tableListRepository,
             ReservationRepository reservationRepository
     ) {
-        this.tableRepository = tableRepository;
         this.tableListRepository = tableListRepository;
         this.reservationRepository = reservationRepository;
-    }
-
-    // Palauttaa pöydät, joiden kapasiteetti riittää seuralle ja jotka ovat vapaana annetulle ajalle
-    public List<Table> findAvailableTables(
-            int partySize,
-            LocalDateTime datetime,
-            LocalTime startTime,
-            LocalTime endTime
-    ) {
-        return tableRepository.findByCapacityGreaterThanEqual(partySize).stream()
-                .filter(table -> isAvailable(table.getId(), datetime, startTime, endTime))
-                .toList();
     }
 
     // Riittääkö pöydän kapasiteetti annetulle henkilömäärälle?
@@ -63,7 +47,10 @@ public class TableService {
 
             Reservation reservation = reservationRepository.findById(reservationId).orElse(null);
 
-            if (reservation != null && overlaps(reservation, datetime, startTime, endTime)) {
+            if (reservation != null
+                    && (reservation.getStatus() == null
+                        || !"CANCELLED".equals(reservation.getStatus().getName()))
+                    && overlaps(reservation, datetime, startTime, endTime)) {
                 return false;
             }
         }

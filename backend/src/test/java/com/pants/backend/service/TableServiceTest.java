@@ -20,13 +20,9 @@ import com.pants.backend.entity.TableList;
 import com.pants.backend.entity.TableList.TableListId;
 import com.pants.backend.repository.ReservationRepository;
 import com.pants.backend.repository.TableListRepository;
-import com.pants.backend.repository.TableRepository;
 
 @ExtendWith(MockitoExtension.class)
 class TableServiceTest {
-
-    @Mock
-    private TableRepository tableRepository;
 
     @Mock
     private TableListRepository tableListRepository;
@@ -121,23 +117,4 @@ class TableServiceTest {
         assertThat(available).isTrue();
     }
 
-    @Test
-    void findAvailableTables_filtersOutTablesThatDoNotFitOrAreBooked() {
-        LocalDateTime date = LocalDateTime.of(2026, 12, 1, 19, 0);
-        LocalTime start = LocalTime.of(19, 0);
-        LocalTime end = LocalTime.of(21, 0);
-
-        Table suitable = table(1, 5);
-        Table booked = table(3, 6);
-
-        when(tableRepository.findByCapacityGreaterThanEqual(4)).thenReturn(List.of(suitable, booked));
-        when(tableListRepository.findByIdTableId(1)).thenReturn(List.of());
-        when(tableListRepository.findByIdTableId(3)).thenReturn(List.of(assignment(99, 3)));
-        when(reservationRepository.findById(99)).thenReturn(Optional.of(
-                reservation(99, date, LocalTime.of(18, 0), LocalTime.of(20, 0))));
-
-        List<Table> available = tableService.findAvailableTables(4, date, start, end);
-
-        assertThat(available).containsExactly(suitable);
-    }
 }

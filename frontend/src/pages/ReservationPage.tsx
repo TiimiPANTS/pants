@@ -1,4 +1,5 @@
 import type { FC } from "react";
+import { useCallback, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 
 import { useReservation } from "../hooks/useReservation";
@@ -11,30 +12,24 @@ import { ContactDetails } from "../components/ContactDetails";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
 
-// Hardcoded for now, but this could easily be fetched
-// from your Spring Boot backend later
-const bookedDays = new Set([
-  4,
-  5,
-  11,
-  12,
-  18,
-  19,
-  25,
-  26,
-]);
-
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
   const { token } = useParams();
+  const [availabilityMonth, setAvailabilityMonth] = useState(() => new Date());
 
   const {
     isEditMode,
     isLoading,
     selectedDay,
-    setSelectedDay,
+    selectDay,
     selectedTime,
     setSelectedTime,
+    slotAvailableCapacities,
+    currentReservationTime,
+    bookedDates,
+    isAvailabilityLoading,
+    availabilityError,
+    refreshAvailability,
     guestCount,
     updateGuestCount,
     form,
@@ -49,6 +44,10 @@ export const ReservationPage: FC = () => {
     isCancelled,
     handleCancel,
   } = useReservation(token);
+  const handleMonthChange = useCallback((month: Date) => {
+    setAvailabilityMonth(month);
+    void refreshAvailability(month);
+  }, [refreshAvailability]);
 
   const submitReservation = async () => {
     const createdReservation = await handleSubmit();
@@ -140,8 +139,9 @@ export const ReservationPage: FC = () => {
 
           <DatePicker
             selectedDay={selectedDay}
-            setSelectedDay={setSelectedDay}
-            bookedDays={bookedDays}
+            setSelectedDay={selectDay}
+            bookedDates={bookedDates}
+            onMonthChange={handleMonthChange}
           />
 
           <PartySizeSelector
@@ -154,7 +154,25 @@ export const ReservationPage: FC = () => {
             selectedDay={selectedDay}
             selectedTime={selectedTime}
             setSelectedTime={setSelectedTime}
+            guestCount={guestCount}
+            slotAvailableCapacities={slotAvailableCapacities}
+            currentReservationTime={currentReservationTime}
+            isAvailabilityLoading={isAvailabilityLoading}
+            availabilityError={availabilityError}
           />
+
+          {availabilityError && (
+            <div className="text-sm text-red-400" role="alert">
+              <p>Could not check reservation availability: {availabilityError}</p>
+              <button
+                type="button"
+                onClick={() => void refreshAvailability(availabilityMonth)}
+                className="mt-2 underline underline-offset-2"
+              >
+                Retry
+              </button>
+            </div>
+          )}
 
           <ContactDetails
             form={form}
@@ -176,7 +194,7 @@ export const ReservationPage: FC = () => {
 
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
             className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase rounded-xl transition-colors"
           >
             {isSubmitting
