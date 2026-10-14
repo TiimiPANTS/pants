@@ -1,8 +1,7 @@
-import {
-  createBrowserRouter,
-  Navigate,
-} from "react-router-dom";
 
+import { createBrowserRouter } from "react-router-dom";
+
+import { HomePage } from "./pages/HomePage.tsx";
 import { ReservationPage } from "./pages/ReservationPage.tsx";
 import ConfirmationPage from "./pages/ConfirmationPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
@@ -10,7 +9,7 @@ import { LoginPage } from "./pages/LoginPage.tsx";
 const router = createBrowserRouter([
   {
     path: "/",
-    element: <Navigate to="/reserve" replace />,
+    element: <HomePage />,
   },
   {
     path: "/reserve",
