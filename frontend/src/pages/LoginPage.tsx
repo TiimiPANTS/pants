@@ -9,6 +9,10 @@ type LoginResponse = {
     email?: string;
     role?: string;
 };
+type ValidationErrors = {
+    email?: string;
+    password?: string;
+}
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
@@ -17,11 +21,36 @@ export const LoginPage = () => {
     const [password, setPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [validationErrors, setValidationErrors] =
+        useState<ValidationErrors>({});
     const [user, setUser] = useState<LoginResponse | null>(null);
 
     const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
         setError(null);
+
+        const errors: ValidationErrors = {};
+
+        if (!email.trim()) {
+            errors.email = "Email is required.";
+        } else {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(email.trim())) {
+                errors.email = "Enter an email like name@example.com";
+            }
+        }
+
+        if (!password.trim()) {
+            errors.password = "Password is required.";
+        }
+
+        setValidationErrors(errors);
+
+        if (Object.keys(errors).length > 0) {
+            return;
+        }
+    
         setIsSubmitting(true);
 
         try {
@@ -99,13 +128,17 @@ export const LoginPage = () => {
                                     <input
                                         id="email"
                                         name="email"
-                                        type="email"
+                                        type="text"
                                         autoComplete="username"
-                                        required
                                         value={email}
                                         onChange={(event) => setEmail(event.target.value)}
                                         className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
                                     />
+                                    {validationErrors.email && (
+                                       <p className="mt-1 text-sm text-red-400">
+                                            {validationErrors.email}
+                                       </p>
+                                    )}
                                 </div>
 
                                 <div>
@@ -117,11 +150,16 @@ export const LoginPage = () => {
                                         name="password"
                                         type="password"
                                         autoComplete="current-password"
-                                        required
                                         value={password}
                                         onChange={(event) => setPassword(event.target.value)}
                                         className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
                                     />
+
+                                    {validationErrors.password && (
+                                        <p className="mt-1 text-sm text-red-400">
+                                            {validationErrors.password}
+                                        </p>
+                                    )}
                                 </div>
 
                                 {error && (
