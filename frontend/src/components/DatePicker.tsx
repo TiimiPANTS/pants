@@ -122,8 +122,10 @@ export const DatePicker: FC<DatePickerProps> = ({
           }}
           disabled={[
             { before: new Date() },
+            { dayOfWeek: [0] },
             ...bookedDates,
           ]}
+          
           classNames={{
             month_caption: "hidden",
             button_previous: "hidden",
