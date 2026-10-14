@@ -51,6 +51,12 @@ public class SecurityConfig {
 
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/api/reservations/availability"
+                        )
+                        .permitAll()
+
+                        .requestMatchers(
+                                HttpMethod.GET,
                                 "/api/reservations/manage/*"
                         )
                         .permitAll()

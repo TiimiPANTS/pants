@@ -1,10 +1,12 @@
 package com.pants.backend.controller;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDateTime;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
@@ -20,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 
 import com.pants.backend.dto.CustomerDTO;
 import com.pants.backend.dto.ErrorResponse;
+import com.pants.backend.dto.ReservationAvailabilityDTO;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.dto.ReservationResponse;
 import com.pants.backend.entity.RStatus;
@@ -120,6 +123,48 @@ class ReservationControllerTest {
         assertThat(response.getBody()).isEmpty();
 
         verify(reservationService).getAllReservations();
+    }
+
+    @Test
+    void getAvailability_returnsOnlyAvailabilityData() {
+        List<ReservationAvailabilityDTO> availability = List.of(
+                new ReservationAvailabilityDTO(
+                        LocalDate.of(2026, 12, 1),
+                        LocalTime.of(19, 0),
+                        4
+                )
+        );
+        when(reservationService.getReservationAvailability(
+                LocalDate.of(2026, 12, 1),
+                LocalDate.of(2026, 12, 1)
+        ))
+                .thenReturn(availability);
+
+        ResponseEntity<?> response =
+                reservationController.getReservationAvailability(
+                        LocalDate.of(2026, 12, 1),
+                        LocalDate.of(2026, 12, 1)
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isEqualTo(availability);
+        assertThat(availability.get(0).getAvailableCapacity()).isEqualTo(4);
+        verify(reservationService).getReservationAvailability(
+                LocalDate.of(2026, 12, 1),
+                LocalDate.of(2026, 12, 1)
+        );
+    }
+
+    @Test
+    void getAvailability_whenRangeExceedsLimit_returnsBadRequest() {
+        ResponseEntity<?> response =
+                reservationController.getReservationAvailability(
+                        LocalDate.of(2026, 12, 1),
+                        LocalDate.of(2027, 1, 2)
+                );
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        verifyNoInteractions(reservationService);
     }
 
     // GET /api/reservations/{id}
