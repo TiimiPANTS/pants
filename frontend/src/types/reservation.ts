@@ -81,3 +81,13 @@ export type ReservationRequestDto = {
   partySize: number;
   details: string;
 };
+// Backend uses European date format: "dd.MM.yyyy HH:mm"
+export const formatEuropeanDate = (date: Date) =>
+  `${String(date.getDate()).padStart(2, "0")}.` +
+  `${String(date.getMonth() + 1).padStart(2, "0")}.` +
+  `${date.getFullYear()}`;
+
+export const parseEuropeanDate = (value: string) => {
+  const [day, month, year] = value.split(" ")[0].split(".").map(Number);
+  return new Date(year, month - 1, day);
+};
