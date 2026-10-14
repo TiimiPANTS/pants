@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
+    formatEuropeanDate,
     getAvailableTimes,
+    parseEuropeanDate,
     type ReservationForm,
     type ReservationTime,
 } from "../types/reservation";
@@ -81,7 +83,7 @@ export function useReservation(token?: string) {
                     setIsCancelled(true);                         
                 }                                                 
 
-                const reservationDate = new Date(reservation.datetime);
+                const reservationDate = parseEuropeanDate(reservation.datetime);
                 setSelectedDay(reservationDate);
 
                 const time = reservation.startTime.substring(0, 5);
@@ -143,7 +145,7 @@ export function useReservation(token?: string) {
         return `${String(endHours).padStart(2, "0")}:${String(minutes).padStart(
             2,
             "0"
-        )}:00`;
+        )}`;
     };
 
     const handleSubmit = async () => {
@@ -204,11 +206,7 @@ export function useReservation(token?: string) {
 
         setIsSubmitting(true);
 
-        const datetime =
-            `${selectedDay.getFullYear()}-` +
-            `${String(selectedDay.getMonth() + 1).padStart(2, "0")}-` +
-            `${String(selectedDay.getDate()).padStart(2, "0")}` +
-            `T${selectedTime}:00`;
+        const datetime = `${formatEuropeanDate(selectedDay)} ${selectedTime}`;
 
         const reservationData = {
             customer: {
@@ -217,7 +215,7 @@ export function useReservation(token?: string) {
                 email: form.email,
             },
             datetime,
-            startTime: `${selectedTime}:00`,
+            startTime: selectedTime,
             endTime: calculateEndTime(selectedTime),
             partySize: guestCount,
             details: form.specialRequests,
