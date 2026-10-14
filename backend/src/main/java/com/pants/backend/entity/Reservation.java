@@ -3,6 +3,7 @@ package com.pants.backend.entity;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -32,15 +33,18 @@ public class Reservation {
     @JoinColumn(name = "customer_id")
     private Customer customer;
 
-    @Schema(type = "string", example = "18:00:00")
+    @Schema(type = "string", example = "18:00")
+    @JsonFormat(pattern = "HH:mm")
     @Column(name = "starttime")
     private LocalTime startTime;
 
-    @Schema(type = "string", example = "20:00:00")
+    @Schema(type = "string", example = "20:00")
+    @JsonFormat(pattern = "HH:mm")
     @Column(name = "endtime")
     private LocalTime endTime;
 
-    @Schema(type = "string", example = "2026-09-21T18:00:00")
+    @Schema(type = "string", example = "21.09.2026 18:00")
+    @JsonFormat(pattern = "dd.MM.yyyy HH:mm")
     @Column(name = "datetime")
     private LocalDateTime datetime;
 
