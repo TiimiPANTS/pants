@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import LePantsLogo from "../assets/LePantsLogo.svg";
+import { parseEuropeanDate } from "../types/reservation";
 
 type Customer = {
   id: number;
@@ -56,15 +57,15 @@ function ConfirmationPage() {
   const bookingReference =
     `#PV-${reservation.reservationId}`;
 
-  const reservationDate = new Date(
+  const reservationDate = parseEuropeanDate(
     reservation.datetime
   );
 
   const formattedDate =
-    reservationDate.toLocaleDateString("en-US", {
+    reservationDate.toLocaleDateString("en-GB", {
       weekday: "long",
-      month: "short",
-      day: "numeric",
+      day: "2-digit",
+      month: "2-digit",
       year: "numeric",
     });
 
