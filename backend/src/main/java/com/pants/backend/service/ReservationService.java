@@ -90,6 +90,52 @@ public class ReservationService {
         return times;
     }
 
+    private int getRemainingCapacity(
+        LocalDate date,
+        LocalTime startTime,
+        List<Reservation> existingReservations,
+        Integer ignoreReservationId
+    ) {
+        int usedCapacity = existingReservations.stream()
+            .filter(reservation -> reservation.getDatetime() != null
+                && reservation.getDatetime().toLocalDate().equals(date))
+            .filter(reservation -> startTime.equals(reservation.getStartTime()))
+            .filter(reservation -> reservation.getStatus() == null
+                || !"CANCELLED".equals(reservation.getStatus().getName()))
+            .filter(reservation -> ignoreReservationId == null
+                || !ignoreReservationId.equals(reservation.getReservationId()))
+            .mapToInt(Reservation::getPartySize)
+            .sum();
+
+        return Math.max(0, MAX_GUESTS_PER_SLOT - usedCapacity);
+    }
+
+    private RStatus lockConfirmedReservations() {
+        return rStatusRepository
+            .findByNameForUpdate("CONFIRMED")
+            .orElseThrow(() -> new IllegalStateException("Status CONFIRMED missing"));
+    }
+
+    private void ensureSlotHasCapacity(ReservationDTO dto, Integer ignoreReservationId) {
+        LocalDate date = dto.getDatetime().toLocalDate();
+        LocalTime startTime = dto.getStartTime();
+        List<Reservation> existingReservations =
+            reservationRepository.findByDatetimeGreaterThanEqualAndDatetimeLessThan(
+                date.atStartOfDay(),
+                date.plusDays(1).atStartOfDay()
+            );
+
+        int remainingCapacity = getRemainingCapacity(
+            date,
+            startTime,
+            existingReservations,
+            ignoreReservationId
+        );
+        if (dto.getPartySize() > remainingCapacity) {
+            throw new IllegalStateException("Not enough capacity for this reservation slot");
+        }
+    }
+
     public Reservation getReservationById(Integer id) {
         return reservationRepository.findById(id).orElse(null);
     }
