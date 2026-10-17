@@ -101,6 +101,8 @@ cd backend
 ./mvnw --batch-mode --no-transfer-progress test
 ```
 
+`ReservationServiceTest` also checks reservation slot capacity: only non-cancelled reservations at the same date and start time count toward the 10-guest limit, and an update excludes the reservation being edited from the count.
+
 Frontend-testit käyttävät Playwrightia ja vaativat Node.js:n (CI käyttää Node 22:ta).
 
 ```bash
