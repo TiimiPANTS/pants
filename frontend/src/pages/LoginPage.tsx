@@ -1,6 +1,6 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
 
@@ -17,6 +17,8 @@ type ValidationErrors = {
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 export const LoginPage = () => {
+    const navigate = useNavigate();
+
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -69,6 +71,14 @@ export const LoginPage = () => {
             }
 
             setUser(responseData);
+
+            if (
+                responseData.role === "OWNER" ||
+                responseData.role === "ADMIN"
+            ) {
+                navigate("/owner/dashboard");
+            }
+
         } catch (loginError) {
             setError(
                 loginError instanceof Error
