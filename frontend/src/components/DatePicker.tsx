@@ -1,55 +1,66 @@
 import type { FC } from "react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import "@daypicker/react/style.css";
 import { DayPicker, DayButton, type DayButtonProps } from "@daypicker/react";
 
 type DatePickerProps = {
   selectedDay: Date | undefined;
   setSelectedDay: (date: Date) => void;
-  bookedDays: Set<number>;
+  bookedDates: Date[];
+  onMonthChange: (month: Date) => void;
 };
 
 export const DatePicker: FC<DatePickerProps> = ({
   selectedDay,
   setSelectedDay,
-  bookedDays,
+  bookedDates,
+  onMonthChange,
 }) => {
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [hasNavigated, setHasNavigated] = useState(false);
+  const displayedMonth =
+    selectedDay && !hasNavigated ? selectedDay : currentMonth;
+
+  useEffect(() => {
+    if (
+      selectedDay &&
+      !hasNavigated &&
+      (selectedDay.getFullYear() !== currentMonth.getFullYear() ||
+        selectedDay.getMonth() !== currentMonth.getMonth())
+    ) {
+      onMonthChange(
+        new Date(selectedDay.getFullYear(), selectedDay.getMonth(), 1)
+      );
+    }
+  }, [currentMonth, hasNavigated, onMonthChange, selectedDay]);
 
   const goToPreviousMonth = () => {
-    setCurrentMonth(
-      new Date(
-        currentMonth.getFullYear(),
-        currentMonth.getMonth() - 1,
-        1
-      )
+    const month = new Date(
+      displayedMonth.getFullYear(),
+      displayedMonth.getMonth() - 1,
+      1
     );
+    setHasNavigated(true);
+    setCurrentMonth(month);
+    onMonthChange(month);
   };
 
   const goToNextMonth = () => {
-    setCurrentMonth(
-      new Date(
-        currentMonth.getFullYear(),
-        currentMonth.getMonth() + 1,
-        1
-      )
+    const month = new Date(
+      displayedMonth.getFullYear(),
+      displayedMonth.getMonth() + 1,
+      1
     );
+    setHasNavigated(true);
+    setCurrentMonth(month);
+    onMonthChange(month);
   };
 
-  const monthYear = currentMonth.toLocaleDateString("en-US", {
+  const monthYear = displayedMonth.toLocaleDateString("en-US", {
     month: "long",
     year: "numeric",
   });
-
-  const bookedDates = Array.from(bookedDays).map(
-    (day) =>
-      new Date(
-        currentMonth.getFullYear(),
-        currentMonth.getMonth(),
-        day
-      )
-  );
 
   const CustomDayButton = (props: DayButtonProps) => {
     const isBooked = props.modifiers.booked;
@@ -107,8 +118,12 @@ export const DatePicker: FC<DatePickerProps> = ({
 
         <DayPicker
           mode="single"
-          month={currentMonth}
-          onMonthChange={setCurrentMonth}
+          month={displayedMonth}
+          onMonthChange={(month) => {
+            setHasNavigated(true);
+            setCurrentMonth(month);
+            onMonthChange(month);
+          }}
           selected={selectedDay}
           onSelect={(date) => {
             if (date) {
@@ -122,8 +137,10 @@ export const DatePicker: FC<DatePickerProps> = ({
           }}
           disabled={[
             { before: new Date() },
+            { dayOfWeek: [0] },
             ...bookedDates,
           ]}
+          
           classNames={{
             month_caption: "hidden",
             button_previous: "hidden",
