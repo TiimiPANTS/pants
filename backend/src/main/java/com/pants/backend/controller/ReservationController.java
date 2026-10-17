@@ -3,6 +3,7 @@ package com.pants.backend.controller;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.time.LocalDate;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.pants.backend.dto.ErrorResponse;
@@ -64,6 +66,20 @@ public class ReservationController {
     public ResponseEntity<List<Reservation>> getAllReservations() {
         return ResponseEntity.ok(
             reservationService.getAllReservations()
+        );
+    }
+
+    @GetMapping("/availability")
+    public ResponseEntity<?> getReservationAvailability(
+        @RequestParam LocalDate from,
+        @RequestParam LocalDate to
+    ) {
+        if (to.isBefore(from) || to.isAfter(from.plusDays(31))) {
+            return badRequest("Availability date range must be 32 days or fewer");
+        }
+
+        return ResponseEntity.ok(
+            reservationService.getReservationAvailability(from, to)
         );
     }
 
@@ -181,6 +197,10 @@ public class ReservationController {
                 .body(new ReservationResponse(savedReservation));
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, e.getMessage()));
         }
     }
 
@@ -232,6 +252,10 @@ public class ReservationController {
             return notFound(e.getMessage());
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, e.getMessage()));
         }
     }
 

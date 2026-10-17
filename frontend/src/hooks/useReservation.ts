@@ -1,7 +1,11 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 import {
-    availableTimes,
+    formatDateKey,
+    formatEuropeanDate,
+    getAvailableTimes,
+    parseEuropeanDate,
+    type ReservationAvailability,
     type ReservationForm,
     type ReservationTime,
 } from "../types/reservation";
@@ -42,7 +46,7 @@ export function useReservation(token?: string) {
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
         undefined
     );
-    const [selectedTime, setSelectedTime] = useState<ReservationTime>("19:30");
+    const [selectedTime, setSelectedTime] = useState<ReservationTime | undefined>(undefined);
     const [guestCount, setGuestCount] = useState<number>(2);
 
     const [form, setForm] = useState<ReservationForm>(emptyForm);
@@ -55,7 +59,79 @@ export function useReservation(token?: string) {
     const [message, setMessage] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isCancelled, setIsCancelled] = useState(false);
+    const [availability, setAvailability] = useState<ReservationAvailability[]>([]);
+    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
+    const [availabilityError, setAvailabilityError] = useState<string | null>(null);
+    const [originalReservationSlot, setOriginalReservationSlot] = useState<{
+        date: string;
+        time: ReservationTime;
+    } | null>(null);
+    const availabilityRequestId = useRef(0);
 
+    const loadAvailability = useCallback(async (month: Date = new Date()) => {
+        const requestId = ++availabilityRequestId.current;
+        const from = new Date(month.getFullYear(), month.getMonth(), 1);
+        const to = new Date(month.getFullYear(), month.getMonth() + 1, 0);
+        const query = new URLSearchParams({
+            from: formatDateKey(from),
+            to: formatDateKey(to),
+        });
+        setIsAvailabilityLoading(true);
+        setAvailability([]);
+        setAvailabilityError(null);
+
+        try {
+            const response = await fetch(
+                `${API_URL}/reservations/availability?${query.toString()}`
+            );
+            if (!response.ok) {
+                throw new Error(`Unable to load availability (${response.status}).`);
+            }
+
+            const reservations = await readJson(response);
+            if (
+                !Array.isArray(reservations) ||
+                reservations.some(
+                    (reservation) =>
+                        typeof reservation?.date !== "string" ||
+                        typeof reservation?.startTime !== "string" ||
+                        typeof reservation?.availableCapacity !== "number"
+                )
+            ) {
+                throw new Error("The availability response was invalid.");
+            }
+
+            if (requestId === availabilityRequestId.current) {
+                setAvailability(reservations);
+                setAvailabilityError(null);
+            }
+        } catch (error) {
+            if (requestId === availabilityRequestId.current) {
+                setAvailabilityError(
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to load reservation availability."
+                );
+            }
+        } finally {
+            if (requestId === availabilityRequestId.current) {
+                setIsAvailabilityLoading(false);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        let active = true;
+        queueMicrotask(() => {
+            if (active) {
+                void loadAvailability(new Date());
+            }
+        });
+
+        return () => {
+            active = false;
+        };
+    }, [loadAvailability]);
 
     useEffect(() => {
         if (!token) {
@@ -81,11 +157,18 @@ export function useReservation(token?: string) {
                     setIsCancelled(true);                         
                 }                                                 
 
-                setSelectedDay(new Date(reservation.datetime));
+                const reservationDate = parseEuropeanDate(reservation.datetime);
+                setSelectedDay(reservationDate);
 
                 const time = reservation.startTime.substring(0, 5);
-                if ((availableTimes as readonly string[]).includes(time)) {
-                    setSelectedTime(time as ReservationTime);
+                const availableTimes = getAvailableTimes(reservationDate);
+
+                if (availableTimes.includes(time)) {
+                    setSelectedTime(time);
+                    setOriginalReservationSlot({
+                        date: formatDateKey(reservationDate),
+                        time,
+                    });
                 }
 
                 setGuestCount(reservation.partySize);
@@ -109,6 +192,78 @@ export function useReservation(token?: string) {
 
         loadReservation();
     }, [token]);
+
+    const slotAvailableCapacities = useMemo(() => {
+        const capacities = new Map<ReservationTime, number>();
+        if (!selectedDay) {
+            return capacities;
+        }
+
+        const date = formatDateKey(selectedDay);
+        for (const reservation of availability) {
+            const time = reservation.startTime.substring(0, 5);
+            if (reservation.date === date) {
+                capacities.set(
+                    time,
+                    Math.min(
+                        capacities.get(time) ?? Number.POSITIVE_INFINITY,
+                        reservation.availableCapacity
+                    )
+                );
+            }
+        }
+        return capacities;
+    }, [availability, selectedDay]);
+
+    const bookedDates = useMemo(() => {
+        const capacitiesByDateAndTime = new Map<string, Map<string, number>>();
+        for (const reservation of availability) {
+            const capacitiesByTime =
+                capacitiesByDateAndTime.get(reservation.date) ?? new Map<string, number>();
+            const time = reservation.startTime.substring(0, 5);
+            capacitiesByTime.set(
+                time,
+                Math.min(capacitiesByTime.get(time) ?? Number.POSITIVE_INFINITY,
+                    reservation.availableCapacity)
+            );
+            capacitiesByDateAndTime.set(reservation.date, capacitiesByTime);
+        }
+
+        return Array.from(capacitiesByDateAndTime.entries())
+            .filter(([date, capacitiesByTime]) => {
+                const [year, month, day] = date.split("-").map(Number);
+                const dateValue = new Date(year, month - 1, day);
+                const times = getAvailableTimes(dateValue);
+                const noCapacity = times.every(
+                    (time) => (capacitiesByTime.get(time) ?? 0) < 1
+                );
+                return (
+                    originalReservationSlot?.date !== date &&
+                    times.length > 0 &&
+                    noCapacity
+                );
+            })
+            .map(([date]) => {
+                const [year, month, day] = date.split("-").map(Number);
+                return new Date(year, month - 1, day);
+            });
+    }, [availability, originalReservationSlot]);
+
+    const currentReservationTime =
+        originalReservationSlot &&
+        selectedDay &&
+        originalReservationSlot.date === formatDateKey(selectedDay)
+            ? originalReservationSlot.time
+            : undefined;
+    const getRemainingCapacity = (time: ReservationTime) =>
+        slotAvailableCapacities.get(time) ?? 0;
+
+    const selectDay = (date: Date) => {
+        if (!selectedDay || formatDateKey(date) !== formatDateKey(selectedDay)) {
+            setSelectedTime(undefined);
+        }
+        setSelectedDay(date);
+    };
 
     const updateGuestCount = (value: number) => {
         const safeValue = Number.isNaN(value)
@@ -140,15 +295,30 @@ export function useReservation(token?: string) {
         return `${String(endHours).padStart(2, "0")}:${String(minutes).padStart(
             2,
             "0"
-        )}:00`;
+        )}`;
     };
 
     const handleSubmit = async () => {
         setError(null);
         setMessage(null);
 
+        if (isAvailabilityLoading || availabilityError) {
+            setError("Reservation availability is unavailable. Please try again.");
+            return;
+        }
         if (!selectedDay) {
             setError("Please select a date.");
+            return;
+        }
+        if (!selectedTime) {
+            setError("Please select a time.")
+            return;
+        }
+        if (
+            getRemainingCapacity(selectedTime) < guestCount &&
+            selectedTime !== currentReservationTime
+        ) {
+            setError("There is not enough capacity at that time. Please choose another time or reduce your party size.");
             return;
         }
 
@@ -197,11 +367,7 @@ export function useReservation(token?: string) {
 
         setIsSubmitting(true);
 
-        const datetime =
-            `${selectedDay.getFullYear()}-` +
-            `${String(selectedDay.getMonth() + 1).padStart(2, "0")}-` +
-            `${String(selectedDay.getDate()).padStart(2, "0")}` +
-            `T${selectedTime}:00`;
+        const datetime = `${formatEuropeanDate(selectedDay)} ${selectedTime}`;
 
         const reservationData = {
             customer: {
@@ -210,7 +376,7 @@ export function useReservation(token?: string) {
                 email: form.email,
             },
             datetime,
-            startTime: `${selectedTime}:00`,
+            startTime: selectedTime,
             endTime: calculateEndTime(selectedTime),
             partySize: guestCount,
             details: form.specialRequests,
@@ -270,6 +436,7 @@ export function useReservation(token?: string) {
                     ? "Reservation updated successfully!"
                     : "Reservation created successfully!"
             );
+            void loadAvailability(selectedDay);
 
             return savedReservation;
         } catch (error) {
@@ -330,9 +497,15 @@ export function useReservation(token?: string) {
         isEditMode,
         isLoading,
         selectedDay,
-        setSelectedDay,
+        selectDay,
         selectedTime,
         setSelectedTime,
+        slotAvailableCapacities,
+        currentReservationTime,
+        bookedDates,
+        isAvailabilityLoading,
+        availabilityError,
+        refreshAvailability: loadAvailability,
         guestCount,
         updateGuestCount,
         form,
