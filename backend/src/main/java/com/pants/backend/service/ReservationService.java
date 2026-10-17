@@ -171,7 +171,6 @@ public Reservation cancelReservationByToken(String token) {
         throw new IllegalStateException("Reservation can no longer be cancelled");
     }
 
-    lockConfirmedReservations();
     reservation.setStatus(
         rStatusRepository
             .findByName("CANCELLED")
@@ -180,56 +179,6 @@ public Reservation cancelReservationByToken(String token) {
 
     return reservationRepository.save(reservation);
 }
-
-    private RStatus lockConfirmedReservations() {
-        return rStatusRepository
-            .findByNameForUpdate("CONFIRMED")
-            .orElseThrow(() -> new IllegalStateException("Status CONFIRMED missing"));
-    }
-
-    private void ensureSlotHasCapacity(ReservationDTO dto, Integer excludedReservationId) {
-        LocalDate date = dto.getDatetime().toLocalDate();
-        List<Reservation> existingReservations =
-            reservationRepository.findByDatetimeGreaterThanEqualAndDatetimeLessThan(
-                date.atStartOfDay(),
-                date.plusDays(1).atStartOfDay()
-            );
-        int remainingCapacity = getRemainingCapacity(
-            date,
-            dto.getStartTime(),
-            existingReservations,
-            excludedReservationId
-        );
-        if (dto.getPartySize() > remainingCapacity) {
-            throw new IllegalStateException(
-                "There is not enough capacity at that time. Please choose another time or reduce your party size."
-            );
-        }
-    }
-
-    private int getRemainingCapacity(
-        LocalDate date,
-        LocalTime startTime,
-        List<Reservation> existingReservations,
-        Integer excludedReservationId
-    ) {
-        int reservedGuests = existingReservations.stream()
-            .filter(reservation ->
-                reservation.getDatetime() != null
-                    && reservation.getDatetime().toLocalDate().equals(date)
-                    && startTime.equals(reservation.getStartTime())
-                    && reservation.getPartySize() != null
-                    && (reservation.getStatus() == null
-                        || !"CANCELLED".equals(reservation.getStatus().getName()))
-                    && !java.util.Objects.equals(
-                        excludedReservationId,
-                        reservation.getReservationId()
-                    )
-            )
-            .mapToInt(Reservation::getPartySize)
-            .sum();
-        return Math.max(0, MAX_GUESTS_PER_SLOT - reservedGuests);
-    }
 
        private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
