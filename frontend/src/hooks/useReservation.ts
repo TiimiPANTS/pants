@@ -59,79 +59,7 @@ export function useReservation(token?: string) {
     const [message, setMessage] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);
     const [isCancelled, setIsCancelled] = useState(false);
-    const [availability, setAvailability] = useState<ReservationAvailability[]>([]);
-    const [isAvailabilityLoading, setIsAvailabilityLoading] = useState(true);
-    const [availabilityError, setAvailabilityError] = useState<string | null>(null);
-    const [originalReservationSlot, setOriginalReservationSlot] = useState<{
-        date: string;
-        time: ReservationTime;
-    } | null>(null);
-    const availabilityRequestId = useRef(0);
 
-    const loadAvailability = useCallback(async (month: Date = new Date()) => {
-        const requestId = ++availabilityRequestId.current;
-        const from = new Date(month.getFullYear(), month.getMonth(), 1);
-        const to = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-        const query = new URLSearchParams({
-            from: formatDateKey(from),
-            to: formatDateKey(to),
-        });
-        setIsAvailabilityLoading(true);
-        setAvailability([]);
-        setAvailabilityError(null);
-
-        try {
-            const response = await fetch(
-                `${API_URL}/reservations/availability?${query.toString()}`
-            );
-            if (!response.ok) {
-                throw new Error(`Unable to load availability (${response.status}).`);
-            }
-
-            const reservations = await readJson(response);
-            if (
-                !Array.isArray(reservations) ||
-                reservations.some(
-                    (reservation) =>
-                        typeof reservation?.date !== "string" ||
-                        typeof reservation?.startTime !== "string" ||
-                        typeof reservation?.availableCapacity !== "number"
-                )
-            ) {
-                throw new Error("The availability response was invalid.");
-            }
-
-            if (requestId === availabilityRequestId.current) {
-                setAvailability(reservations);
-                setAvailabilityError(null);
-            }
-        } catch (error) {
-            if (requestId === availabilityRequestId.current) {
-                setAvailabilityError(
-                    error instanceof Error
-                        ? error.message
-                        : "Failed to load reservation availability."
-                );
-            }
-        } finally {
-            if (requestId === availabilityRequestId.current) {
-                setIsAvailabilityLoading(false);
-            }
-        }
-    }, []);
-
-    useEffect(() => {
-        let active = true;
-        queueMicrotask(() => {
-            if (active) {
-                void loadAvailability(new Date());
-            }
-        });
-
-        return () => {
-            active = false;
-        };
-    }, [loadAvailability]);
 
     useEffect(() => {
         if (!token) {
@@ -157,8 +85,7 @@ export function useReservation(token?: string) {
                     setIsCancelled(true);                         
                 }                                                 
 
-                const reservationDate = parseEuropeanDate(reservation.datetime);
-                setSelectedDay(reservationDate);
+                setSelectedDay(new Date(reservation.datetime));
 
                 const time = reservation.startTime.substring(0, 5);
                 const availableTimes = getAvailableTimes(reservationDate);
@@ -365,6 +292,49 @@ export function useReservation(token?: string) {
         return;
     }
 
+        const errors: ValidationErrors = {};
+
+        const namePattern = /^[\p{L} '-]+$/u;
+
+        if (!form.firstName.trim()) {
+            errors.firstName = "First name is required.";
+        } else if (form.firstName.trim().length < 2) {
+            errors.firstName = "First name must be at least 2 characters.";
+        } else if (form.firstName.trim().length > 50) {
+            errors.firstName = "First name must be 50 characters or less.";
+        } else if (!namePattern.test(form.firstName.trim())) {
+            errors.firstName =
+                "First name can only contain letter"
+        }
+
+        if (!form.lastName.trim()) {
+            errors.lastName = "Last name is required.";
+        } else if (form.lastName.trim().length < 2) {
+            errors.lastName = "Last name must be at least 2 characters.";
+        } else if (form.lastName.trim().length > 50) {
+            errors.lastName = "Last name must be 50 characters or less.";
+        } else if (!namePattern.test(form.lastName.trim())) {
+            errors.lastName =
+                "Last name can only contain letter"
+        }
+
+        if (!form.email.trim()) {
+            errors.email = "Email is required.";
+        } else {
+            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+            if (!emailPattern.test(form.email.trim())) {
+                errors.email = "Enter an email like name@example.com";
+            }
+
+    }
+
+    setValidationErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+        return;
+    }
+
         setIsSubmitting(true);
 
         const datetime = `${formatEuropeanDate(selectedDay)} ${selectedTime}`;
@@ -478,7 +448,6 @@ export function useReservation(token?: string) {
 
             setIsCancelled(true);
             setMessage("Your reservation has been cancelled.");
-            void loadAvailability(selectedDay);
             return true;
         } catch (error) {
             setError(
