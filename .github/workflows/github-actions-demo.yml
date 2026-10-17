@@ -1,4 +1,4 @@
-name: Backend Tests
+name: Backend and Frontend Tests
 on:
   push:
   pull_request:
@@ -34,4 +34,32 @@ jobs:
         with:
           name: backend-test-reports
           path: backend/target/surefire-reports/
+          if-no-files-found: warn
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v6
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Install Playwright browsers
+        working-directory: frontend
+        run: npx playwright install --with-deps
+      - name: Run frontend tests
+        working-directory: frontend
+        run: npm test
+      - name: Upload Playwright report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-playwright-report
+          path: frontend/playwright-report/
           if-no-files-found: warn
