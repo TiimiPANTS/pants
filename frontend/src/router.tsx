@@ -5,6 +5,7 @@ import { HomePage } from "./pages/HomePage.tsx";
 import { ReservationPage } from "./pages/ReservationPage.tsx";
 import ConfirmationPage from "./pages/ConfirmationPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
+import { OwnerDashboardPage } from "./pages/OwnerDashboardPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -18,6 +19,10 @@ const router = createBrowserRouter([
   {
     path: "/login",
     element: <LoginPage />,
+  },
+  {
+    path: "/owner/dashboard",
+    element: <OwnerDashboardPage />,
   },
   {
     path: "/reserve/:token",
