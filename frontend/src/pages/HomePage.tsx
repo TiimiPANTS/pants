@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import "../styles/HomePage.css";
+import { useAuth } from "../hooks/useAuth";
 
 import burgerImage from "../assets/burger.jpg";
 import tableImage from "../assets/table.png";
@@ -34,6 +35,7 @@ function Icon({
 
 export function HomePage() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated, isLoading } = useAuth();
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -98,13 +100,17 @@ export function HomePage() {
               <span>Reserve</span>
             </Link>
 
-            <Link
-              to="/login"
-              className="homepage__icon-button homepage__login-link"
-              aria-label="Staff sign in"
-            >
-              <Icon name="person_outline" />
-            </Link>
+            {isLoading ? null : (
+              <Link
+                to={isAuthenticated ? "/owner/dashboard" : "/login"}
+                className="homepage__icon-button homepage__login-link"
+                aria-label={isAuthenticated ? "Dashboard" : "Staff sign in"}
+                title={isAuthenticated ? "Dashboard" : "Staff sign in"}
+              >
+                <Icon name="person_outline" />
+              </Link>
+            )}
+
           </div>
         </nav>
 
