@@ -16,6 +16,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 
 import com.pants.backend.dto.LoginRequest;
 
@@ -35,15 +37,12 @@ public class AuthController {
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody LoginRequest loginRequest,
-            HttpServletRequest request
-    ) {
+            HttpServletRequest request) {
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
-                            loginRequest.getPassword()
-                    )
-            );
+                            loginRequest.getPassword()));
 
             SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
             securityContext.setAuthentication(authentication);
@@ -51,8 +50,7 @@ public class AuthController {
 
             request.getSession(true).setAttribute(
                     HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                    securityContext
-            );
+                    securityContext);
 
             String role = authentication.getAuthorities()
                     .stream()
@@ -63,13 +61,30 @@ public class AuthController {
             return ResponseEntity.ok(Map.of(
                     "message", "Login successful",
                     "email", authentication.getName(),
-                    "role", role
-            ));
+                    "role", role));
 
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Invalid email or password"));
         }
+    }
+
+    @GetMapping("/me")
+    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Not signed in"));
+        }
+
+        String role = authentication.getAuthorities()
+                .stream()
+                .findFirst()
+                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .orElse("");
+
+        return ResponseEntity.ok(Map.of(
+                "email", authentication.getName(),
+                "role", role));
     }
 
     @PostMapping("/logout")
