@@ -9,6 +9,7 @@ import { DatePicker } from "../components/DatePicker";
 import { PartySizeSelector } from "../components/PartySizeSelector";
 import { TimeSlotSelector } from "../components/TimeSlotSelector";
 import { ContactDetails } from "../components/ContactDetails";
+import { useAuth } from "../hooks/useAuth";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
 
@@ -16,6 +17,7 @@ export const ReservationPage: FC = () => {
   const navigate = useNavigate();
   const { token } = useParams();
   const [availabilityMonth, setAvailabilityMonth] = useState(() => new Date());
+  const { isAuthenticated } = useAuth();
 
   const {
     isEditMode,
@@ -63,7 +65,7 @@ export const ReservationPage: FC = () => {
     });
   };
 
-      const cancelReservation = async () => {
+  const cancelReservation = async () => {
     const confirmed = window.confirm(
       "Are you sure you want to cancel this reservation?"
     );
@@ -83,7 +85,7 @@ export const ReservationPage: FC = () => {
     );
   }
 
-    if (isCancelled) {
+  if (isCancelled) {
     return (
       <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center px-4">
         <div className="bg-card-bg border border-card-border rounded-2xl p-7 text-center max-w-md w-full space-y-4">
@@ -107,16 +109,39 @@ export const ReservationPage: FC = () => {
   return (
     <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
       <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-36 flex flex-col">
-        <div className="mb-4 flex justify-end">
+        <div className="mb-4 flex justify-between">
           <Link
-            to="/login"
+            to="/"
             className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-              login
+              home
             </span>
-            Staff sign in
+            Homepage
           </Link>
+
+          {isLoading ? null : isAuthenticated ? (
+            <Link
+              to="/owner/dashboard"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                person_outline
+              </span>
+              Dashboard
+            </Link>
+          ) : (
+            <Link
+              to="/login"
+              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
+                login
+              </span>
+              Staff sign in
+            </Link>
+          )}
+
         </div>
         <Header
           logoUrl={LePantsLogo}
@@ -206,7 +231,7 @@ export const ReservationPage: FC = () => {
                 : "Confirm Reservation"}
           </button>
 
-            {isEditMode && (
+          {isEditMode && (
             <button
               type="button"
               onClick={cancelReservation}
