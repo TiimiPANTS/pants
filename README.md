@@ -10,7 +10,6 @@
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Database-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![H2](https://img.shields.io/badge/H2-Database-09476B)](https://www.h2database.com/)
 
-[![Postman](https://img.shields.io/badge/Postman-API_Tests-FF6C37?logo=postman&logoColor=white)](https://www.postman.com/)
 [![Swagger](https://img.shields.io/badge/Swagger-API_Docs-85EA2D?logo=swagger&logoColor=black)](https://swagger.io/)
 [![JUnit](https://img.shields.io/badge/JUnit-5-25A162?logo=junit5&logoColor=white)](https://junit.org/junit5/)
 [![Mockito](https://img.shields.io/badge/Mockito-Testing_Framework-C5D9C8)](https://site.mockito.org/)
@@ -26,16 +25,11 @@
 
 🎯 **Retrospektit Miro-taulu:** https://miro.com/app/board/uXjVHqNZkTk=/?share_link_id=954013309038
 
-**Swagger API dokumentaatio:** 
-- https://pants-backend.2.rahtiapp.fi/swagger-ui/index.html#
+⭐ **Swagger API dokumentaatio:** https://pants-backend.2.rahtiapp.fi/swagger-ui/index.html#
 
 **Main branch deployment with Postgre**
 - Backend URL: https://pants-backend.2.rahtiapp.fi
 - Frontend URL: https://pants-frontend.onrender.com
-
-**Dev branch deployment with H2**
-- Backend URL: https://teampants-git-ohjelmistoprojekti2-teampants.2.rahtiapp.fi
-- Frontend URL: https://pants-mir9.onrender.com
 
 Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
 
@@ -68,7 +62,7 @@ Sovelluksen ensimmäisessä versiossa (MVP) käyttäjä voi tehdä seuraavia asi
 - Vastaanottaa onnistuneesta varauksesta sähköpostivahvistuksen.  
 
 ---
-**Lokaalin projektin käynnistys**
+### **Lokaalin projektin ja testien käynnistys**
 
 Backend käynnistys http://localhost:8080/
 1. `cd backend`
@@ -85,9 +79,7 @@ Kysy admineiltä application-local.properties tiedostoa, jos tarvitset.
 
 ---
 
-**Testien ajaminen lokaalisti**
-
-Backend-testit vaativat Java 21:n. Aja komennot projektin juuresta:
+Backend-testit vaativat Java 21
 
 Windows (PowerShell):
 ```powershell
@@ -101,9 +93,9 @@ cd backend
 ./mvnw --batch-mode --no-transfer-progress test
 ```
 
-`ReservationServiceTest` also checks reservation slot capacity: only non-cancelled reservations at the same date and start time count toward the 10-guest limit, and an update excludes the reservation being edited from the count.
+---
 
-Frontend-testit käyttävät Playwrightia ja vaativat Node.js:n (CI käyttää Node 22:ta).
+Frontend-testit vaativat Node 22
 
 ```bash
 cd frontend
@@ -111,6 +103,4 @@ npm ci
 npx playwright install 
 npm test
 ```
-HUOM! Lataa Playwright riippuvuus vain ensimmäisellä kerralla!
-
-Asennuskomennot tarvitsee ajaa vain ensimmäisellä kerralla tai riippuvuuksien muuttuessa. `npm test` käynnistää Vite-kehityspalvelimen automaattisesti testejä varten ja suorittaa testit Chromium-, Firefox- ja WebKit-selaimilla.
+*HUOM! Lataa Playwright riippuvuus vain ensimmäisellä kerralla!*
