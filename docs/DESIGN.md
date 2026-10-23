@@ -6,14 +6,14 @@ Previous versions of UI/UX:
 - [Stitch v2](https://stitch.withgoogle.com/projects/427455009647000198)
 - [Stitch v3]()
 
-![design](../assets/design.png)
+![design](assets/design.png)
 
 name: Le Pants Theme
 
 colors:
   surface: '#131315'
   surface-dim: '#131315'
-  surface-bright: '#39393b'
+  surface-bright: '#0e0e4e'
   surface-container-lowest: '#0e0e10'
   surface-container-low: '#1c1b1d'
   surface-container: '#201f21'

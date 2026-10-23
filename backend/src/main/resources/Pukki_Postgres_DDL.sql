@@ -1,11 +1,26 @@
 CREATE TABLE customers (
     customer_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
-    firstname VARCHAR(100) NOT NULL,
-    lastname VARCHAR(100) NOT NULL,
-    email VARCHAR(255) NOT NULL,
+    firstname TEXT NOT NULL,
+    lastname TEXT NOT NULL,
+    email TEXT NOT NULL,
 
     CONSTRAINT pk_customers
-        PRIMARY KEY (customer_id)
+        PRIMARY KEY (customer_id),
+    CONSTRAINT chk_customers_firstname
+        CHECK (
+            char_length(btrim(firstname, E' \t\n\r\f')) BETWEEN 2 AND 50
+            AND btrim(firstname, E' \t\n\r\f') ~ $regex$^[[:alpha:] '-]+$$regex$
+        ),
+    CONSTRAINT chk_customers_lastname
+        CHECK (
+            char_length(btrim(lastname, E' \t\n\r\f')) BETWEEN 2 AND 50
+            AND btrim(lastname, E' \t\n\r\f') ~ $regex$^[[:alpha:] '-]+$$regex$
+        ),
+    CONSTRAINT chk_customers_email
+        CHECK (
+            btrim(email, E' \t\n\r\f')
+            ~ $regex$^[^[:space:]@]+@[^[:space:]@]+[.][^[:space:]@]+$$regex$
+        )
 );
 
 CREATE TABLE r_status (
@@ -38,7 +53,6 @@ CREATE TABLE roles (
         UNIQUE (name)
 );
 
-
 CREATE TABLE reservations (
     reservation_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     edit_token VARCHAR(64) UNIQUE,
@@ -65,7 +79,7 @@ CREATE TABLE reservations (
         CHECK (endtime IS NULL OR endtime >= starttime),
 
     CONSTRAINT chk_reservations_party_size
-        CHECK (party_size > 0)
+        CHECK (party_size BETWEEN 1 AND 10)
 );
 
 
@@ -138,3 +152,21 @@ CREATE INDEX idx_reservations_rstatus_id ON reservations(rstatus_id);
 CREATE INDEX idx_tables_tstatus_id ON tables(tstatus_id);
 CREATE INDEX idx_tablelist_reservation_id ON tablelist(reservation_id);
 CREATE INDEX idx_users_role_id ON users(role_id);
+
+-- INSERT
+INSERT INTO R_STATUS (name) VALUES
+('PENDING')
+,('CONFIRMED')
+,('CANCELLED')
+,('COMPLETED');
+
+INSERT INTO T_STATUS (name) VALUES
+('AVAILABLE')
+,('RESERVED')
+,('OCCUPIED')
+,('OUT_OF_SERVICE');
+
+INSERT INTO ROLES (name) VALUES
+('ADMIN')
+,('OWNER')
+,('EMPLOYEE');
