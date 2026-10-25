@@ -12,6 +12,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -84,6 +85,13 @@ public class AuthController {
         return ResponseEntity.ok(Map.of(
                 "email", authentication.getName(),
                 "role", role));
+    }
+
+        @GetMapping("/csrf")
+    public ResponseEntity<?> getCsrfToken(CsrfToken csrfToken) {
+        return ResponseEntity.ok(Map.of(
+                "headerName", csrfToken.getHeaderName(),
+                "token", csrfToken.getToken()));   // suojaa käyttäjiä luvattomilta komennoilta
     }
 
     @PostMapping("/logout")

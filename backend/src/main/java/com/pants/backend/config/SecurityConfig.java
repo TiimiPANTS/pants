@@ -52,7 +52,8 @@ public class SecurityConfig {
                         // Authentication
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/logout"
+                                "/api/auth/logout",
+                                "/api/auth/csrf"
                         )
                         .permitAll()
 
@@ -165,6 +166,13 @@ public class SecurityConfig {
                                 HttpMethod.DELETE,
                                 "/api/customers/*",
                                 "/api/tables/*"
+                        )
+                        .hasAnyRole("ADMIN", "OWNER")
+
+                        // Cancel reservations
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/reservations/*/cancel"
                         )
                         .hasAnyRole("ADMIN", "OWNER")
 

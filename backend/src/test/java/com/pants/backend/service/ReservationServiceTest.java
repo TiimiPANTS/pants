@@ -114,6 +114,69 @@ class ReservationServiceTest {
         verify(reservationRepository, never()).save(any());
     }
 
+        // cancelReservation (owner / admin)
+
+    @Test
+    void cancelById_whenConfirmed_setsStatusCancelled() {
+        Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusDays(2));
+        RStatus cancelled = new RStatus("CANCELLED");
+
+        when(reservationRepository.findById(1))
+                .thenReturn(Optional.of(reservation));
+        when(rStatusRepository.findByName("CANCELLED"))
+                .thenReturn(Optional.of(cancelled));
+        when(reservationRepository.save(reservation))
+                .thenReturn(reservation);
+
+        Reservation result = reservationService.cancelReservation(1);
+
+        assertThat(result.getStatus()).isEqualTo(cancelled);
+        verify(reservationRepository).save(reservation);
+    }
+
+    @Test
+    void cancelById_whenLessThanOneHourBefore_stillCancels() {
+        Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusMinutes(30));
+        RStatus cancelled = new RStatus("CANCELLED");
+
+        when(reservationRepository.findById(1))
+                .thenReturn(Optional.of(reservation));
+        when(rStatusRepository.findByName("CANCELLED"))
+                .thenReturn(Optional.of(cancelled));
+        when(reservationRepository.save(reservation))
+                .thenReturn(reservation);
+
+        Reservation result = reservationService.cancelReservation(1);
+
+        assertThat(result.getStatus()).isEqualTo(cancelled);
+    }
+
+    @Test
+    void cancelById_whenNotFound_throwsNoSuchElement() {
+        when(reservationRepository.findById(99))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> reservationService.cancelReservation(99))
+                .isInstanceOf(NoSuchElementException.class)
+                .hasMessage("Reservation not found");
+
+        verify(reservationRepository, never()).save(any());
+    }
+
+    @Test
+    void cancelById_whenAlreadyCancelled_throwsIllegalState() {
+        Reservation reservation = reservation("CANCELLED", LocalDateTime.now().plusDays(2));
+
+        when(reservationRepository.findById(1))
+                .thenReturn(Optional.of(reservation));
+
+        assertThatThrownBy(() -> reservationService.cancelReservation(1))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("Reservation is already cancelled");
+
+        verify(reservationRepository, never()).save(any());
+    }
+
     // updateReservationByToken
 
     @Test
