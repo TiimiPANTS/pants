@@ -15,6 +15,7 @@ type Reservation = {
     datetime: string;
     partySize: number;
     details: string;
+    status: {name: string} | null;
 };
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
@@ -136,7 +137,8 @@ export const OwnerDashboardPage = () => {
 
                                 <tbody className="divide-y divide-card-border">
                                     {reservations.map((reservation) => (
-                                        <tr key={reservation.reservationId}>
+                                        <tr key={reservation.reservationId}
+                                        className={reservation.status?.name === "CANCELLED" ? "opacity-50" : ""}>
                                             <td className="px-4 py-4">
                                                 <p className="font-medium text-wine-light">
                                                     #{reservation.reservationId}
@@ -174,12 +176,19 @@ export const OwnerDashboardPage = () => {
                                                         Edit
                                                     </button>
 
+                                                    {reservation.status?.name === "CANCELLED" ? (
+                                                        <span className="px-3 py-1.5 text-xs text-zinc-500">
+                                                            Cancelled
+                                                        </span>
+                                                    ) : (
                                                     <button
                                                         type="button"
+                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/cancel`)}
                                                         className="rounded border border-card-border px-3 py-1.5 text-xs text-red-400"
                                                     >
-                                                        Delete
+                                                        Cancel
                                                     </button>
+                                                    )}
                                                 </div>
                                             </td>
                                         </tr>

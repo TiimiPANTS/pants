@@ -448,6 +448,53 @@ class ReservationControllerTest {
         verify(reservationService).cancelReservationByToken("test-token");
     }
 
+    // PATCH /api/reservations/{id}/cancel
+
+    @Test
+    void cancelById_whenExists_returnsOk() {
+        Reservation cancelledReservation = createReservation();
+        cancelledReservation.setStatus(new RStatus("CANCELLED"));
+
+        when(reservationService.cancelReservation(1))
+                .thenReturn(cancelledReservation);
+
+        ResponseEntity<?> response = reservationController.cancelReservationById(1);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isInstanceOf(ReservationResponse.class);
+
+        ReservationResponse body = (ReservationResponse) response.getBody();
+
+        assertThat(body.getReservation()).isEqualTo(cancelledReservation);
+        assertThat(body.getReservation().getStatus().getName()).isEqualTo("CANCELLED");
+
+        verify(reservationService).cancelReservation(1);
+    }
+
+    @Test
+    void cancelById_whenNotExists_returnsNotFound() {
+        when(reservationService.cancelReservation(99))
+                .thenThrow(new NoSuchElementException("Reservation not found"));
+
+        ResponseEntity<?> response = reservationController.cancelReservationById(99);
+
+        assertError(response, HttpStatus.NOT_FOUND, "Reservation not found");
+
+        verify(reservationService).cancelReservation(99);
+    }
+
+    @Test
+    void cancelById_whenAlreadyCancelled_returnsConflict() {
+        when(reservationService.cancelReservation(1))
+                .thenThrow(new IllegalStateException("Reservation is already cancelled"));
+
+        ResponseEntity<?> response = reservationController.cancelReservationById(1);
+
+        assertError(response, HttpStatus.CONFLICT, "Reservation is already cancelled");
+
+        verify(reservationService).cancelReservation(1);
+    }
+
     // DELETE /api/reservations/{id}
 
     @Test
