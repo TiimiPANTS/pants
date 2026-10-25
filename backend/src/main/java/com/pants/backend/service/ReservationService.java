@@ -206,25 +206,40 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return true;
     }
 // TOKEN
-@Transactional
-public Reservation cancelReservationByToken(String token) {
-    Reservation reservation = getReservationByToken(token);
+    @Transactional
+    public Reservation cancelReservationByToken(String token) {
+        Reservation reservation = getReservationByToken(token);
 
-    if ("CANCELLED".equals(reservation.getStatus().getName())) {
-        throw new IllegalStateException("Reservation is already cancelled");
+        if (reservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+            throw new IllegalStateException("Reservation can no longer be cancelled");
+        }
+
+        return applyCancel(reservation);
     }
-    if (reservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
-        throw new IllegalStateException("Reservation can no longer be cancelled");
+
+    // OWNER / ADMIN
+    @Transactional
+    public Reservation cancelReservation(Integer id) {
+        Reservation reservation = reservationRepository
+            .findById(id)
+            .orElseThrow(() -> new NoSuchElementException("Reservation not found"));
+
+        return applyCancel(reservation);
     }
 
-    reservation.setStatus(
-        rStatusRepository
-            .findByName("CANCELLED")
-            .orElseThrow(() -> new IllegalStateException("Status CANCELLED missing"))
-    );
+    private Reservation applyCancel(Reservation reservation) {
+        if ("CANCELLED".equals(reservation.getStatus().getName())) {
+            throw new IllegalStateException("Reservation is already cancelled");
+        }
 
-    return reservationRepository.save(reservation);
-}
+        reservation.setStatus(
+            rStatusRepository
+                .findByName("CANCELLED")
+                .orElseThrow(() -> new IllegalStateException("Status CANCELLED missing"))
+        );
+
+        return reservationRepository.save(reservation);
+    }
 
        private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
