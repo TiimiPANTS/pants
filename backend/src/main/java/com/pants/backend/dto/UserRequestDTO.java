@@ -1,10 +1,23 @@
 package com.pants.backend.dto;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Positive;
+
 public class UserRequestDTO {
 
+    @NotBlank
     private String username;
+
+    @NotBlank 
+    @Email 
+    @Size(max = 254)
     private String email;
+
     private String password;
+
+    @Positive
     private Integer roleId;
 
     public UserRequestDTO() {

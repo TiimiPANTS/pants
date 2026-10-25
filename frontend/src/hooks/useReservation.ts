@@ -350,6 +350,8 @@ export function useReservation(token?: string) {
 
         if (!form.email.trim()) {
             errors.email = "Email is required.";
+        } else if (form.email.trim().length > 254) {
+            errors.email = "Email must be 254 characters or less.";
         } else {
             const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -373,7 +375,7 @@ export function useReservation(token?: string) {
             customer: {
                 firstname: form.firstName,
                 lastname: form.lastName,
-                email: form.email,
+                email: form.email.trim(),
             },
             datetime,
             startTime: selectedTime,
