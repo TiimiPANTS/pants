@@ -6,12 +6,10 @@ Piirretään projektin arkkitehtuuri diagrammi lopussa. Voidaan selittää se t�
 - Deployment link?
 
 # Class Diagram
-![classDiagram](../assets/classDiagram.png)
+![classDiagram](assets/classDiagram.png)
 
 # ER diagram
-![ERD](../assets/ERD.png)
-
-assets\classDiagram.png
+![ERD](assets/ERD.png)
 
 
 # Data Dictionary

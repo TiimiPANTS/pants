@@ -109,6 +109,7 @@ export const ContactDetails: FC<ContactDetailsProps> = ({
           id="specialRequests"
           name="specialRequests"
           rows={3}
+          maxLength={500}
           value={form.specialRequests}
           onChange={handleInputChange}
           className="w-full bg-surface-input border border-zinc-700 rounded-lg px-3.5 py-2.5 text-white resize-none"

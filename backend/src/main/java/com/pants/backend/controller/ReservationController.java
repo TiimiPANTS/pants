@@ -30,6 +30,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -184,7 +185,7 @@ public class ReservationController {
     })
     @PostMapping
     public ResponseEntity<?> createReservation(
-        @RequestBody ReservationDTO reservationDTO
+       @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation savedReservation =
@@ -238,7 +239,7 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
         @PathVariable Integer id,
-        @RequestBody ReservationDTO reservationDTO
+        @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation updatedReservation =
@@ -301,7 +302,7 @@ public class ReservationController {
     @PutMapping("/manage/{token}")
     public ResponseEntity<?> updateReservationByToken(
         @PathVariable String token,
-        @RequestBody ReservationDTO reservationDTO
+        @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation updatedReservation =
@@ -362,6 +363,57 @@ public class ReservationController {
         try {
             Reservation cancelledReservation =
                 reservationService.cancelReservationByToken(token);
+
+            return ResponseEntity.ok(
+                new ReservationResponse(cancelledReservation)
+            );
+        } catch (NoSuchElementException e) {
+            return notFound(e.getMessage());
+        } catch (IllegalStateException e) {
+            return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(409, e.getMessage()));
+        }
+    }
+
+      // PATCH /api/reservations/{id}/cancel , OWNER AND ADMIN
+    @Operation(
+        summary = "Cancel reservation by ID",
+        description = "Lets owner or admin cancel a reservation by its ID"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "200",
+            description = "Reservation cancelled successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReservationResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Reservation not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "409",
+            description = "Reservation already cancelled",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelReservationById(
+        @PathVariable Integer id
+    ) {
+        try {
+            Reservation cancelledReservation =
+                reservationService.cancelReservation(id);
 
             return ResponseEntity.ok(
                 new ReservationResponse(cancelledReservation)
