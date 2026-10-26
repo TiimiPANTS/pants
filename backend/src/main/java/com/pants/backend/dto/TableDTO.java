@@ -1,9 +1,13 @@
 package com.pants.backend.dto;
+import jakarta.validation.constraints.Min;
 
 public class TableDTO {
 
     private Integer id;
+
+    @Min(1)
     private int tableNumber;
+    @Min(1)
     private int capacity;
 
     public TableDTO() {
