@@ -54,7 +54,7 @@ export function useReservation(token?: string) {
     const [isLoading, setIsLoading] = useState(isEditMode);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [validationErrors, setValidationErrors] = 
+    const [validationErrors, setValidationErrors] =
         useState<ValidationErrors>({});
     const [message, setMessage] = useState<string | null>(null);
     const [isCancelling, setIsCancelling] = useState(false);

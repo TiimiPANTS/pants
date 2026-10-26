@@ -11,4 +11,6 @@ public interface TableListRepository
         extends JpaRepository<TableList, TableListId> {
 
     List<TableList> findByIdTableId(Integer tableId);
+
+    List<TableList> findByIdReservationId(Integer reservationId);
 }
