@@ -19,9 +19,12 @@ import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.entity.Customer;
 import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
+import com.pants.backend.entity.Table;
+import com.pants.backend.entity.TableList;
 import com.pants.backend.repository.CustomerRepository;
 import com.pants.backend.repository.RStatusRepository;
 import com.pants.backend.repository.ReservationRepository;
+import com.pants.backend.repository.TableListRepository;
 
 @Service
 public class ReservationService {
@@ -32,15 +35,21 @@ public class ReservationService {
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
     private final RStatusRepository rStatusRepository;
+    private final TableService tableService;
+    private final TableListRepository tableListRepository;
 
     public ReservationService(
         ReservationRepository reservationRepository,
         CustomerRepository customerRepository,
-        RStatusRepository rStatusRepository
+        RStatusRepository rStatusRepository,
+        TableService tableService,
+        TableListRepository tableListRepository
     ) {
         this.reservationRepository = reservationRepository;
         this.customerRepository = customerRepository;
         this.rStatusRepository = rStatusRepository;
+        this.tableService = tableService;
+        this.tableListRepository = tableListRepository;
     }
 
     public List<Reservation> getAllReservations() {
@@ -152,6 +161,7 @@ public class ReservationService {
         validate(dto);
         RStatus confirmedStatus = lockConfirmedReservations();
         ensureSlotHasCapacity(dto, null);
+        Table selectedTable = findAvailableTable(dto, null);
         Customer customer = findOrCreateCustomer(dto.getCustomer()); // jos sähköposti on jo tietokannassa, käyttää samaa asiakasta, jolloin duplikaatteja ei synny.
 
         Reservation reservation = new Reservation();
@@ -160,6 +170,7 @@ public class ReservationService {
         reservation.setStatus(confirmedStatus);
         reservation.setEditToken(generateToken()); // TOKEN
         Reservation savedReservation = reservationRepository.save(reservation);
+        tableListRepository.save(new TableList(savedReservation.getReservationId(), selectedTable.getId()));
         return savedReservation;
     }
 
@@ -172,7 +183,9 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
+        Table selectedTable = findAvailableTable(dto, existingReservation.getReservationId());
         Reservation updatedReservation = applyUpdate(existingReservation, dto);
+        updateTableAssignment(updatedReservation, selectedTable);
         return updatedReservation;
     }
 
@@ -191,16 +204,20 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
+        Table selectedTable = findAvailableTable(dto, existingReservation.getReservationId());
         Reservation updatedReservation = applyUpdate(existingReservation, dto);
+        updateTableAssignment(updatedReservation, selectedTable);
         return updatedReservation;
     }
 
+    @Transactional
     public boolean deleteReservation(Integer id) {
 
         if (!reservationRepository.existsById(id)) {
             return false;
         }
 
+        tableListRepository.deleteAll(tableListRepository.findByIdReservationId(id));
         reservationRepository.deleteById(id);
 
         return true;
@@ -241,7 +258,33 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return reservationRepository.save(reservation);
     }
 
-       private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
+    private Table findAvailableTable(ReservationDTO dto, Integer ignoreReservationId) {
+        List<Table> availableTables = ignoreReservationId == null
+            ? tableService.findAvailableTables(
+                dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime())
+            : tableService.findAvailableTables(
+                dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime(), ignoreReservationId);
+        if (availableTables.isEmpty()) {
+            throw new IllegalStateException("No suitable tables available for this reservation");
+        }
+        return availableTables.getFirst();
+    }
+
+    private void updateTableAssignment(Reservation reservation, Table selectedTable) {
+        boolean alreadyAssigned = false;
+        for (TableList assignment : tableListRepository.findByIdReservationId(reservation.getReservationId())) {
+            if (selectedTable.getId().equals(assignment.getId().getTableId())) {
+                alreadyAssigned = true;
+            } else {
+                tableListRepository.delete(assignment);
+            }
+        }
+        if (!alreadyAssigned) {
+            tableListRepository.save(new TableList(reservation.getReservationId(), selectedTable.getId()));
+        }
+    }
+
+    private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
 
         Customer customer = reservation.getCustomer();
