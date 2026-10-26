@@ -30,6 +30,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -184,7 +185,7 @@ public class ReservationController {
     })
     @PostMapping
     public ResponseEntity<?> createReservation(
-        @RequestBody ReservationDTO reservationDTO
+       @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation savedReservation =
@@ -238,7 +239,7 @@ public class ReservationController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateReservation(
         @PathVariable Integer id,
-        @RequestBody ReservationDTO reservationDTO
+        @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation updatedReservation =
@@ -301,7 +302,7 @@ public class ReservationController {
     @PutMapping("/manage/{token}")
     public ResponseEntity<?> updateReservationByToken(
         @PathVariable String token,
-        @RequestBody ReservationDTO reservationDTO
+        @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
             Reservation updatedReservation =
