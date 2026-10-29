@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
 import com.pants.backend.dto.ErrorResponse;
+import com.pants.backend.dto.TableDTO;
 import com.pants.backend.entity.Table;
 import com.pants.backend.repository.TableRepository;
 
@@ -129,10 +130,10 @@ class TableControllerTest {
     void create_whenValid_returnsCreated() {
         Table table = createTable();
 
-        when(tableRepository.save(table))
+        when(tableRepository.save(any(Table.class)))
                 .thenReturn(table);
 
-        ResponseEntity<?> response = tableController.createTable(table);
+        ResponseEntity<?> response = tableController.createTable(new TableDTO(null, 1, 4));
 
         assertThat(response.getStatusCode())
                 .isEqualTo(HttpStatus.CREATED);
@@ -140,17 +141,16 @@ class TableControllerTest {
         assertThat(response.getBody())
                 .isEqualTo(table);
 
-        verify(tableRepository).save(table);
+        verify(tableRepository).save(any(Table.class));
     }
 
     @Test
     void create_whenRepositoryThrows_returnsBadRequest() {
-        Table table = createTable();
 
-        when(tableRepository.save(table))
+        when(tableRepository.save(any(Table.class)))
                 .thenThrow(new RuntimeException("Database error"));
 
-        ResponseEntity<?> response = tableController.createTable(table);
+        ResponseEntity<?> response = tableController.createTable(new TableDTO(null, 1, 4));
 
         assertErrorResponse(
                 response,
@@ -158,7 +158,7 @@ class TableControllerTest {
                 "Invalid table data: Database error"
         );
 
-        verify(tableRepository).save(table);
+        verify(tableRepository).save(any(Table.class));
     }
 
 
@@ -179,7 +179,7 @@ class TableControllerTest {
                 .thenReturn(updatedTable);
 
         ResponseEntity<?> response =
-                tableController.updateTable(1, updatedTable);
+                tableController.updateTable(1, new TableDTO(null, 5, 8));
 
         assertThat(response.getStatusCode())
                 .isEqualTo(HttpStatus.OK);
@@ -199,13 +199,12 @@ class TableControllerTest {
 
     @Test
     void update_whenNotFound_returnsNotFound() {
-        Table table = createTable();
 
         when(tableRepository.findById(99))
                 .thenReturn(Optional.empty());
 
         ResponseEntity<?> response =
-                tableController.updateTable(99, table);
+                tableController.updateTable(99, new TableDTO(null, 1, 4));
 
         assertErrorResponse(
                 response,
