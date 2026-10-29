@@ -1,19 +1,23 @@
 package com.pants.backend.dto;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 public class TableDTO {
 
     private Integer id;
 
-    @Min(1)
-    private int tableNumber;
-    @Min(1)
-    private int capacity;
+        @NotNull(message = "Table number is required")
+    @Min(value = 1, message = "Table number must be at least 1")
+    private Integer tableNumber;
+
+    @NotNull(message = "Capacity is required")
+    @Min(value = 1, message = "Capacity must be at least 1")
+    private Integer capacity;
 
     public TableDTO() {
     }
 
-    public TableDTO(Integer id, int tableNumber, int capacity) {
+    public TableDTO(Integer id, Integer tableNumber, Integer capacity) {
         this.id = id;
         this.tableNumber = tableNumber;
         this.capacity = capacity;
@@ -27,7 +31,7 @@ public class TableDTO {
         this.id = id;
     }
 
-    public int getTableNumber() {
+    public Integer getTableNumber() {
         return tableNumber;
     }
 
@@ -35,7 +39,7 @@ public class TableDTO {
         this.tableNumber = tableNumber;
     }
 
-    public int getCapacity() {
+    public Integer getCapacity() {
         return capacity;
     }
 
