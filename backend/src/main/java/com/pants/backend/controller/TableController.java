@@ -1,5 +1,11 @@
 package com.pants.backend.controller;
 
+import com.pants.backend.dto.TableDTO;
+import jakarta.validation.Valid;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import java.util.stream.Collectors;
+
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.pants.backend.dto.ErrorResponse;
@@ -80,8 +86,11 @@ public class TableController {
     })
 
     @PostMapping
-    public ResponseEntity<?> createTable(@RequestBody Table table) {
+    public ResponseEntity<?> createTable(@Valid @RequestBody TableDTO tableDTO) {
         try {
+             Table table = new Table();
+            table.setTableNumber(tableDTO.getTableNumber());
+            table.setCapacity(tableDTO.getCapacity());
             Table savedTable = tableRepository.save(table);
 
             return ResponseEntity
@@ -97,11 +106,12 @@ public class TableController {
     @Operation(summary = "Update an existing table", description = "Updates information for an existing table")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Table updated successfully", content = @Content(mediaType = "application/json", schema = @Schema(implementation = Table.class))),
+            @ApiResponse(responseCode = "400", description = "Invalid table data", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "404", description = "Table not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class)))
     })
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateTable(@PathVariable Integer id, @RequestBody Table table) {
+    public ResponseEntity<?> updateTable(@PathVariable Integer id, @Valid @RequestBody TableDTO tableDTO) {
 
         Table existingTable = tableRepository.findById(id).orElse(null);
 
@@ -111,8 +121,8 @@ public class TableController {
                     .body(new ErrorResponse(404, "Table not found"));
         }
 
-        existingTable.setTableNumber(table.getTableNumber());
-        existingTable.setCapacity(table.getCapacity());
+        existingTable.setTableNumber(tableDTO.getTableNumber());
+        existingTable.setCapacity(tableDTO.getCapacity());
 
         Table updatedTable = tableRepository.save(existingTable);
 
@@ -138,5 +148,15 @@ public class TableController {
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(404, "Table not found"));
     }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+public ResponseEntity<ErrorResponse> handleValidationErrors(MethodArgumentNotValidException e) {
+    String message = e.getBindingResult().getFieldErrors().stream()
+            .map(error -> error.getDefaultMessage())
+            .collect(Collectors.joining(", "));
+
+    return ResponseEntity
+            .status(HttpStatus.BAD_REQUEST)
+            .body(new ErrorResponse(400, "Invalid table data: " + message));
+}
 
 }
