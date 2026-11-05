@@ -85,6 +85,14 @@ export const OwnerDashboardPage = () => {
                     <div className="flex items-center gap-5">
                         <button
                             type="button"
+                            onClick={() => navigate("/owner/adduser")}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Add new user
+                        </button>
+
+                        <button
+                            type="button"
                             onClick={() => navigate("/owner/edituser")}
                             className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
                         >
