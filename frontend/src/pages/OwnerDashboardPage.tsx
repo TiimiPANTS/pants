@@ -82,13 +82,23 @@ export const OwnerDashboardPage = () => {
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300"
-                    >
-                        Log out
-                    </button>
+                    <div className="flex items-center gap-5">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/owner/edituser")}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Edit account
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Log out
+                        </button>
+                    </div>
                 </header>
 
                 {isLoading && (

@@ -1,10 +1,22 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
 export default function EditUser() {
     const navigate = useNavigate();
+
+    const [userId, setUserId] = useState<number | null>(null);
+    const [username, setUsername] = useState("");
+    const [email, setEmail] = useState("");
+    const [saveMessage, setSaveMessage] = useState("");
+    const [saveError, setSaveError] = useState(false);
+
+    const [currentPassword, setCurrentPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+    const [passwordMessage, setPasswordMessage] = useState("");
+    const [passwordError, setPasswordError] = useState(false);
 
     const handleLogout = async () => {
         try {
@@ -20,9 +32,9 @@ export default function EditUser() {
     };
 
     useEffect(() => {
-        const checkAuthentication = async () => {
+        const loadUser = async () => {
             try {
-                const response = await fetch(`${API_URL}/auth/me`, {
+                const response = await fetch(`${API_URL}/users/me`, {
                     credentials: "include",
                 });
 
@@ -32,17 +44,143 @@ export default function EditUser() {
                 }
 
                 if (!response.ok) {
-                    throw new Error("Unable to verify authentication.");
+                    throw new Error("Unable to load account information.");
                 }
 
+                const user = await response.json();
+
+                setUserId(user.id);
+                setUsername(user.username);
+                setEmail(user.email);
+
             } catch (error) {
-                console.error("Authentication check failed:", error);
+                console.error("Failed to load account information:", error);
                 navigate("/login");
             }
         };
 
-        checkAuthentication();
+        loadUser();
     }, [navigate]);
+
+    const handleSaveChanges = async () => {
+        setSaveMessage("");
+        setSaveError(false);
+
+        if (userId === null) {
+            return;
+        }
+
+        try {
+            const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
+                credentials: "include",
+            });
+
+            if (!csrfResponse.ok) {
+                throw new Error("Could not get CSRF token.");
+            }
+
+            const csrfData = await csrfResponse.json();
+
+            const response = await fetch(`${API_URL}/users/${userId}`, {
+                method: "PUT",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfData.headerName]: csrfData.token,
+                },
+                body: JSON.stringify({
+                    username,
+                    email,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error("Could not update account information.");
+            }
+
+            const updatedUser = await response.json();
+
+            setUsername(updatedUser.username);
+            setEmail(updatedUser.email);
+
+            setSaveError(false);
+            setSaveMessage("Account information updated successfully");
+
+        } catch (error) {
+            console.error("Failed to update account:", error);
+            setSaveError(true);
+            setSaveMessage("Could not update account information.");
+        }
+    };
+
+    const handleChangePassword = async () => {
+        setPasswordMessage("");
+        setPasswordError(false);
+
+        if (!currentPassword || !newPassword || !confirmPassword) {
+            setPasswordError(true);
+            setPasswordMessage("Please fill in all password fields.");
+            return;
+        }
+
+        if (newPassword !== confirmPassword) {
+            setPasswordError(true);
+            setPasswordMessage("New passwords do not match.");
+            return;
+        }
+
+        if (currentPassword === newPassword) {
+            setPasswordError(true);
+            setPasswordMessage("New password must be different from current password.");
+            return;
+        }
+
+        try {
+            const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
+                credentials: "include",
+            });
+
+            if (!csrfResponse.ok) {
+                throw new Error("Could not get CSRF token.");
+            }
+
+            const csrfData = await csrfResponse.json();
+
+            const response = await fetch(`${API_URL}/users/me/password`, {
+                method: "PUT",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    [csrfData.headerName]: csrfData.token,
+                },
+                body: JSON.stringify({
+                    currentPassword,
+                    newPassword,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Could not update password.");
+            }
+
+            setCurrentPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+
+            setPasswordError(false);
+            setPasswordMessage("Password updated successfully!");
+
+        } catch (error) {
+            console.error("Failed to update password:", error);
+            setPasswordError(true);
+            setPasswordMessage(
+                error instanceof Error
+                    ? error.message
+                    : "Could not update password."
+            );
+        }
+    };
 
     return (
         <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
@@ -99,6 +237,8 @@ export default function EditUser() {
                                 <input
                                     id="name"
                                     type="text"
+                                    value={username}
+                                    onChange={(e) => setUsername(e.target.value)}
                                     placeholder="Enter username"
                                     className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
                                 />
@@ -114,6 +254,8 @@ export default function EditUser() {
                                 <input
                                     id="email"
                                     type="email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
                                     placeholder="Enter email address"
                                     className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
                                 />
@@ -122,10 +264,17 @@ export default function EditUser() {
                             <div className="pt-2">
                                 <button
                                     type="button"
+                                    onClick={handleSaveChanges}
                                     className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
                                 >
                                     Save changes
                                 </button>
+
+                                {saveMessage && (
+                                    <p className={`mt-3 text-sm ${saveError ? "text-red-400" : "text-white"}`}>
+                                        {saveMessage}
+                                    </p>
+                                )}
                             </div>
                         </form>
                     </section>
@@ -149,6 +298,8 @@ export default function EditUser() {
                                     type="password"
                                     placeholder="Enter current password"
                                     className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+                                    value={currentPassword}
+                                    onChange={(e) => setCurrentPassword(e.target.value)}
                                 />
                             </div>
 
@@ -164,6 +315,8 @@ export default function EditUser() {
                                     type="password"
                                     placeholder="Enter new password"
                                     className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+                                    value={newPassword}
+                                    onChange={(e) => setNewPassword(e.target.value)}
                                 />
                             </div>
 
@@ -179,6 +332,8 @@ export default function EditUser() {
                                     type="password"
                                     placeholder="Confirm new password"
                                     className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
                                 />
                             </div>
 
@@ -186,9 +341,15 @@ export default function EditUser() {
                                 <button
                                     type="button"
                                     className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+                                    onClick={handleChangePassword}
                                 >
                                     Update password
                                 </button>
+                                {passwordMessage && (
+                                    <p className={`mt-3 text-sm ${passwordError ? "text-red-400" : "text-white"}`}>
+                                        {passwordMessage}
+                                    </p>
+                                )}
                             </div>
                         </form>
                     </section>
