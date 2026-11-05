@@ -7,6 +7,7 @@ import ConfirmationPage from "./pages/ConfirmationPage.tsx";
 import { LoginPage } from "./pages/LoginPage.tsx";
 import { OwnerDashboardPage } from "./pages/OwnerDashboardPage.tsx";
 import { CancelReservationPage } from "./pages/CancelReservationPage.tsx";
+import EditUser from "./pages/EditUser.tsx";
 
 const router = createBrowserRouter([
   {
@@ -36,6 +37,10 @@ const router = createBrowserRouter([
    {
     path: "/owner/reservations/:id/cancel",
     element: <CancelReservationPage />,
+  },
+  {
+    path: "/owner/edituser",
+    element: <EditUser />,
   },
 ]);
 
