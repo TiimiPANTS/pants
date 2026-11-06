@@ -210,8 +210,38 @@ public class CustomerController {
                     .body(new ErrorResponse(400, "Email is required"));
         }
 
-        return null;
-    }
+        if (customerDTO.getFirstname().length() < 2 || customerDTO.getFirstname().length() > 50) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Firstname must be 2-50 characters"));
+        }
+
+        if (!customerDTO.getFirstname().matches("^[\\p{L} '-]+$")) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Firstname contains invalid characters"));
+        }
+
+        if (customerDTO.getLastname().length() < 2 || customerDTO.getLastname().length() > 50) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Lastname must be 2-50 characters"));
+        }
+
+        if (!customerDTO.getLastname().matches("^[\\p{L} '-]+$")) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Lastname contains invalid characters"));
+        }
+
+        if (customerDTO.getEmail().length() > 254) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Email must not exceed 254 characters"));
+        }
+
+        if (!customerDTO.getEmail().matches("^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$")) {
+                return ResponseEntity.badRequest()
+                .body(new ErrorResponse(400, "Invalid email format"));
+        }
+
+                return null;
+        }
 
     private CustomerDTO toDto(Customer customer) {
         return new CustomerDTO(
