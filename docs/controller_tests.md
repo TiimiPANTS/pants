@@ -15,12 +15,12 @@ The tests instantiate controllers with Mockito using `@InjectMocks` and invoke t
 The controller test classes use `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks`.
 
 | Test class | Mocked dependencies | Controller under test |
-|---|---|---|
-| CustomerControllerTest | CustomerRepository | CustomerController |
-| ReservationControllerTest | ReservationService | ReservationController |
-| TableControllerTest | TableRepository | TableController |
-| TableListControllerTest | TableListRepository, ReservationRepository, TableRepository, TableService | TableListController |
-| GlobalExceptionHandlerTest | None | GlobalExceptionHandler |
+| --- | --- | --- |
+| `CustomerControllerTest` | `CustomerRepository` | `CustomerController` |
+| `ReservationControllerTest` | `ReservationService` | `ReservationController` |
+| `TableControllerTest` | `TableRepository` | `TableController` |
+| `TableListControllerTest` | `TableListRepository`, `ReservationRepository`, `TableRepository`, `TableService` | `TableListController` |
+| `GlobalExceptionHandlerTest` | None | `GlobalExceptionHandler` |
 
 The repository-backed controllers are tested with repository mocks; `ReservationController` delegates to a mocked service. For table assignments, the repository mocks supply reservation, table, and assignment lookups, while `TableService` supplies capacity and availability results.
 
