@@ -97,7 +97,10 @@ export default function EditUser() {
       });
 
       if (!response.ok) {
-        throw new Error("Could not update account information.");
+        const errorData = await response.json();
+        throw new Error(
+          errorData.message || "Could not update account information."
+        );
       }
 
       const updatedUser = await response.json();
@@ -111,7 +114,11 @@ export default function EditUser() {
     } catch (error) {
       console.error("Failed to update account:", error);
       setSaveError(true);
-      setSaveMessage("Could not update account information.");
+      setSaveMessage(
+        error instanceof Error
+          ? error.message
+          : "Could not update account information."
+      );
     }
   };
 
