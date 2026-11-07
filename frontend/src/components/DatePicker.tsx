@@ -19,8 +19,23 @@ export const DatePicker: FC<DatePickerProps> = ({
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hasNavigated, setHasNavigated] = useState(false);
+  
   const displayedMonth =
     selectedDay && !hasNavigated ? selectedDay : currentMonth;
+  
+  
+  const today = new Date();
+  const firstAllowedMonth = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    1
+  );
+
+  const isPreviousMonthDisabled = 
+  displayedMonth < firstAllowedMonth || 
+    displayedMonth.getFullYear() === firstAllowedMonth.getFullYear() && 
+    displayedMonth.getMonth() === firstAllowedMonth.getMonth();
+    
 
   useEffect(() => {
     if (
@@ -41,9 +56,16 @@ export const DatePicker: FC<DatePickerProps> = ({
       displayedMonth.getMonth() - 1,
       1
     );
+
+    if (month < firstAllowedMonth) {
+      return;
+
+    }
+
     setHasNavigated(true);
     setCurrentMonth(month);
     onMonthChange(month);
+
   };
 
   const goToNextMonth = () => {
@@ -98,9 +120,10 @@ export const DatePicker: FC<DatePickerProps> = ({
       <div className="bg-[#141519] border border-zinc-800/90 rounded-xl p-3 sm:p-4">
         <div className="flex items-center justify-between mb-3 pb-2 border-b border-zinc-800">
           <button
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white enabled:hover:bg-zinc-800 transition-colors disabled:opacity-30"
             type="button"
             onClick={goToPreviousMonth}
+            disabled={isPreviousMonthDisabled}
           >
             ‹
           </button>
@@ -108,7 +131,7 @@ export const DatePicker: FC<DatePickerProps> = ({
             {monthYear}
           </span>
           <button
-            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+            className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg text-zinc-400 enabled:hover:text-white enabled:hover:bg-zinc-800 transition-colors"
             type="button"
             onClick={goToNextMonth}
           >
