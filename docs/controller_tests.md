@@ -6,7 +6,7 @@
 
 ## 1. Scope & Purpose
 
-These tests check controller response behavior for customer, reservation, table, and table-assignment operations. They verify the returned `ResponseEntity` status and body and, where relevant, the interaction with a mocked repository or service.
+These tests check controller response behavior for customer, reservation, table, table-assignment and global exception-handling operations. They verify the returned `ResponseEntity` status and body and, where relevant, the interaction with a mocked repository or service.
 
 The tests instantiate controllers with Mockito using `@InjectMocks` and invoke their methods directly. They are controller unit tests, not Spring MVC tests: they do not send HTTP requests and do not exercise route mapping, JSON serialization, request binding, validation filters, or security configuration.
 
@@ -15,11 +15,12 @@ The tests instantiate controllers with Mockito using `@InjectMocks` and invoke t
 The controller test classes use `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks`.
 
 | Test class | Mocked dependencies | Controller under test |
-| :--- | :--- | :--- |
-| `CustomerControllerTest` | `CustomerRepository` | `CustomerController` |
-| `ReservationControllerTest` | `ReservationService` | `ReservationController` |
-| `TableControllerTest` | `TableRepository` | `TableController` |
-| `TableListControllerTest` | `TableListRepository`, `ReservationRepository`, `TableRepository`, `TableService` | `TableListController` |
+|---|---|---|
+| CustomerControllerTest | CustomerRepository | CustomerController |
+| ReservationControllerTest | ReservationService | ReservationController |
+| TableControllerTest | TableRepository | TableController |
+| TableListControllerTest | TableListRepository, ReservationRepository, TableRepository, TableService | TableListController |
+| GlobalExceptionHandlerTest | None | GlobalExceptionHandler |
 
 The repository-backed controllers are tested with repository mocks; `ReservationController` delegates to a mocked service. For table assignments, the repository mocks supply reservation, table, and assignment lookups, while `TableService` supplies capacity and availability results.
 
