@@ -100,6 +100,12 @@ public class UserController {
         public ResponseEntity<?> createUser(
                         @Valid @RequestBody UserRequestDTO request) {
 
+                if (userRepository.existsByEmail(request.getEmail())) {
+                        return ResponseEntity
+                                        .status(HttpStatus.CONFLICT)
+                                        .body(new ErrorResponse(409, "Email is already in use"));
+                }
+
                 if (request.getPassword() == null
                                 || request.getPassword().isBlank()) {
                         return ResponseEntity
@@ -271,6 +277,13 @@ public class UserController {
                         }
 
                         if (request.getEmail() != null) {
+                                if (!request.getEmail().equals(existingUser.getEmail())
+                                                && userRepository.existsByEmail(request.getEmail())) {
+                                        return ResponseEntity
+                                                        .status(HttpStatus.CONFLICT)
+                                                        .body(new ErrorResponse(409, "Email is already in use"));
+                                }
+
                                 existingUser.setEmail(request.getEmail());
                         }
 
