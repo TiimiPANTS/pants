@@ -464,8 +464,8 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(cancelledReservation);
-        assertThat(body.getReservation().getStatus().getName()).isEqualTo("CANCELLED");
+        assertThat(body.getReservationId()).isEqualTo(cancelledReservation.getReservationId());
+        assertThat(body.getStatus().name()).isEqualTo("CANCELLED");
 
         verify(reservationService).cancelReservation(1);
     }
