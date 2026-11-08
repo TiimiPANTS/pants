@@ -1,12 +1,20 @@
-/**
- * Temporary compatibility helper.
- *
- * CSRF protection is disabled because authentication
- * now uses JWT Bearer tokens.
- *
- * This function can be removed after its callers
- * have been cleaned up.
- */
+const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+
+type CsrfResponse = {
+    headerName: string;
+    token: string;
+};
+
 export const getCsrfHeaders = async (): Promise<Record<string, string>> => {
-    return {};
+    const response = await fetch(`${API_URL}/auth/csrf`, {
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to get CSRF token.");
+    }
+
+    const { headerName, token } = (await response.json()) as CsrfResponse;
+
+    return { [headerName]: token };
 };

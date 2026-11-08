@@ -237,7 +237,7 @@ export const ReservationPage: FC = () => {
                 : "Confirm Reservation"}
           </button>
 
-          {isEditMode && !isStaffEdit &&(
+          {isEditMode && (
             <button
               type="button"
               onClick={cancelReservation}
