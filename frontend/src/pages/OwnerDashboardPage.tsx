@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -15,7 +16,7 @@ type Reservation = {
     datetime: string;
     partySize: number;
     details: string;
-    status: {name: string} | null;
+    status: { name: string } | null;
 };
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
@@ -29,12 +30,33 @@ export const OwnerDashboardPage = () => {
 
     useEffect(() => {
         const loadReservations = async () => {
+            // Get JWT token from session storage
+            const token = sessionStorage.getItem("jwt");
+
+            // Redirect to login if no token exists
+            if (!token) {
+                navigate("/login");
+                setIsLoading(false);
+                return;
+            }
+
             try {
+                // Fetch reservations using JWT authentication
                 const response = await fetch(`${API_URL}/reservations`, {
-                    credentials: "include",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
-                if (response.status === 401 || response.status === 403) {
+                // Handle expired or invalid JWT
+                if (response.status === 401) {
+                    sessionStorage.removeItem("jwt");
+                    navigate("/login");
+                    return;
+                }
+
+                // Handle insufficient permissions
+                if (response.status === 403) {
                     navigate("/login");
                     return;
                 }
@@ -45,6 +67,7 @@ export const OwnerDashboardPage = () => {
 
                 const data = (await response.json()) as Reservation[];
                 setReservations(data);
+
             } catch (loadError) {
                 setError(
                     loadError instanceof Error
@@ -56,16 +79,25 @@ export const OwnerDashboardPage = () => {
             }
         };
 
-        loadReservations();
+        void loadReservations();
     }, [navigate]);
 
     const handleLogout = async () => {
-        await fetch(`${API_URL}/auth/logout`, {
-            method: "POST",
-            credentials: "include",
-        });
+        try {
+            // End the old session during JWT migration
+            await fetch(`${API_URL}/auth/logout`, {
+                method: "POST",
+                credentials: "include",
+            });
+        } catch {
+            // Continue logout even if backend is unavailable
+        } finally {
+            // Remove JWT from browser storage
+            sessionStorage.removeItem("jwt");
 
-        navigate("/login");
+            // Redirect to login page
+            navigate("/login");
+        }
     };
 
     return (
@@ -155,8 +187,14 @@ export const OwnerDashboardPage = () => {
 
                                 <tbody className="divide-y divide-card-border">
                                     {reservations.map((reservation) => (
-                                        <tr key={reservation.reservationId}
-                                        className={reservation.status?.name === "CANCELLED" ? "opacity-50" : ""}>
+                                        <tr
+                                            key={reservation.reservationId}
+                                            className={
+                                                reservation.status?.name === "CANCELLED"
+                                                    ? "opacity-50"
+                                                    : ""
+                                            }
+                                        >
                                             <td className="px-4 py-4">
                                                 <p className="font-medium text-wine-light">
                                                     #{reservation.reservationId}
@@ -186,29 +224,37 @@ export const OwnerDashboardPage = () => {
                                             </td>
 
                                             <td className="px-4 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                {reservation.status?.name !== "CANCELLED" && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/edit`)}
-                                                        className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
+                                                <div className="flex justify-end gap-2">
+                                                    {reservation.status?.name !== "CANCELLED" && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    `/owner/reservations/${reservation.reservationId}/edit`
+                                                                )
+                                                            }
+                                                            className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    )}
 
                                                     {reservation.status?.name === "CANCELLED" ? (
                                                         <span className="px-3 py-1.5 text-xs text-zinc-500">
                                                             Cancelled
                                                         </span>
                                                     ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/cancel`)}
-                                                        className="rounded border border-card-border px-3 py-1.5 text-xs text-red-400"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() =>
+                                                                navigate(
+                                                                    `/owner/reservations/${reservation.reservationId}/cancel`
+                                                                )
+                                                            }
+                                                            className="rounded border border-card-border px-3 py-1.5 text-xs text-red-400"
+                                                        >
+                                                            Cancel
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>

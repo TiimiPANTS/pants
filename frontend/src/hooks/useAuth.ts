@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 
 type AuthUser = {
@@ -12,13 +13,29 @@ export const useAuth = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
-        const checkSession = async () => {
+        const checkAuthentication = async () => {
+            // Get JWT token from session storage
+            const token = sessionStorage.getItem("jwt");
+
+            if (!token) {
+                setUser(null);
+                setIsLoading(false);
+                return;
+            }
+
             try {
+                // Verify JWT with backend
                 const response = await fetch(`${API_URL}/auth/me`, {
-                    credentials: "include",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
                 if (!response.ok) {
+                    if (response.status === 401) {
+                        sessionStorage.removeItem("jwt");
+                    }
+
                     setUser(null);
                     return;
                 }
@@ -26,6 +43,7 @@ export const useAuth = () => {
                 const data = (await response.json()) as AuthUser;
 
                 setUser(data);
+
             } catch {
                 setUser(null);
             } finally {
@@ -33,7 +51,7 @@ export const useAuth = () => {
             }
         };
 
-        void checkSession();
+        void checkAuthentication();
     }, []);
 
     return {

@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
@@ -8,11 +9,13 @@ type LoginResponse = {
     message?: string;
     email?: string;
     role?: string;
+    token?: string;
 };
+
 type ValidationErrors = {
     email?: string;
     password?: string;
-}
+};
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
@@ -52,7 +55,7 @@ export const LoginPage = () => {
         if (Object.keys(errors).length > 0) {
             return;
         }
-    
+
         setIsSubmitting(true);
 
         try {
@@ -64,14 +67,32 @@ export const LoginPage = () => {
                 },
                 body: JSON.stringify({ email, password }),
             });
-            const responseData = (await response.json().catch(() => ({}))) as LoginResponse;
+
+            const responseData = (await response.json().catch(
+                () => ({})
+            )) as LoginResponse;
 
             if (!response.ok) {
-                throw new Error(responseData.message ?? "Unable to sign in. Please try again.");
+                throw new Error(
+                    responseData.message ??
+                    "Unable to sign in. Please try again."
+                );
             }
 
+            // Check that backend returned a JWT token
+            if (!responseData.token) {
+                throw new Error(
+                    "JWT token missing from login response."
+                );
+            }
+
+            // Save JWT in browser session storage
+            sessionStorage.setItem("jwt", responseData.token);
+
+            // Save signed-in user details
             setUser(responseData);
 
+            // Redirect owner and admin to dashboard
             if (
                 responseData.role === "OWNER" ||
                 responseData.role === "ADMIN"
@@ -101,21 +122,41 @@ export const LoginPage = () => {
                             src={LePantsLogo}
                         />
                     </div>
-                    <p className="font-headline text-3xl font-bold text-white">Le Pants</p>
+
+                    <p className="font-headline text-3xl font-bold text-white">
+                        Le Pants
+                    </p>
+
                     <div className="mt-3 h-0.5 w-12 rounded-full bg-wine" />
                 </header>
 
                 <section className="rounded-2xl border border-card-border bg-card-bg p-6 shadow-2xl sm:p-8">
                     {user ? (
-                        <div className="space-y-6 text-center" role="status" aria-live="polite">
+                        <div
+                            className="space-y-6 text-center"
+                            role="status"
+                            aria-live="polite"
+                        >
                             <div>
-                                <p className="font-headline text-2xl font-semibold">Welcome back</p>
-                                <p className="mt-2 text-sm text-zinc-400">You are signed in as</p>
-                                <p className="mt-1 font-medium text-white">{user.email ?? email}</p>
+                                <p className="font-headline text-2xl font-semibold">
+                                    Welcome back
+                                </p>
+
+                                <p className="mt-2 text-sm text-zinc-400">
+                                    You are signed in as
+                                </p>
+
+                                <p className="mt-1 font-medium text-white">
+                                    {user.email ?? email}
+                                </p>
+
                                 {user.role && (
-                                    <p className="mt-2 text-sm text-zinc-400">{user.role}</p>
+                                    <p className="mt-2 text-sm text-zinc-400">
+                                        {user.role}
+                                    </p>
                                 )}
                             </div>
+
                             <Link
                                 to="/reserve"
                                 className="flex min-h-12 w-full items-center justify-center rounded-xl bg-wine px-6 font-bold text-white transition-colors hover:bg-wine-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
@@ -126,42 +167,63 @@ export const LoginPage = () => {
                     ) : (
                         <>
                             <div className="mb-7 text-center">
-                                <h1 className="font-headline text-2xl font-semibold text-white">Welcome back</h1>
-                                <p className="mt-2 text-sm text-zinc-400">Sign in to your account</p>
+                                <h1 className="font-headline text-2xl font-semibold text-white">
+                                    Welcome back
+                                </h1>
+
+                                <p className="mt-2 text-sm text-zinc-400">
+                                    Sign in to your account
+                                </p>
                             </div>
 
-                            <form className="space-y-5" onSubmit={handleSubmit}>
+                            <form
+                                className="space-y-5"
+                                onSubmit={handleSubmit}
+                            >
                                 <div>
-                                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-zinc-200">
+                                    <label
+                                        htmlFor="email"
+                                        className="mb-2 block text-sm font-medium text-zinc-200"
+                                    >
                                         Email
                                     </label>
+
                                     <input
                                         id="email"
                                         name="email"
                                         type="text"
                                         autoComplete="username"
                                         value={email}
-                                        onChange={(event) => setEmail(event.target.value)}
+                                        onChange={(event) =>
+                                            setEmail(event.target.value)
+                                        }
                                         className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
                                     />
+
                                     {validationErrors.email && (
-                                       <p className="mt-1 text-sm text-red-400">
+                                        <p className="mt-1 text-sm text-red-400">
                                             {validationErrors.email}
-                                       </p>
+                                        </p>
                                     )}
                                 </div>
 
                                 <div>
-                                    <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-200">
+                                    <label
+                                        htmlFor="password"
+                                        className="mb-2 block text-sm font-medium text-zinc-200"
+                                    >
                                         Password
                                     </label>
+
                                     <input
                                         id="password"
                                         name="password"
                                         type="password"
                                         autoComplete="current-password"
                                         value={password}
-                                        onChange={(event) => setPassword(event.target.value)}
+                                        onChange={(event) =>
+                                            setPassword(event.target.value)
+                                        }
                                         className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
                                     />
 
@@ -173,7 +235,12 @@ export const LoginPage = () => {
                                 </div>
 
                                 {error && (
-                                    <p className="text-sm text-red-400" role="alert">{error}</p>
+                                    <p
+                                        className="text-sm text-red-400"
+                                        role="alert"
+                                    >
+                                        {error}
+                                    </p>
                                 )}
 
                                 <button
@@ -181,7 +248,9 @@ export const LoginPage = () => {
                                     disabled={isSubmitting}
                                     className="min-h-12 w-full rounded-xl bg-wine px-6 font-bold text-white transition-colors hover:bg-wine-hover disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
                                 >
-                                    {isSubmitting ? "Signing in..." : "Sign in"}
+                                    {isSubmitting
+                                        ? "Signing in..."
+                                        : "Sign in"}
                                 </button>
                             </form>
                         </>
@@ -189,7 +258,10 @@ export const LoginPage = () => {
                 </section>
 
                 <p className="mt-6 text-center text-sm text-zinc-400">
-                    <Link className="transition-colors hover:text-white" to="/reserve">
+                    <Link
+                        className="transition-colors hover:text-white"
+                        to="/reserve"
+                    >
                         Back to reservations
                     </Link>
                 </p>

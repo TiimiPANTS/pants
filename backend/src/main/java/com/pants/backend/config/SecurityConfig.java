@@ -9,285 +9,303 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 
 @Configuration
 public class SecurityConfig {
 
-        @Bean
-        public SecurityFilterChain securityFilterChain(HttpSecurity http)
-                        throws Exception {
+    @Bean
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationConverter jwtAuthenticationConverter)
+            throws Exception {
 
-                return http
-                                .cors(Customizer.withDefaults())
+        return http
+                .cors(Customizer.withDefaults())
 
-                                // Swagger HTTP Basic authentication
-                                // Prevent browser login popup
-                                .httpBasic(basic -> basic
-                                                .authenticationEntryPoint(
-                                                                new HttpStatusEntryPoint(
-                                                                                HttpStatus.UNAUTHORIZED)))
+                // Swagger HTTP Basic authentication
+                // Prevent browser login popup
+                .httpBasic(basic -> basic
+                        .authenticationEntryPoint(
+                                new HttpStatusEntryPoint(
+                                        HttpStatus.UNAUTHORIZED)))
 
-                                // CSRF protection
-                                .csrf(csrf -> csrf
-                                                .ignoringRequestMatchers(
-                                                                "/api/auth/login",
-                                                                "/api/auth/logout")
-                                                .ignoringRequestMatchers(
-                                                                SecurityConfig::isPublicMutationWithoutCsrf))
+                // JWT authentication
+                .oauth2ResourceServer(oauth2 -> oauth2
+                        .jwt(jwt -> jwt
+                                .jwtAuthenticationConverter(
+                                        jwtAuthenticationConverter)
+                        )
+                )
 
-                                .authorizeHttpRequests(authorize -> authorize
+                // CSRF protection
+                .csrf(csrf -> csrf
+                        .ignoringRequestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/logout")
+                        .ignoringRequestMatchers(
+                                SecurityConfig::isPublicMutationWithoutCsrf))
 
-                                                // =====================================
-                                                // PUBLIC ENDPOINTS
-                                                // =====================================
+                .authorizeHttpRequests(authorize -> authorize
 
-                                                // Authentication
-                                                .requestMatchers(
-                                                                "/api/auth/login",
-                                                                "/api/auth/logout",
-                                                                "/api/auth/csrf")
-                                                .permitAll()
+                        // =====================================
+                        // PUBLIC ENDPOINTS
+                        // =====================================
 
-                                                // Swagger documentation
-                                                .requestMatchers(
-                                                                "/swagger-ui.html",
-                                                                "/swagger-ui/**",
-                                                                "/v3/api-docs",
-                                                                "/v3/api-docs/**",
-                                                                "/v3/api-docs.yaml")
-                                                .permitAll()
+                        // Authentication
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/auth/logout",
+                                "/api/auth/csrf")
+                        .permitAll()
 
-                                                // Public health endpoints
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/",
-                                                                "/hello")
-                                                .permitAll()
+                        // Current authenticated user
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/auth/me")
+                        .authenticated()
 
-                                                // Create reservation
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/reservations")
-                                                .permitAll()
+                        // Swagger documentation
+                        .requestMatchers(
+                                "/swagger-ui.html",
+                                "/swagger-ui/**",
+                                "/v3/api-docs",
+                                "/v3/api-docs/**",
+                                "/v3/api-docs.yaml")
+                        .permitAll()
 
-                                                // View reservation using edit token
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/reservations/availability")
-                                                .permitAll()
+                        // Public health endpoints
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/",
+                                "/hello")
+                        .permitAll()
 
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/reservations/manage/*")
-                                                .permitAll()
+                        // Create reservation
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/reservations")
+                        .permitAll()
 
-                                                // Update reservation using edit token
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/reservations/manage/*")
-                                                .permitAll()
+                        // View reservation availability
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations/availability")
+                        .permitAll()
 
-                                                // Cancel reservation using edit token
-                                                .requestMatchers(
-                                                                HttpMethod.PATCH,
-                                                                "/api/reservations/manage/*/cancel")
-                                                .permitAll()
+                        // View reservation using edit token
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations/manage/*")
+                        .permitAll()
 
-                                                // Create receipt using reservation token
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/receipts/*")
-                                                .permitAll()
+                        // Update reservation using edit token
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/reservations/manage/*")
+                        .permitAll()
 
-                                                // =====================================
-                                                // USER ACCOUNT
-                                                // =====================================
+                        // Cancel reservation using edit token
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/reservations/manage/*/cancel")
+                        .permitAll()
 
-                                                // View own account
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/users/me")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // Create receipt using reservation token
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/receipts/*")
+                        .permitAll()
 
-                                                // Change own password
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/users/me/password")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // =====================================
+                        // USER ACCOUNT
+                        // =====================================
 
-                                                // Update own account information
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/users/*")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // View own account
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/users/me")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // Create new users
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/users")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // Change own password
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/users/me/password")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // =====================================
-                                                // ADMIN ONLY
-                                                // =====================================
+                        // Update own account information
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/users/*")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // User and role management
-                                                .requestMatchers(
-                                                                "/api/users",
-                                                                "/api/users/**")
-                                                .hasRole("ADMIN")
+                        // Create new users
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/users")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // Delete reservations and receipts
-                                                .requestMatchers(
-                                                                HttpMethod.DELETE,
-                                                                "/api/reservations/*",
-                                                                "/api/receipts/*")
-                                                .hasRole("ADMIN")
+                        // =====================================
+                        // ADMIN ONLY
+                        // =====================================
 
-                                                // =====================================
-                                                // ADMIN AND OWNER
-                                                // =====================================
+                        // User and role management
+                        .requestMatchers(
+                                "/api/users",
+                                "/api/users/**")
+                        .hasRole("ADMIN")
 
-                                                // View receipts
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/receipts",
-                                                                "/api/receipts/*")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // Delete reservations and receipts
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/reservations/*",
+                                "/api/receipts/*")
+                        .hasRole("ADMIN")
 
-                                                // Create tables
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/tables")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // =====================================
+                        // ADMIN AND OWNER
+                        // =====================================
 
-                                                // Update tables
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/tables/*")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // View receipts
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/receipts",
+                                "/api/receipts/*")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // Delete customers and tables
-                                                .requestMatchers(
-                                                                HttpMethod.DELETE,
-                                                                "/api/customers/*",
-                                                                "/api/tables/*")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // Create tables
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/tables")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // Cancel reservations
-                                                .requestMatchers(
-                                                                HttpMethod.PATCH,
-                                                                "/api/reservations/*/cancel")
-                                                .hasAnyRole("ADMIN", "OWNER")
+                        // Update tables
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/tables/*")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // =====================================
-                                                // ADMIN, OWNER AND EMPLOYEE
-                                                // =====================================
+                        // Delete customers and tables
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/customers/*",
+                                "/api/tables/*")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // View reservations
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/reservations",
-                                                                "/api/reservations/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // Cancel reservations
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/reservations/*/cancel")
+                        .hasAnyRole("ADMIN", "OWNER")
 
-                                                // Update reservations
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/reservations/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // =====================================
+                        // ADMIN, OWNER AND EMPLOYEE
+                        // =====================================
 
-                                                // View customers
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/customers",
-                                                                "/api/customers/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // View reservations
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations",
+                                "/api/reservations/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // Create customers
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/customers")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // Update reservations
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/reservations/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // Update customers
-                                                .requestMatchers(
-                                                                HttpMethod.PUT,
-                                                                "/api/customers/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // View customers
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/customers",
+                                "/api/customers/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // View tables
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/tables",
-                                                                "/api/tables/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // Create customers
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/customers")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // View table assignments
-                                                .requestMatchers(
-                                                                HttpMethod.GET,
-                                                                "/api/tablelists",
-                                                                "/api/tablelists/*/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // Update customers
+                        .requestMatchers(
+                                HttpMethod.PUT,
+                                "/api/customers/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // Assign tables to reservations
-                                                .requestMatchers(
-                                                                HttpMethod.POST,
-                                                                "/api/tablelists")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // View tables
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/tables",
+                                "/api/tables/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // Remove table assignments
-                                                .requestMatchers(
-                                                                HttpMethod.DELETE,
-                                                                "/api/tablelists/*/*")
-                                                .hasAnyRole(
-                                                                "ADMIN", "OWNER", "EMPLOYEE")
+                        // View table assignments
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/tablelists",
+                                "/api/tablelists/*/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // =====================================
-                                                // OTHER ENDPOINTS
-                                                // =====================================
+                        // Assign tables to reservations
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/api/tablelists")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                                // Unlisted endpoints: ADMIN only
-                                                .anyRequest()
-                                                .hasRole("ADMIN"))
+                        // Remove table assignments
+                        .requestMatchers(
+                                HttpMethod.DELETE,
+                                "/api/tablelists/*/*")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
-                                .exceptionHandling(exceptions -> exceptions
-                                                .authenticationEntryPoint(
-                                                                new HttpStatusEntryPoint(
-                                                                                HttpStatus.UNAUTHORIZED)))
+                        // =====================================
+                        // OTHER ENDPOINTS
+                        // =====================================
 
-                                .build();
-        }
+                        // Unlisted endpoints: ADMIN only
+                        .anyRequest()
+                        .hasRole("ADMIN"))
 
-        private static boolean isPublicMutationWithoutCsrf(
-                        HttpServletRequest request) {
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(
+                                new HttpStatusEntryPoint(
+                                        HttpStatus.UNAUTHORIZED)))
 
-                String method = request.getMethod();
-                String path = request.getServletPath();
+                .build();
+    }
 
-                return (HttpMethod.POST.matches(method)
-                                && "/api/reservations".equals(path))
+    private static boolean isPublicMutationWithoutCsrf(
+            HttpServletRequest request) {
 
-                                || (HttpMethod.PUT.matches(method)
-                                                && path.matches(
-                                                                "/api/reservations/manage/[^/]+"))
+        String method = request.getMethod();
+        String path = request.getServletPath();
 
-                                || (HttpMethod.PATCH.matches(method)
-                                                && path.matches(
-                                                                "/api/reservations/manage/[^/]+/cancel"))
+        return (HttpMethod.POST.matches(method)
+                        && "/api/reservations".equals(path))
 
-                                || (HttpMethod.POST.matches(method)
-                                                && path.matches(
-                                                                "/api/receipts/\\d+"));
-        }
+                || (HttpMethod.PUT.matches(method)
+                        && path.matches(
+                                "/api/reservations/manage/[^/]+"))
+
+                || (HttpMethod.PATCH.matches(method)
+                        && path.matches(
+                                "/api/reservations/manage/[^/]+/cancel"))
+
+                || (HttpMethod.POST.matches(method)
+                        && path.matches(
+                                "/api/receipts/\\d+"));
+    }
 }

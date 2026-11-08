@@ -1,7 +1,17 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+
+type CsrfResponse = {
+    headerName: string;
+    token: string;
+};
+
+type ErrorResponse = {
+    message?: string;
+};
 
 export default function AddUser() {
     const navigate = useNavigate();
@@ -14,33 +24,50 @@ export default function AddUser() {
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
 
+    // Verify user authentication using JWT
     useEffect(() => {
         const checkUser = async () => {
+            const token = sessionStorage.getItem("jwt");
+
+            if (!token) {
+                navigate("/login");
+                return;
+            }
+
             try {
                 const response = await fetch(`${API_URL}/users/me`, {
-                    credentials: "include",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
                 });
 
-                if (response.status === 401 || response.status === 403) {
+                if (response.status === 401) {
+                    sessionStorage.removeItem("jwt");
                     navigate("/login");
+                    return;
+                }
+
+                if (response.status === 403) {
+                    navigate("/owner/dashboard");
                     return;
                 }
 
                 if (!response.ok) {
                     throw new Error("Could not verify user.");
                 }
-
             } catch (error) {
                 console.error("Authentication check failed:", error);
                 navigate("/login");
             }
         };
 
-        checkUser();
+        void checkUser();
     }, [navigate]);
 
+    // Logout and remove JWT
     const handleLogout = async () => {
         try {
+            // End existing session during JWT migration
             await fetch(`${API_URL}/auth/logout`, {
                 method: "POST",
                 credentials: "include",
@@ -48,10 +75,12 @@ export default function AddUser() {
         } catch (error) {
             console.error("Logout failed:", error);
         } finally {
+            sessionStorage.removeItem("jwt");
             navigate("/login");
         }
     };
 
+    // Create new user using JWT authentication
     const handleCreateUser = async () => {
         setMessage("");
         setIsError(false);
@@ -62,7 +91,15 @@ export default function AddUser() {
             return;
         }
 
+        const token = sessionStorage.getItem("jwt");
+
+        if (!token) {
+            navigate("/login");
+            return;
+        }
+
         try {
+            // CSRF is still required during migration
             const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
                 credentials: "include",
             });
@@ -71,13 +108,16 @@ export default function AddUser() {
                 throw new Error("Could not get CSRF token.");
             }
 
-            const csrfData = await csrfResponse.json();
+            const csrfData =
+                (await csrfResponse.json()) as CsrfResponse;
 
+            // Send user creation request with JWT and CSRF
             const response = await fetch(`${API_URL}/users`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
                     [csrfData.headerName]: csrfData.token,
                 },
                 body: JSON.stringify({
@@ -88,11 +128,31 @@ export default function AddUser() {
                 }),
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Could not create user.");
+            // Invalid or expired JWT
+            if (response.status === 401) {
+                sessionStorage.removeItem("jwt");
+                navigate("/login");
+                return;
             }
 
+            // User does not have permission
+            if (response.status === 403) {
+                throw new Error(
+                    "You do not have permission to create users."
+                );
+            }
+
+            if (!response.ok) {
+                const errorData = (await response.json().catch(
+                    () => ({})
+                )) as ErrorResponse;
+
+                throw new Error(
+                    errorData.message || "Could not create user."
+                );
+            }
+
+            // Clear form after successful creation
             setUsername("");
             setEmail("");
             setPassword("");
@@ -238,7 +298,13 @@ export default function AddUser() {
                             </button>
 
                             {message && (
-                                <p className={`mt-3 text-sm ${isError ? "text-red-400" : "text-white"}`}>
+                                <p
+                                    className={`mt-3 text-sm ${
+                                        isError
+                                            ? "text-red-400"
+                                            : "text-white"
+                                    }`}
+                                >
                                     {message}
                                 </p>
                             )}
