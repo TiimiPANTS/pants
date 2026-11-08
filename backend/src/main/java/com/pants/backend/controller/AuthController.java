@@ -90,6 +90,27 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletRequest request) {
+        SecurityContextHolder.clearContext();
+
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Not signed in"));
+        }
+
+        String role = authentication.getAuthorities()
+                .stream()
+                .findFirst()
+                .map(authority ->
+                        authority.getAuthority().replace("ROLE_", ""))
+                .orElse("");
+
+        return ResponseEntity.ok(Map.of(
+                "email", authentication.getName(),
+                "role", role));
+    }
+
+    @PostMapping("/logout")
     public ResponseEntity<?> logout() {
         return ResponseEntity.ok(Map.of(
                 "message", "Logout successful"));

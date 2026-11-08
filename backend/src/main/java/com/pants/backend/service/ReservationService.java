@@ -262,32 +262,6 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return reservationRepository.save(reservation);
     }
 
-    private Table findAvailableTable(ReservationDTO dto, Integer ignoreReservationId) {
-        List<Table> availableTables = ignoreReservationId == null
-            ? tableService.findAvailableTables(
-                dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime())
-            : tableService.findAvailableTables(
-                dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime(), ignoreReservationId);
-        if (availableTables.isEmpty()) {
-            throw new IllegalStateException("No suitable tables available for this reservation");
-        }
-        return availableTables.getFirst();
-    }
-
-    private void updateTableAssignment(Reservation reservation, Table selectedTable) {
-        boolean alreadyAssigned = false;
-        for (TableList assignment : tableListRepository.findByIdReservationId(reservation.getReservationId())) {
-            if (selectedTable.getId().equals(assignment.getId().getTableId())) {
-                alreadyAssigned = true;
-            } else {
-                tableListRepository.delete(assignment);
-            }
-        }
-        if (!alreadyAssigned) {
-            tableListRepository.save(new TableList(reservation.getReservationId(), selectedTable.getId()));
-        }
-    }
-
     private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
 
