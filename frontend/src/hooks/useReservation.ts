@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { getCsrfHeaders } from "./csrf";
 import {
     formatDateKey,
     formatEuropeanDate,
@@ -40,8 +41,9 @@ type ValidationErrors = {
 
 
 // Pass an edit token to load an existing reservation and update it instead of creating a new one
-export function useReservation(token?: string) {
-    const isEditMode = Boolean(token);
+export function useReservation(token?: string, reservationId?:string) {
+    const isStaffEdit = Boolean(reservationId);
+    const isEditMode = Boolean(token) || isStaffEdit;
 
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
         undefined
@@ -134,16 +136,22 @@ export function useReservation(token?: string) {
     }, [loadAvailability]);
 
     useEffect(() => {
-        if (!token) {
+        if (!token && !reservationId) {
             return;
         }
 
         const loadReservation = async () => {
             try {
                 const response = await fetch(
-                    `${API_URL}/reservations/manage/${token}`
+                 reservationId
+                        ? `${API_URL}/reservations/${reservationId}`
+                        : `${API_URL}/reservations/manage/${token}`,
+                    { credentials: "include" }
                 );
 
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("You are not authorized to edit this reservation.");
+                }
                 if (!response.ok) {
                     throw new Error("Reservation not found.");
                 }
@@ -191,7 +199,7 @@ export function useReservation(token?: string) {
         };
 
         loadReservation();
-    }, [token]);
+    }, [token, reservationId]);
 
     const slotAvailableCapacities = useMemo(() => {
         const capacities = new Map<ReservationTime, number>();
@@ -385,19 +393,21 @@ export function useReservation(token?: string) {
         };
 
         try {
-            const response = await fetch(
-                isEditMode
-                    ? `${API_URL}/reservations/manage/${token}`
-                    : `${API_URL}/reservations`,
-                {
-                    method: isEditMode ? "PUT" : "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(reservationData),
-                }
-            );
+            const url = isStaffEdit
+            ? `${API_URL}/reservations/${reservationId}`
+            : token
+                ? `${API_URL}/reservations/manage/${token}`
+                : `${API_URL}/reservations`;
+
+            const response = await fetch(url, {
+                method: isEditMode ? "PUT" : "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(isStaffEdit ? await getCsrfHeaders() : {}),
+                },
+                body: JSON.stringify(reservationData),
+            });
 
             if (!response.ok) {
                 const errorData = await readJson(response);
@@ -497,6 +507,7 @@ export function useReservation(token?: string) {
 
     return {
         isEditMode,
+        isStaffEdit,
         isLoading,
         selectedDay,
         selectDay,
