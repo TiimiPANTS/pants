@@ -39,6 +39,10 @@ const router = createBrowserRouter([
     path: "/owner/reservations/:id/cancel",
     element: <CancelReservationPage />,
   },
+    {
+    path: "/owner/reservations/:id/edit",
+    element: <ReservationPage key="staff-edit" />,
+  },
   {
     path: "/owner/edituser",
     element: <EditUser />,
