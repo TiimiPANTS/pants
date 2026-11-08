@@ -33,6 +33,8 @@
 
 Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
 
+Projektin koodaukseen ja dokumentoitiin on pääosin käytetty Github Copilot ilmaista opiskelijalisenssiä. Osalla ryhmäjäsenistä on käytössä Claude tai Codex tilaukset.
+
 ---
 
 👖 **Ryhmä:** Pants

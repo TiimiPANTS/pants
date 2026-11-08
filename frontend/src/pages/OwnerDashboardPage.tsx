@@ -82,13 +82,31 @@ export const OwnerDashboardPage = () => {
                         </p>
                     </div>
 
-                    <button
-                        type="button"
-                        onClick={handleLogout}
-                        className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300"
-                    >
-                        Log out
-                    </button>
+                    <div className="flex items-center gap-5">
+                        <button
+                            type="button"
+                            onClick={() => navigate("/owner/adduser")}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Add new user
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={() => navigate("/owner/edituser")}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Edit account
+                        </button>
+
+                        <button
+                            type="button"
+                            onClick={handleLogout}
+                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                        >
+                            Log out
+                        </button>
+                    </div>
                 </header>
 
                 {isLoading && (
@@ -168,13 +186,16 @@ export const OwnerDashboardPage = () => {
                                             </td>
 
                                             <td className="px-4 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-2">
+                                                {reservation.status?.name !== "CANCELLED" && (
                                                     <button
                                                         type="button"
+                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/edit`)}
                                                         className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
                                                     >
                                                         Edit
                                                     </button>
+                                                )}
 
                                                     {reservation.status?.name === "CANCELLED" ? (
                                                         <span className="px-3 py-1.5 text-xs text-zinc-500">

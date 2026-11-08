@@ -13,7 +13,7 @@ public class TableDTO {
     public TableDTO() {
     }
 
-    public TableDTO(Integer id, int tableNumber, int capacity) {
+    public TableDTO(Integer id, Integer tableNumber, Integer capacity) {
         this.id = id;
         this.tableNumber = tableNumber;
         this.capacity = capacity;
@@ -27,19 +27,19 @@ public class TableDTO {
         this.id = id;
     }
 
-    public int getTableNumber() {
+    public Integer getTableNumber() {
         return tableNumber;
     }
 
-    public void setTableNumber(int tableNumber) {
+    public void setTableNumber(Integer tableNumber) {
         this.tableNumber = tableNumber;
     }
 
-    public int getCapacity() {
+    public Integer getCapacity() {
         return capacity;
     }
 
-    public void setCapacity(int capacity) {
+    public void setCapacity(Integer capacity) {
         this.capacity = capacity;
     }
 }

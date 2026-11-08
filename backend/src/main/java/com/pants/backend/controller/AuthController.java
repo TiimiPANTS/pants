@@ -20,18 +20,23 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.pants.backend.dto.LoginRequest;
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpSession;
+import com.pants.backend.service.JwtService;
 
 @RestController
 @RequestMapping("/api/auth")
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public AuthController(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        this.authenticationManager = authenticationConfiguration.getAuthenticationManager();
+    public AuthController(
+            AuthenticationConfiguration authenticationConfiguration,
+            JwtService jwtService) throws Exception {
+
+        this.authenticationManager =
+                authenticationConfiguration.getAuthenticationManager();
+
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -55,8 +60,11 @@ public class AuthController {
             String role = authentication.getAuthorities()
                     .stream()
                     .findFirst()
-                    .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                    .map(authority ->
+                            authority.getAuthority().replace("ROLE_", ""))
                     .orElse("");
+
+            String token = jwtService.generateToken(authentication);
 
             return ResponseEntity.ok(Map.of(
                     "message", "Login successful",
@@ -65,7 +73,8 @@ public class AuthController {
 
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid email or password"));
+                    .body(Map.of(
+                            "message", "Invalid email or password"));
         }
     }
 
@@ -98,11 +107,26 @@ public class AuthController {
     public ResponseEntity<?> logout(HttpServletRequest request) {
         SecurityContextHolder.clearContext();
 
-        HttpSession session = request.getSession(false);
-        if (session != null) {
-            session.invalidate();
+        if (authentication == null || !authentication.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body(Map.of("message", "Not signed in"));
         }
 
-        return ResponseEntity.ok(Map.of("message", "Logout successful"));
+        String role = authentication.getAuthorities()
+                .stream()
+                .findFirst()
+                .map(authority ->
+                        authority.getAuthority().replace("ROLE_", ""))
+                .orElse("");
+
+        return ResponseEntity.ok(Map.of(
+                "email", authentication.getName(),
+                "role", role));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout() {
+        return ResponseEntity.ok(Map.of(
+                "message", "Logout successful"));
     }
 }

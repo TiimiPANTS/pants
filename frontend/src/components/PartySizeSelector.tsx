@@ -27,7 +27,8 @@ export const PartySizeSelector: FC<PartySizeSelectorProps> = ({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold hover:bg-zinc-800 transition-colors"
+          disabled={guestCount <= 1}
+          className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold enabled:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-default"
           onClick={() => updateGuestCount(guestCount - 1)}
         >
           −
@@ -44,7 +45,8 @@ export const PartySizeSelector: FC<PartySizeSelectorProps> = ({
 
         <button
           type="button"
-          className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold hover:bg-zinc-800 transition-colors"
+          disabled={guestCount >= 10}
+          className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold enabled:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-default"
           onClick={() => updateGuestCount(guestCount + 1)}
         >
           +
