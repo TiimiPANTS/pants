@@ -8,5 +8,15 @@
  * have been cleaned up.
  */
 export const getCsrfHeaders = async (): Promise<Record<string, string>> => {
-    return {};
+    const response = await fetch(`${API_URL}/auth/csrf`, {
+        credentials: "include",
+    });
+
+    if (!response.ok) {
+        throw new Error("Unable to get CSRF token.");
+    }
+
+    const { headerName, token } = (await response.json()) as CsrfResponse;
+
+    return { [headerName]: token };
 };

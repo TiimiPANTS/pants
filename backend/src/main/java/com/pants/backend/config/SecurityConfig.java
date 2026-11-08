@@ -189,6 +189,12 @@ public class SecurityConfig {
                                 "/api/reservations/*/cancel")
                         .hasAnyRole("ADMIN", "OWNER")
 
+                        // Cancel reservations
+                        .requestMatchers(
+                                HttpMethod.PATCH,
+                                "/api/reservations/*/cancel")
+                        .hasAnyRole("ADMIN", "OWNER")
+
                         // =====================================
                         // ADMIN, OWNER AND EMPLOYEE
                         // =====================================
