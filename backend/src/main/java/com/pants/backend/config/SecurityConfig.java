@@ -49,8 +49,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/auth/login",
                                 "/api/auth/logout",
-                                "/api/auth/csrf"
-                        )
+                                "/api/auth/csrf")
                         .permitAll()
 
                         // Current authenticated user
@@ -193,8 +192,7 @@ public class SecurityConfig {
                         // Cancel reservations
                         .requestMatchers(
                                 HttpMethod.PATCH,
-                                "/api/reservations/*/cancel"
-                        )
+                                "/api/reservations/*/cancel")
                         .hasAnyRole("ADMIN", "OWNER")
 
                         // =====================================

@@ -1,14 +1,18 @@
 package com.pants.backend.dto;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 public class TableDTO {
 
     private Integer id;
 
-    @Min(1)
-    private int tableNumber;
-    @Min(1)
-    private int capacity;
+        @NotNull(message = "Table number is required")
+    @Min(value = 1, message = "Table number must be at least 1")
+    private Integer tableNumber;
+
+    @NotNull(message = "Capacity is required")
+    @Min(value = 1, message = "Capacity must be at least 1")
+    private Integer capacity;
 
     public TableDTO() {
     }

@@ -1,10 +1,12 @@
-const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
-
-type CsrfResponse = {
-    headerName: string;
-    token: string;
-};
-
+/**
+ * Temporary compatibility helper.
+ *
+ * CSRF protection is disabled because authentication
+ * now uses JWT Bearer tokens.
+ *
+ * This function can be removed after its callers
+ * have been cleaned up.
+ */
 export const getCsrfHeaders = async (): Promise<Record<string, string>> => {
     const response = await fetch(`${API_URL}/auth/csrf`, {
         credentials: "include",
