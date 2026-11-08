@@ -186,13 +186,16 @@ export const OwnerDashboardPage = () => {
                                             </td>
 
                                             <td className="px-4 py-4 text-right">
-                                                <div className="flex justify-end gap-2">
+                                            <div className="flex justify-end gap-2">
+                                                {reservation.status?.name !== "CANCELLED" && (
                                                     <button
                                                         type="button"
+                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/edit`)}
                                                         className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
                                                     >
                                                         Edit
                                                     </button>
+                                                )}
 
                                                     {reservation.status?.name === "CANCELLED" ? (
                                                         <span className="px-3 py-1.5 text-xs text-zinc-500">
