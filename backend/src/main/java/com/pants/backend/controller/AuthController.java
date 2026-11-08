@@ -1,3 +1,4 @@
+
 package com.pants.backend.controller;
 
 import java.util.Map;
@@ -20,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.GetMapping;
 
 import com.pants.backend.dto.LoginRequest;
+import com.pants.backend.service.JwtService;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpSession;
@@ -29,22 +31,32 @@ import jakarta.servlet.http.HttpSession;
 public class AuthController {
 
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public AuthController(AuthenticationConfiguration authenticationConfiguration) throws Exception {
-        this.authenticationManager = authenticationConfiguration.getAuthenticationManager();
+    public AuthController(
+            AuthenticationConfiguration authenticationConfiguration,
+            JwtService jwtService) throws Exception {
+
+        this.authenticationManager =
+                authenticationConfiguration.getAuthenticationManager();
+
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> login(
             @RequestBody LoginRequest loginRequest,
             HttpServletRequest request) {
+
         try {
             Authentication authentication = authenticationManager.authenticate(
                     new UsernamePasswordAuthenticationToken(
                             loginRequest.getEmail(),
                             loginRequest.getPassword()));
 
-            SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+            SecurityContext securityContext =
+                    SecurityContextHolder.createEmptyContext();
+
             securityContext.setAuthentication(authentication);
             SecurityContextHolder.setContext(securityContext);
 
@@ -55,22 +67,28 @@ public class AuthController {
             String role = authentication.getAuthorities()
                     .stream()
                     .findFirst()
-                    .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                    .map(authority -> authority.getAuthority()
+                            .replace("ROLE_", ""))
                     .orElse("");
+
+            String token = jwtService.generateToken(authentication);
 
             return ResponseEntity.ok(Map.of(
                     "message", "Login successful",
                     "email", authentication.getName(),
-                    "role", role));
+                    "role", role,
+                    "token", token));
 
         } catch (AuthenticationException e) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                    .body(Map.of("message", "Invalid email or password"));
+                    .body(Map.of(
+                            "message", "Invalid email or password"));
         }
     }
 
     @GetMapping("/me")
     public ResponseEntity<?> getCurrentUser(Authentication authentication) {
+
         if (authentication == null || !authentication.isAuthenticated()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body(Map.of("message", "Not signed in"));
@@ -79,7 +97,8 @@ public class AuthController {
         String role = authentication.getAuthorities()
                 .stream()
                 .findFirst()
-                .map(authority -> authority.getAuthority().replace("ROLE_", ""))
+                .map(authority -> authority.getAuthority()
+                        .replace("ROLE_", ""))
                 .orElse("");
 
         return ResponseEntity.ok(Map.of(
@@ -87,22 +106,26 @@ public class AuthController {
                 "role", role));
     }
 
-        @GetMapping("/csrf")
+    @GetMapping("/csrf")
     public ResponseEntity<?> getCsrfToken(CsrfToken csrfToken) {
+
         return ResponseEntity.ok(Map.of(
                 "headerName", csrfToken.getHeaderName(),
-                "token", csrfToken.getToken()));   // suojaa käyttäjiä luvattomilta komennoilta
+                "token", csrfToken.getToken()));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletRequest request) {
+
         SecurityContextHolder.clearContext();
 
         HttpSession session = request.getSession(false);
+
         if (session != null) {
             session.invalidate();
         }
 
-        return ResponseEntity.ok(Map.of("message", "Logout successful"));
+        return ResponseEntity.ok(
+                Map.of("message", "Logout successful"));
     }
 }
