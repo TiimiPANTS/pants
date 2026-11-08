@@ -9,7 +9,30 @@ test.beforeEach(async ({ page }) => {
                 message: 'Login successful',
                 email: 'admin@test.com',
                 role: 'ADMIN',
+                token: 'playwright-test-token',
             }),
+        });
+    });
+
+    await page.route('**/api/reservations', async (route) => {
+        const authorization =
+            await route.request().headerValue('authorization');
+
+        if (authorization !== 'Bearer playwright-test-token') {
+            await route.fulfill({
+                status: 401,
+                contentType: 'application/json',
+                body: JSON.stringify({
+                    message: 'Unauthorized',
+                }),
+            });
+            return;
+        }
+
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify([]),
         });
     });
 });
@@ -29,7 +52,9 @@ async function fillLoginForm(
 
 test('login page loads successfully', async ({ page }) => {
     await gotoLoginPage(page);
+
     await expect(page).toHaveURL(/\/login$/);
+
     await expect(
         page.getByRole('heading', { name: 'Welcome back' })
     ).toBeVisible();
@@ -37,11 +62,14 @@ test('login page loads successfully', async ({ page }) => {
 
 test('login form components are visible', async ({ page }) => {
     await gotoLoginPage(page);
+
     await expect(page.getByLabel('Email')).toBeVisible();
     await expect(page.getByLabel('Password')).toBeVisible();
+
     await expect(
         page.getByRole('button', { name: 'Sign in' })
     ).toBeVisible();
+
     await expect(
         page.getByRole('link', { name: 'Back to reservations' })
     ).toBeVisible();
@@ -50,31 +78,60 @@ test('login form components are visible', async ({ page }) => {
 test('admin can successfully log in', async ({ page }) => {
     await gotoLoginPage(page);
     await fillLoginForm(page);
+
     await page.getByRole('button', { name: 'Sign in' }).click();
+
     await expect(page).toHaveURL(/\/owner\/dashboard$/);
+
+    const token = await page.evaluate(() => {
+        return sessionStorage.getItem('jwt');
+    });
+
+    expect(token).toBe('playwright-test-token');
+
+    await expect(
+        page.getByRole('heading', { name: 'Reservations' })
+    ).toBeVisible();
+
+    await expect(
+        page.getByText('No reservations found')
+    ).toBeVisible();
 });
 
 test('empty login form displays validation errors', async ({ page }) => {
     await gotoLoginPage(page);
+
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByText('Email is required.')).toBeVisible();
-    await expect(page.getByText('Password is required.')).toBeVisible();
+
+    await expect(
+        page.getByText('Email is required.')
+    ).toBeVisible();
+
+    await expect(
+        page.getByText('Password is required.')
+    ).toBeVisible();
+
     await expect(page).toHaveURL(/\/login$/);
 });
 
 test('invalid email displays a validation error', async ({ page }) => {
     await gotoLoginPage(page);
+
     await page.getByLabel('Email').fill('invalid-email');
     await page.getByLabel('Password').fill('test123');
+
     await page.getByRole('button', { name: 'Sign in' }).click();
+
     await expect(
         page.getByText('Enter an email like name@example.com')
     ).toBeVisible();
+
     await expect(page).toHaveURL(/\/login$/);
 });
 
 test('invalid credentials display an error message', async ({ page }) => {
     await page.unroute('**/api/auth/login');
+
     await page.route('**/api/auth/login', async (route) => {
         await route.fulfill({
             status: 401,
@@ -87,9 +144,12 @@ test('invalid credentials display an error message', async ({ page }) => {
 
     await gotoLoginPage(page);
     await fillLoginForm(page);
+
     await page.getByRole('button', { name: 'Sign in' }).click();
+
     await expect(
         page.getByRole('alert')
     ).toHaveText('Invalid email or password');
+
     await expect(page).toHaveURL(/\/login$/);
 });
