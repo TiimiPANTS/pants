@@ -180,6 +180,10 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
             .findById(id)
             .orElseThrow(() -> new NoSuchElementException("Reservation not found"));
 
+            if ("CANCELLED".equals(existingReservation.getStatus().getName())) {
+                throw new IllegalStateException("Cancelled reservations cannot be modified");
+        }
+
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
