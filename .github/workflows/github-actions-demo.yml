@@ -43,7 +43,7 @@ jobs:
   frontend-tests:
     runs-on: ubuntu-latest
 
-      env:
+    env:
       VITE_BACKEND_URL: http://localhost:5173
 
     steps:
