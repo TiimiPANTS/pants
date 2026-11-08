@@ -2,12 +2,13 @@ package com.pants.backend.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 
 public class UserRequestDTO {
 
     @NotBlank
+    @Size(max = 50)
     private String username;
 
     @NotBlank 
@@ -15,6 +16,7 @@ public class UserRequestDTO {
     @Size(max = 254)
     private String email;
 
+    @Size(min = 8, max = 72)
     private String password;
 
     @Positive
