@@ -15,12 +15,13 @@ import LePantsLogo from "../assets/LePantsLogo.svg";
 
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
-  const { token } = useParams();
+  const { token, id } = useParams();
   const [availabilityMonth, setAvailabilityMonth] = useState(() => new Date());
   const { isAuthenticated } = useAuth();
 
   const {
     isEditMode,
+    isStaffEdit,
     isLoading,
     selectedDay,
     selectDay,
@@ -45,22 +46,27 @@ export const ReservationPage: FC = () => {
     isCancelling,
     isCancelled,
     handleCancel,
-  } = useReservation(token);
+  } = useReservation(token,id);
   const handleMonthChange = useCallback((month: Date) => {
     setAvailabilityMonth(month);
     void refreshAvailability(month);
   }, [refreshAvailability]);
 
   const submitReservation = async () => {
-    const createdReservation = await handleSubmit();
+    const savedReservation = await handleSubmit();
 
-    if (!createdReservation) {
+    if (!savedReservation) {
+      return;
+    }
+
+    if (isStaffEdit) {
+      navigate("/owner/dashboard");
       return;
     }
 
     navigate("/confirmation", {
       state: {
-        reservation: createdReservation,
+        reservation: savedReservation,
       },
     });
   };
@@ -158,7 +164,7 @@ export const ReservationPage: FC = () => {
         >
           {isEditMode && (
             <h2 className="text-lg font-bold text-white">
-              Edit your reservation
+              {isStaffEdit ? `Edit reservation #${id}` : "Edit your reservation"}
             </h2>
           )}
 
@@ -231,7 +237,7 @@ export const ReservationPage: FC = () => {
                 : "Confirm Reservation"}
           </button>
 
-          {isEditMode && (
+          {isEditMode && !isStaffEdit &&(
             <button
               type="button"
               onClick={cancelReservation}

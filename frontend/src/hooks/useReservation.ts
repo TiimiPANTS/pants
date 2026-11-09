@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
+import { getCsrfHeaders } from "./csrf";
 import {
     formatDateKey,
     formatEuropeanDate,
@@ -40,8 +41,9 @@ type ValidationErrors = {
 
 
 // Pass an edit token to load an existing reservation and update it instead of creating a new one
-export function useReservation(token?: string) {
-    const isEditMode = Boolean(token);
+export function useReservation(token?: string, reservationId?:string) {
+    const isStaffEdit = Boolean(reservationId);
+    const isEditMode = Boolean(token) || isStaffEdit;
 
     const [selectedDay, setSelectedDay] = useState<Date | undefined>(
         undefined
@@ -134,16 +136,22 @@ export function useReservation(token?: string) {
     }, [loadAvailability]);
 
     useEffect(() => {
-        if (!token) {
+        if (!token && !reservationId) {
             return;
         }
 
         const loadReservation = async () => {
             try {
                 const response = await fetch(
-                    `${API_URL}/reservations/manage/${token}`
+                 reservationId
+                        ? `${API_URL}/reservations/${reservationId}`
+                        : `${API_URL}/reservations/manage/${token}`,
+                    { credentials: "include" }
                 );
 
+                if (response.status === 401 || response.status === 403) {
+                    throw new Error("You are not authorized to edit this reservation.");
+                }
                 if (!response.ok) {
                     throw new Error("Reservation not found.");
                 }
@@ -191,7 +199,79 @@ export function useReservation(token?: string) {
         };
 
         loadReservation();
-    }, [token]);
+    }, [token, reservationId]);
+
+    const slotAvailableCapacities = useMemo(() => {
+        const capacities = new Map<ReservationTime, number>();
+        if (!selectedDay) {
+            return capacities;
+        }
+
+        const date = formatDateKey(selectedDay);
+        for (const reservation of availability) {
+            const time = reservation.startTime.substring(0, 5);
+            if (reservation.date === date) {
+                capacities.set(
+                    time,
+                    Math.min(
+                        capacities.get(time) ?? Number.POSITIVE_INFINITY,
+                        reservation.availableCapacity
+                    )
+                );
+            }
+        }
+        return capacities;
+    }, [availability, selectedDay]);
+
+    const bookedDates = useMemo(() => {
+        const capacitiesByDateAndTime = new Map<string, Map<string, number>>();
+        for (const reservation of availability) {
+            const capacitiesByTime =
+                capacitiesByDateAndTime.get(reservation.date) ?? new Map<string, number>();
+            const time = reservation.startTime.substring(0, 5);
+            capacitiesByTime.set(
+                time,
+                Math.min(capacitiesByTime.get(time) ?? Number.POSITIVE_INFINITY,
+                    reservation.availableCapacity)
+            );
+            capacitiesByDateAndTime.set(reservation.date, capacitiesByTime);
+        }
+
+        return Array.from(capacitiesByDateAndTime.entries())
+            .filter(([date, capacitiesByTime]) => {
+                const [year, month, day] = date.split("-").map(Number);
+                const dateValue = new Date(year, month - 1, day);
+                const times = getAvailableTimes(dateValue);
+                const noCapacity = times.every(
+                    (time) => (capacitiesByTime.get(time) ?? 0) < 1
+                );
+                return (
+                    originalReservationSlot?.date !== date &&
+                    times.length > 0 &&
+                    noCapacity
+                );
+            })
+            .map(([date]) => {
+                const [year, month, day] = date.split("-").map(Number);
+                return new Date(year, month - 1, day);
+            });
+    }, [availability, originalReservationSlot]);
+
+    const currentReservationTime =
+        originalReservationSlot &&
+        selectedDay &&
+        originalReservationSlot.date === formatDateKey(selectedDay)
+            ? originalReservationSlot.time
+            : undefined;
+    const getRemainingCapacity = (time: ReservationTime) =>
+        slotAvailableCapacities.get(time) ?? 0;
+
+    const selectDay = (date: Date) => {
+        if (!selectedDay || formatDateKey(date) !== formatDateKey(selectedDay)) {
+            setSelectedTime(undefined);
+        }
+        setSelectedDay(date);
+    };
 
     const slotAvailableCapacities = useMemo(() => {
         const capacities = new Map<ReservationTime, number>();
@@ -385,19 +465,21 @@ export function useReservation(token?: string) {
         };
 
         try {
-            const response = await fetch(
-                isEditMode
-                    ? `${API_URL}/reservations/manage/${token}`
-                    : `${API_URL}/reservations`,
-                {
-                    method: isEditMode ? "PUT" : "POST",
-                    credentials: "include",
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(reservationData),
-                }
-            );
+            const url = isStaffEdit
+            ? `${API_URL}/reservations/${reservationId}`
+            : token
+                ? `${API_URL}/reservations/manage/${token}`
+                : `${API_URL}/reservations`;
+
+            const response = await fetch(url, {
+                method: isEditMode ? "PUT" : "POST",
+                credentials: "include",
+                headers: {
+                    "Content-Type": "application/json",
+                    ...(isStaffEdit ? await getCsrfHeaders() : {}),
+                },
+                body: JSON.stringify(reservationData),
+            });
 
             if (!response.ok) {
                 const errorData = await readJson(response);
@@ -497,6 +579,7 @@ export function useReservation(token?: string) {
 
     return {
         isEditMode,
+        isStaffEdit,
         isLoading,
         selectedDay,
         selectDay,

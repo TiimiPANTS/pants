@@ -1,10 +1,6 @@
 package com.pants.backend.controller;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.verifyNoInteractions;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -12,10 +8,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -213,7 +213,7 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(reservation);
+        assertThat(body.getReservationId()).isEqualTo(reservation.getReservationId());
         assertThat(body.getEditToken()).isEqualTo("test-token");
 
         verify(reservationService).getReservationByToken("test-token");
@@ -249,7 +249,7 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(savedReservation);
+        assertThat(body.getReservationId()).isEqualTo(savedReservation.getReservationId());
         assertThat(body.getEditToken()).isEqualTo("test-token");
 
         verify(reservationService).createReservation(dto);
@@ -333,7 +333,7 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(updatedReservation);
+        assertThat(body.getReservationId()).isEqualTo(updatedReservation.getReservationId());
         assertThat(body.getEditToken()).isEqualTo("test-token");
 
         verify(reservationService).updateReservationByToken("test-token", dto);
@@ -402,8 +402,8 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(cancelledReservation);
-        assertThat(body.getReservation().getStatus().getName()).isEqualTo("CANCELLED");
+        assertThat(body.getReservationId()).isEqualTo(cancelledReservation.getReservationId());
+        assertThat(body.getStatus().name()).isEqualTo("CANCELLED");
         assertThat(body.getEditToken()).isEqualTo("test-token");
 
         verify(reservationService).cancelReservationByToken("test-token");
@@ -465,8 +465,8 @@ class ReservationControllerTest {
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservation()).isEqualTo(cancelledReservation);
-        assertThat(body.getReservation().getStatus().getName()).isEqualTo("CANCELLED");
+        assertThat(body.getReservationId()).isEqualTo(cancelledReservation.getReservationId());
+        assertThat(body.getStatus().name()).isEqualTo("CANCELLED");
 
         verify(reservationService).cancelReservation(1);
     }

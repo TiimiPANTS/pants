@@ -2,10 +2,17 @@ package com.pants.backend.dto;
 
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
+import io.swagger.v3.oas.annotations.media.Schema;
+
 public class ReceiptDTO {
 
     private Integer receiptId;
     private ReservationDTO reservation;
+
+    @Schema(type = "string", example = "07.11.2026 14:30")
+    @JsonFormat(pattern = "dd.MM.yyyy HH:mm")
     private LocalDateTime issued;
 
     public ReceiptDTO(){

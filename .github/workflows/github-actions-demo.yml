@@ -15,6 +15,10 @@ jobs:
           distribution: temurin
           java-version: '21'
           cache: maven
+
+      - name: Generate JWT secret for tests
+        run: echo "JWT_SECRET=$(openssl rand -base64 32)" >> "$GITHUB_ENV"
+
       - name: Run backend tests
         working-directory: backend
         run: ./mvnw --batch-mode --no-transfer-progress test
@@ -38,6 +42,10 @@ jobs:
 
   frontend-tests:
     runs-on: ubuntu-latest
+
+    env:
+      VITE_BACKEND_URL: http://localhost:5173
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v6

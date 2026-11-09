@@ -1,4 +1,3 @@
-
 package com.pants.backend.config;
 
 import org.springframework.context.annotation.Configuration;
@@ -10,12 +9,13 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 
 @Configuration
 @SecurityScheme(
-        name = "basicAuth",
+        name = "bearerAuth",
         type = SecuritySchemeType.HTTP,
-        scheme = "basic"
+        scheme = "bearer",
+        bearerFormat = "JWT"
 )
 @OpenAPIDefinition(
-        security = @SecurityRequirement(name = "basicAuth")
+        security = @SecurityRequirement(name = "bearerAuth")
 )
 public class SwaggerConfig {
 }
