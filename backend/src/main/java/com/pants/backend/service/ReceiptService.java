@@ -1,121 +1,73 @@
 package com.pants.backend.service;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.time.format.DateTimeFormatter;
+
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.stereotype.Service;
+import org.springframework.web.util.HtmlUtils;
+
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.repository.ReservationRepository;
-import org.springframework.stereotype.Service;
 
 @Service
 public class ReceiptService {
+
+    private static final DateTimeFormatter RESERVATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final ReservationRepository reservationRepository;
     private final EmailService emailService;
 
     public ReceiptService(
-            ReservationRepository reservationRepository,
-            EmailService emailService) {
+        ReservationRepository reservationRepository,
+        EmailService emailService) {
         this.reservationRepository = reservationRepository;
         this.emailService = emailService;
     }
 
     public void sendReceipt(Integer reservationId) {
-
         Reservation reservation = reservationRepository.findById(reservationId)
-                .orElseThrow(() -> new IllegalArgumentException(
-                        "Reservation could not be found: " + reservationId));
+            .orElseThrow(() -> new IllegalArgumentException(
+                "Reservation could not be found: " + reservationId));
 
-        String html = buildReceiptHtml(reservation);
-
-        emailService.sendHtmlEmail(
-                reservation.getCustomer().getEmail(),
-                "Reservation Confirmation #" + reservation.getReservationId(),
-                html);
+        emailService.sendHtmlEmailWithInlineImage(
+            reservation.getCustomer().getEmail(),
+            "Le Pants - Reservation Confirmation #" + reservation.getReservationId(),
+            buildReceiptHtml(reservation),
+            "le-pants-logo",
+            new ClassPathResource("templates/LePantsLogo.png"),
+            "image/png");
     }
 
     private String buildReceiptHtml(Reservation reservation) {
+        String customerName = escape(
+            reservation.getCustomer().getFirstname() + " " + reservation.getCustomer().getLastname());
 
-        return """
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <meta charset="UTF-8">
-                </head>
-                <body style="font-family: Arial, sans-serif;">
+        return loadTemplate()
+            .replace("src=\"LePantsLogo.png\"", "src=\"cid:le-pants-logo\"")
+            .replace("{{customerName}}", customerName)
+            .replace("{{reservationId}}", escape(String.valueOf(reservation.getReservationId())))
+            .replace("{{customerEmail}}", escape(reservation.getCustomer().getEmail()))
+            .replace(
+                "{{reservationDate}}",
+                escape(reservation.getDatetime().toLocalDate().format(RESERVATION_DATE_FORMAT)))
+            .replace("{{startTime}}", escape(String.valueOf(reservation.getStartTime())))
+            .replace("{{endTime}}", escape(String.valueOf(reservation.getEndTime())))
+            .replace("{{partySize}}", escape(String.valueOf(reservation.getPartySize())))
+            .replace("{{details}}", escape(reservation.getDetails()));
+    }
 
-                    <h2>Reservation Confirmation</h2>
+    private String loadTemplate() {
+        ClassPathResource template = new ClassPathResource("templates/receipt-email.html");
+        try (var input = template.getInputStream()) {
+            return new String(input.readAllBytes(), StandardCharsets.UTF_8);
+        } catch (IOException e) {
+            throw new IllegalStateException("Could not load receipt email template", e);
+        }
+    }
 
-                    <p>
-                        Thank you for your reservation.
-                        Here are your booking details:
-                    </p>
-
-                    <table border="1" cellpadding="8" cellspacing="0">
-                        <tr>
-                            <th align="left">Reservation ID</th>
-                            <td>%d</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Customer</th>
-                            <td>%s %s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Email</th>
-                            <td>%s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Created</th>
-                            <td>%s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Start Time</th>
-                            <td>%s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">End Time</th>
-                            <td>%s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Party Size</th>
-                            <td>%d guests</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Status</th>
-                            <td>%s</td>
-                        </tr>
-
-                        <tr>
-                            <th align="left">Details</th>
-                            <td>%s</td>
-                        </tr>
-                    </table>
-
-                    <br>
-
-                    <p>
-                        We look forward to serving you.
-                    </p>
-
-                </body>
-                </html>
-                """.formatted(
-                reservation.getReservationId(),
-                reservation.getCustomer().getFirstname(),
-                reservation.getCustomer().getLastname(),
-                reservation.getCustomer().getEmail(),
-                reservation.getDatetime(),
-                reservation.getStartTime(),
-                reservation.getEndTime(),
-                reservation.getPartySize(),
-                //Use PENDING as a fallback if reservation status is not set yet
-                reservation.getStatus() != null
-                    ? reservation.getStatus().getName()
-                    : "PENDING",
-                reservation.getDetails());
+    private String escape(String value) {
+        return HtmlUtils.htmlEscape(value == null ? "" : value);
     }
 }
