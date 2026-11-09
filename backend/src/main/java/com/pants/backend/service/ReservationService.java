@@ -31,25 +31,29 @@ public class ReservationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int MAX_GUESTS_PER_SLOT = 10;
+    private static final int CANCELLED_STATUS_ID = 3;
 
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
     private final RStatusRepository rStatusRepository;
     private final TableService tableService;
     private final TableListRepository tableListRepository;
+    private final CancelService cancelService;
 
     public ReservationService(
         ReservationRepository reservationRepository,
         CustomerRepository customerRepository,
         RStatusRepository rStatusRepository,
         TableService tableService,
-        TableListRepository tableListRepository
+        TableListRepository tableListRepository,
+        CancelService cancelService
     ) {
         this.reservationRepository = reservationRepository;
         this.customerRepository = customerRepository;
         this.rStatusRepository = rStatusRepository;
         this.tableService = tableService;
         this.tableListRepository = tableListRepository;
+        this.cancelService = cancelService;
     }
 
     public List<Reservation> getAllReservations() {
@@ -249,17 +253,24 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
     }
 
     private Reservation applyCancel(Reservation reservation) {
-        if ("CANCELLED".equals(reservation.getStatus().getName())) {
+        if (reservation.getStatus() != null
+                && Integer.valueOf(CANCELLED_STATUS_ID).equals(reservation.getStatus().getId())) {
             throw new IllegalStateException("Reservation is already cancelled");
         }
 
         reservation.setStatus(
             rStatusRepository
-                .findByName("CANCELLED")
-                .orElseThrow(() -> new IllegalStateException("Status CANCELLED missing"))
+                .findById(CANCELLED_STATUS_ID)
+                .orElseThrow(() -> new IllegalStateException(
+                    "Status with ID " + CANCELLED_STATUS_ID + " missing"))
         );
 
-        return reservationRepository.save(reservation);
+        Reservation savedReservation = reservationRepository.save(reservation);
+        if (savedReservation.getStatus() != null
+                && Integer.valueOf(CANCELLED_STATUS_ID).equals(savedReservation.getStatus().getId())) {
+            cancelService.sendCancellationEmail(savedReservation);
+        }
+        return savedReservation;
     }
 
     private Table findAvailableTable(ReservationDTO dto, Integer ignoreReservationId) {
