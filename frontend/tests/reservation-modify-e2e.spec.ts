@@ -50,7 +50,7 @@ async function openEditPage(page: Page, token: string) {
     await expect(page.getByRole('heading', { name: 'Edit your reservation' })).toBeVisible();
 }
 
-// ---------- setup: a fresh reservation for every test ----------
+// setup: a fresh reservation for every test 
 
 let editToken: string;
 
@@ -75,7 +75,7 @@ test.afterEach(async ({ request }) => {
     }
 });
 
-// ---------- tests ----------
+// tests 
 
 test('customer can create a reservation in the UI and open the edit page', async ({ page, request }) => {
     await page.goto('/reserve');
