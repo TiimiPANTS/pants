@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title></title>
+</head>
+<body style="margin: 0; padding: 32px 16px; background: #0A0A0C; color: #E4E4E7; font-family: Arial, Helvetica, sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td style="padding: 28px; background: #18181D; border: 1px solid #27272A;">
+                <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
+                    <tr>
+                        <td style="padding-right: 14px; vertical-align: middle;">
+                            <img src="LePantsLogo.png" width="56" height="56" alt="Le Pants logo" style="display: block; border: 0;">
+                        </td>
+                        <td style="vertical-align: middle; color: #FFFFFF; font: italic 500 34px 'Playfair Display', Georgia, 'Times New Roman', serif; letter-spacing: -1px;">
+                            Le Pants
+                        </td>
+                    </tr>
+                </table>
+
+                <h1 style="margin: 0; color: #FFFFFF; font: normal 30px/1.25 Arial, Helvetica, sans-serif;">
+                    Reservation confirmed
+                </h1>
+                <p style="margin: 24px 0 8px; color: #E4E4E7; font-size: 15px; line-height: 1.6;">
+                    Hello {{customerName}},
+                </p>
+                <p style="margin: 0 0 24px; color: #A1A1AA; font-size: 14px; line-height: 1.7;">
+                    Your reservation has been confirmed. We look forward to seeing you!
+                </p>
+
+                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
+                    <tr>
+                        <td width="38%" style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Reservation</td>
+                        <td style="padding: 11px 0; color: #FFFFFF; border-top: 1px solid #27272A;">#{{reservationId}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Name</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{customerName}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Email</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{customerEmail}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Date</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{reservationDate}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Time</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{startTime}} – {{endTime}}</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Party</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{partySize}} guests</td>
+                    </tr>
+                    <tr>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A; border-bottom: 1px solid #27272A;">Notes</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A; border-bottom: 1px solid #27272A;">{{details}}</td>
+                    </tr>
+                </table>
+
+                <p style="margin: 24px 0 0; color: #E4E4E7; font-size: 14px; line-height: 1.7;">
+                    Need help? Contact us and we’ll be happy to assist.
+                </p>
+            </td>
+        </tr>
+        <tr>
+            <td style="padding: 20px 4px 0; color: #A1A1AA; font-size: 12px; line-height: 1.8;">
+                Pohjoisesplanadi 17, 00170 Helsinki<br>
+                <a href="tel:+358961285000" style="color: #FFB2BF; text-decoration: none;">+358 9 6128 5000</a>
+                &nbsp; · &nbsp;
+                <a href="mailto:pants@contact.com" style="color: #FFB2BF; text-decoration: none;">pants@contact.com</a>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
