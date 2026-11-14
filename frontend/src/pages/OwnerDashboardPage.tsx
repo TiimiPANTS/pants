@@ -15,7 +15,7 @@ type Reservation = {
     datetime: string;
     partySize: number;
     details: string;
-    status: {name: string} | null;
+    status: { name: string } | null;
 };
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
@@ -26,6 +26,7 @@ export const OwnerDashboardPage = () => {
     const [reservations, setReservations] = useState<Reservation[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentUserRole, setCurrentUserRole] = useState(null);
 
     useEffect(() => {
         const loadReservations = async () => {
@@ -45,6 +46,23 @@ export const OwnerDashboardPage = () => {
 
                 const data = (await response.json()) as Reservation[];
                 setReservations(data);
+
+                const userResponse = await fetch(`${API_URL}/users/me`, {
+                    credentials: "include",
+                });
+
+                if (userResponse.status === 401 || userResponse.status === 403) {
+                    navigate("/login");
+                    return;
+                }
+
+                if (!userResponse.ok) {
+                    throw new Error("Could not verify user.");
+                }
+
+                const userData = await userResponse.json();
+                setCurrentUserRole(userData.roleId);
+
             } catch (loadError) {
                 setError(
                     loadError instanceof Error
@@ -91,13 +109,15 @@ export const OwnerDashboardPage = () => {
                             Reservation form
                         </button>
 
-                        <button
-                            type="button"
-                            onClick={() => navigate("/owner/adduser")}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
-                        >
-                            Add new user
-                        </button>
+                        {Number(currentUserRole) !== 3 && currentUserRole !== null && (
+                            <button
+                                type="button"
+                                onClick={() => navigate("/owner/adduser")}
+                                className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                            >
+                                Add new user
+                            </button>
+                        )}
 
                         <button
                             type="button"
@@ -164,7 +184,7 @@ export const OwnerDashboardPage = () => {
                                 <tbody className="divide-y divide-card-border">
                                     {reservations.map((reservation) => (
                                         <tr key={reservation.reservationId}
-                                        className={reservation.status?.name === "CANCELLED" ? "opacity-50" : ""}>
+                                            className={reservation.status?.name === "CANCELLED" ? "opacity-50" : ""}>
                                             <td className="px-4 py-4">
                                                 <p className="font-medium text-wine-light">
                                                     #{reservation.reservationId}
@@ -194,29 +214,29 @@ export const OwnerDashboardPage = () => {
                                             </td>
 
                                             <td className="px-4 py-4 text-right">
-                                            <div className="flex justify-end gap-2">
-                                                {reservation.status?.name !== "CANCELLED" && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/edit`)}
-                                                        className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
-                                                    >
-                                                        Edit
-                                                    </button>
-                                                )}
+                                                <div className="flex justify-end gap-2">
+                                                    {reservation.status?.name !== "CANCELLED" && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/edit`)}
+                                                            className="rounded border border-card-border px-3 py-1.5 text-xs text-zinc-300"
+                                                        >
+                                                            Edit
+                                                        </button>
+                                                    )}
 
                                                     {reservation.status?.name === "CANCELLED" ? (
                                                         <span className="px-3 py-1.5 text-xs text-zinc-500">
                                                             Cancelled
                                                         </span>
                                                     ) : (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/cancel`)}
-                                                        className="rounded border border-card-border px-3 py-1.5 text-xs text-red-400"
-                                                    >
-                                                        Cancel
-                                                    </button>
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => navigate(`/owner/reservations/${reservation.reservationId}/cancel`)}
+                                                            className="rounded border border-card-border px-3 py-1.5 text-xs text-red-400"
+                                                        >
+                                                            Cancel
+                                                        </button>
                                                     )}
                                                 </div>
                                             </td>
