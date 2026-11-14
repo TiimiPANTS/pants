@@ -187,7 +187,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.PATCH,
                                 "/api/reservations/*/cancel")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // =====================================
                         // ADMIN, OWNER AND EMPLOYEE
