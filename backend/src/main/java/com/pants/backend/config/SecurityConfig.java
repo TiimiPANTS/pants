@@ -116,7 +116,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/users/me")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Change own password
                         .requestMatchers(
