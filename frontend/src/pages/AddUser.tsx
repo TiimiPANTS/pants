@@ -230,6 +230,7 @@ export default function AddUser() {
                                     <option value="1">Admin</option>
                                 )}
                                 <option value="2">Owner</option>
+                                <option value="3">Employee</option>
                             </select>
                         </div>
 

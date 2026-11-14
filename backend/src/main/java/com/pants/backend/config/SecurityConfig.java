@@ -122,13 +122,13 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/users/me/password")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Update own account information
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/users/*")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Create new users
                         .requestMatchers(
