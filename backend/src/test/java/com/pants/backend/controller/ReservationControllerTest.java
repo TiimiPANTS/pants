@@ -27,12 +27,16 @@ import com.pants.backend.dto.ReservationResponse;
 import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.service.ReservationService;
+import com.pants.backend.service.ReceiptService;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationControllerTest {
 
     @Mock
     private ReservationService reservationService;
+
+    @Mock
+    private ReceiptService receiptService;
 
     @InjectMocks
     private ReservationController reservationController;
@@ -322,20 +326,23 @@ class ReservationControllerTest {
         Reservation updatedReservation = createReservation();
 
         when(reservationService.updateReservationByToken("test-token", dto))
-                .thenReturn(updatedReservation);
+            .thenReturn(updatedReservation);
 
         ResponseEntity<?> response =
-                reservationController.updateReservationByToken("test-token", dto);
+            reservationController.updateReservationByToken("test-token", dto);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
         assertThat(response.getBody()).isInstanceOf(ReservationResponse.class);
 
         ReservationResponse body = (ReservationResponse) response.getBody();
 
-        assertThat(body.getReservationId()).isEqualTo(updatedReservation.getReservationId());
+        assertThat(body.getReservationId())
+            .isEqualTo(updatedReservation.getReservationId());
         assertThat(body.getEditToken()).isEqualTo("test-token");
 
         verify(reservationService).updateReservationByToken("test-token", dto);
+
+        verify(receiptService).sendEditConfirmation(updatedReservation);
     }
 
     @Test
