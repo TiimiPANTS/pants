@@ -14,14 +14,16 @@ import com.pants.backend.repository.ReservationRepository;
 @Service
 public class ReceiptService {
 
-    private static final DateTimeFormatter RESERVATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
+    private static final DateTimeFormatter RESERVATION_DATE_FORMAT =
+        DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final ReservationRepository reservationRepository;
     private final EmailService emailService;
 
     public ReceiptService(
         ReservationRepository reservationRepository,
-        EmailService emailService) {
+        EmailService emailService
+    ) {
         this.reservationRepository = reservationRepository;
         this.emailService = emailService;
     }
@@ -34,36 +36,53 @@ public class ReceiptService {
         emailService.sendHtmlEmailWithInlineImage(
             reservation.getCustomer().getEmail(),
             "Le Pants - Reservation Confirmation #" + reservation.getReservationId(),
-            buildReceiptHtml(reservation),
+            buildEmailHtml(reservation, "receipt-email.html"),
             "le-pants-logo",
             new ClassPathResource("templates/LePantsLogo.png"),
-            "image/png");
+            "image/png"
+        );
     }
 
-    private String buildReceiptHtml(Reservation reservation) {
-        String customerName = escape(
-            reservation.getCustomer().getFirstname() + " " + reservation.getCustomer().getLastname());
+    public void sendEditConfirmation(Reservation reservation) {
+        emailService.sendHtmlEmailWithInlineImage(
+            reservation.getCustomer().getEmail(),
+            "Le Pants - Reservation Edited #" + reservation.getReservationId(),
+            buildEmailHtml(reservation, "edit-email.html"),
+            "le-pants-logo",
+            new ClassPathResource("templates/LePantsLogo.png"),
+            "image/png"
+        );
+    }
 
-        return loadTemplate()
+    private String buildEmailHtml(Reservation reservation, String fileName) {
+        String customerName = escape(
+            reservation.getCustomer().getFirstname() + " " +
+            reservation.getCustomer().getLastname()
+        );
+
+        return loadTemplate(fileName)
             .replace("src=\"LePantsLogo.png\"", "src=\"cid:le-pants-logo\"")
             .replace("{{customerName}}", customerName)
             .replace("{{reservationId}}", escape(String.valueOf(reservation.getReservationId())))
             .replace("{{customerEmail}}", escape(reservation.getCustomer().getEmail()))
             .replace(
                 "{{reservationDate}}",
-                escape(reservation.getDatetime().toLocalDate().format(RESERVATION_DATE_FORMAT)))
+                escape(reservation.getDatetime().toLocalDate().format(RESERVATION_DATE_FORMAT))
+            )
             .replace("{{startTime}}", escape(String.valueOf(reservation.getStartTime())))
             .replace("{{endTime}}", escape(String.valueOf(reservation.getEndTime())))
             .replace("{{partySize}}", escape(String.valueOf(reservation.getPartySize())))
             .replace("{{details}}", escape(reservation.getDetails()));
     }
 
-    private String loadTemplate() {
-        ClassPathResource template = new ClassPathResource("templates/receipt-email.html");
+    private String loadTemplate(String fileName) {
+        ClassPathResource template =
+            new ClassPathResource("templates/" + fileName);
+
         try (var input = template.getInputStream()) {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new IllegalStateException("Could not load receipt email template", e);
+            throw new IllegalStateException("Could not load email template: " + fileName, e);
         }
     }
 

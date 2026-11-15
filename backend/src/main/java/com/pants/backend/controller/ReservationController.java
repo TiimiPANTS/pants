@@ -32,6 +32,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import com.pants.backend.service.ReceiptService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/api/reservations")
 @Tag(
@@ -40,12 +44,18 @@ import jakarta.validation.Valid;
 )
 public class ReservationController {
 
+    private static final Logger logger =
+        LoggerFactory.getLogger(ReservationController.class);
+
     private final ReservationService reservationService;
+    private final ReceiptService receiptService;
 
     public ReservationController(
-        ReservationService reservationService
+        ReservationService reservationService,
+        ReceiptService receiptService
     ) {
         this.reservationService = reservationService;
+        this.receiptService = receiptService;
     }
 
     // GET /api/reservations
@@ -299,6 +309,7 @@ public class ReservationController {
             )
         )
     })
+
     @PutMapping("/manage/{token}")
     public ResponseEntity<?> updateReservationByToken(
         @PathVariable String token,
@@ -311,9 +322,20 @@ public class ReservationController {
                     reservationDTO
                 );
 
+            try {
+                receiptService.sendEditConfirmation(updatedReservation);
+            } catch (Exception e) {
+                logger.error(
+                    "Failed to send edit confirmation for reservation {}",
+                    updatedReservation.getReservationId(),
+                    e
+                );
+            }
+
             return ResponseEntity.ok(
                 new ReservationResponse(updatedReservation)
             );
+
         } catch (NoSuchElementException e) {
             return notFound(e.getMessage());
         } catch (IllegalArgumentException e) {
