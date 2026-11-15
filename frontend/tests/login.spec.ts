@@ -14,6 +14,19 @@ test.beforeEach(async ({ page }) => {
         });
     });
 
+    await page.route('**/api/users/me', async (route) => {
+        await route.fulfill({
+            status: 200,
+            contentType: 'application/json',
+            body: JSON.stringify({
+                id: 1,
+                username: 'admin',
+                email: 'admin@test.com',
+                roleId: 1,
+            }),
+        });
+    });
+
     await page.route('**/api/reservations', async (route) => {
         const authorization =
             await route.request().headerValue('authorization');
