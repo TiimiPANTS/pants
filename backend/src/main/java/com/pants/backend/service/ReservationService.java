@@ -299,6 +299,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         }
     }
 
+
     private Reservation applyUpdate(Reservation reservation, ReservationDTO dto) {
         validate(dto);
 
