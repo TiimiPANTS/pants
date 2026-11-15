@@ -116,19 +116,19 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.GET,
                                 "/api/users/me")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Change own password
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/users/me/password")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Update own account information
                         .requestMatchers(
                                 HttpMethod.PUT,
                                 "/api/users/*")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // Create new users
                         .requestMatchers(
@@ -187,7 +187,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 HttpMethod.PATCH,
                                 "/api/reservations/*/cancel")
-                        .hasAnyRole("ADMIN", "OWNER")
+                        .hasAnyRole("ADMIN", "OWNER", "EMPLOYEE")
 
                         // =====================================
                         // ADMIN, OWNER AND EMPLOYEE

@@ -11,6 +11,7 @@ export default function AddUser() {
     const [password, setPassword] = useState("");
     const [roleId, setRoleId] = useState("");
 
+    const [currentUserRole, setCurrentUserRole] = useState(null);
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
 
@@ -29,6 +30,9 @@ export default function AddUser() {
                 if (!response.ok) {
                     throw new Error("Could not verify user.");
                 }
+
+                const userData = await response.json();
+                setCurrentUserRole(userData.roleId);
 
             } catch (error) {
                 console.error("Authentication check failed:", error);
@@ -222,8 +226,11 @@ export default function AddUser() {
                                 className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white focus:border-white focus:outline-none"
                             >
                                 <option value="">Select a role</option>
-                                <option value="1">Admin</option>
+                                {Number(currentUserRole) === 1 && (
+                                    <option value="1">Admin</option>
+                                )}
                                 <option value="2">Owner</option>
+                                <option value="3">Employee</option>
                             </select>
                         </div>
 
