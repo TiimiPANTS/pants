@@ -41,6 +41,8 @@ import com.pants.backend.utils.TestDataFactory;
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
 
+    private static final int CANCELLED_STATUS_ID = 3;
+
     @Mock
     private ReservationRepository reservationRepository;
 
@@ -56,6 +58,9 @@ class ReservationServiceTest {
     @Mock
     private TableListRepository tableListRepository;
 
+    @Mock
+    private CancelService cancelService;
+
     @InjectMocks
     private ReservationService reservationService;
 
@@ -64,7 +69,11 @@ class ReservationServiceTest {
         reservation.setReservationId(1);
         reservation.setEditToken("test-token");
         reservation.setDatetime(datetime);
-        reservation.setStatus(new RStatus(status));
+        RStatus rStatus = new RStatus(status);
+        if ("CANCELLED".equals(status)) {
+            rStatus.setId(CANCELLED_STATUS_ID);
+        }
+        reservation.setStatus(rStatus);
         return reservation;
     }
 
@@ -129,11 +138,11 @@ class ReservationServiceTest {
     @Test
     void cancelByToken_whenConfirmed_setsStatusCancelled() {
         Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusDays(2));
-        RStatus cancelled = new RStatus("CANCELLED");
+        RStatus cancelled = cancelledStatus();
 
         when(reservationRepository.findByEditToken("test-token"))
                 .thenReturn(Optional.of(reservation));
-        when(rStatusRepository.findByName("CANCELLED"))
+        when(rStatusRepository.findById(CANCELLED_STATUS_ID))
                 .thenReturn(Optional.of(cancelled));
         when(reservationRepository.save(reservation))
                 .thenReturn(reservation);
@@ -189,11 +198,11 @@ class ReservationServiceTest {
     @Test
     void cancelById_whenConfirmed_setsStatusCancelled() {
         Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusDays(2));
-        RStatus cancelled = new RStatus("CANCELLED");
+        RStatus cancelled = cancelledStatus();
 
         when(reservationRepository.findById(1))
                 .thenReturn(Optional.of(reservation));
-        when(rStatusRepository.findByName("CANCELLED"))
+        when(rStatusRepository.findById(CANCELLED_STATUS_ID))
                 .thenReturn(Optional.of(cancelled));
         when(reservationRepository.save(reservation))
                 .thenReturn(reservation);
@@ -207,11 +216,11 @@ class ReservationServiceTest {
     @Test
     void cancelById_whenLessThanOneHourBefore_stillCancels() {
         Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusMinutes(30));
-        RStatus cancelled = new RStatus("CANCELLED");
+        RStatus cancelled = cancelledStatus();
 
         when(reservationRepository.findById(1))
                 .thenReturn(Optional.of(reservation));
-        when(rStatusRepository.findByName("CANCELLED"))
+        when(rStatusRepository.findById(CANCELLED_STATUS_ID))
                 .thenReturn(Optional.of(cancelled));
         when(reservationRepository.save(reservation))
                 .thenReturn(reservation);
@@ -219,6 +228,12 @@ class ReservationServiceTest {
         Reservation result = reservationService.cancelReservation(1);
 
         assertThat(result.getStatus()).isEqualTo(cancelled);
+    }
+
+    private static RStatus cancelledStatus() {
+        RStatus cancelled = new RStatus("CANCELLED");
+        cancelled.setId(CANCELLED_STATUS_ID);
+        return cancelled;
     }
 
     @Test

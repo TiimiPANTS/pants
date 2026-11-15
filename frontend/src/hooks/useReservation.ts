@@ -3,13 +3,20 @@ import type { ChangeEvent } from "react";
 import { getCsrfHeaders } from "./csrf";
 import {
     formatDateKey,
-    formatEuropeanDate,
     getAvailableTimes,
     parseEuropeanDate,
     type ReservationAvailability,
     type ReservationForm,
     type ReservationTime,
 } from "../types/reservation";
+
+import {
+    validateReservationForm,
+    type ValidationErrors,
+} from "../utils/reservationValidation";
+
+import { createReservationData } from "../utils/reservationData";
+
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
@@ -32,13 +39,6 @@ const emptyForm: ReservationForm = {
     email: "",
     specialRequests: "",
 };
-
-type ValidationErrors = {
-    firstName?: string;
-    lastName?: string;
-    email?: string;
-}
-
 
 // Pass an edit token to load an existing reservation and update it instead of creating a new one
 export function useReservation(token?: string, reservationId?:string) {
@@ -296,16 +296,6 @@ export function useReservation(token?: string, reservationId?:string) {
         }));
     };
 
-    const calculateEndTime = (startTime: ReservationTime) => {
-        const [hours, minutes] = startTime.split(":").map(Number);
-        const endHours = (hours + 2) % 24;
-
-        return `${String(endHours).padStart(2, "0")}:${String(minutes).padStart(
-            2,
-            "0"
-        )}`;
-    };
-
     const handleSubmit = async () => {
         setError(null);
         setMessage(null);
@@ -330,44 +320,8 @@ export function useReservation(token?: string, reservationId?:string) {
             return;
         }
 
-        const errors: ValidationErrors = {};
+        const errors = validateReservationForm(form);
 
-        const namePattern = /^[\p{L} '-]+$/u;
-
-        if (!form.firstName.trim()) {
-            errors.firstName = "First name is required.";
-        } else if (form.firstName.trim().length < 2) {
-            errors.firstName = "First name must be at least 2 characters.";
-        } else if (form.firstName.trim().length > 50) {
-            errors.firstName = "First name must be 50 characters or less.";
-        } else if (!namePattern.test(form.firstName.trim())) {
-            errors.firstName =
-                "First name can only contain letter"
-        }
-
-        if (!form.lastName.trim()) {
-            errors.lastName = "Last name is required.";
-        } else if (form.lastName.trim().length < 2) {
-            errors.lastName = "Last name must be at least 2 characters.";
-        } else if (form.lastName.trim().length > 50) {
-            errors.lastName = "Last name must be 50 characters or less.";
-        } else if (!namePattern.test(form.lastName.trim())) {
-            errors.lastName =
-                "Last name can only contain letter"
-        }
-
-        if (!form.email.trim()) {
-            errors.email = "Email is required.";
-        } else if (form.email.trim().length > 254) {
-            errors.email = "Email must be 254 characters or less.";
-        } else {
-            const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-            if (!emailPattern.test(form.email.trim())) {
-                errors.email = "Enter an email like name@example.com";
-            }
-
-    }
 
     setValidationErrors(errors);
 
@@ -377,20 +331,12 @@ export function useReservation(token?: string, reservationId?:string) {
 
         setIsSubmitting(true);
 
-        const datetime = `${formatEuropeanDate(selectedDay)} ${selectedTime}`;
-
-        const reservationData = {
-            customer: {
-                firstname: form.firstName,
-                lastname: form.lastName,
-                email: form.email.trim(),
-            },
-            datetime,
-            startTime: selectedTime,
-            endTime: calculateEndTime(selectedTime),
-            partySize: guestCount,
-            details: form.specialRequests,
-        };
+    const reservationData = createReservationData(
+        form,
+        selectedDay,
+        selectedTime,
+        guestCount
+    );
 
         try {
             const url = isStaffEdit
