@@ -157,6 +157,12 @@ public class SecurityConfig {
                         // ADMIN AND OWNER
                         // =====================================
 
+                        // Reservation statistics
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations/stats")
+                        .hasAnyRole("ADMIN", "OWNER")
+
                         // View receipts
                         .requestMatchers(
                                 HttpMethod.GET,

@@ -20,6 +20,10 @@ type Reservation = {
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
+const headerButtonClass =
+    "min-w-36 rounded border border-card-border px-3 py-1.5 text-center text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white";
+
+
 export const OwnerDashboardPage = () => {
     const navigate = useNavigate();
 
@@ -104,16 +108,26 @@ export const OwnerDashboardPage = () => {
                         <button
                             type="button"
                             onClick={() => navigate("/reserve")}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                            className={headerButtonClass}
                         >
                             Reservation form
                         </button>
+
+                        {(Number(currentUserRole) === 1 || Number(currentUserRole) === 2) && (
+                            <button
+                                type="button"
+                                onClick={() => navigate("/owner/analytics")}
+                                className={headerButtonClass}
+                            >
+                                Analytics
+                            </button>
+                        )}
 
                         {Number(currentUserRole) !== 3 && currentUserRole !== null && (
                             <button
                                 type="button"
                                 onClick={() => navigate("/owner/adduser")}
-                                className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                                className={headerButtonClass}
                             >
                                 Add new user
                             </button>
@@ -122,7 +136,7 @@ export const OwnerDashboardPage = () => {
                         <button
                             type="button"
                             onClick={() => navigate("/owner/edituser")}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                            className={headerButtonClass}
                         >
                             Edit account
                         </button>
@@ -130,7 +144,7 @@ export const OwnerDashboardPage = () => {
                         <button
                             type="button"
                             onClick={handleLogout}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
+                            className={headerButtonClass}
                         >
                             Log out
                         </button>
