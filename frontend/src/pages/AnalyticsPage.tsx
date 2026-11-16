@@ -26,6 +26,13 @@ type ReservationStats = {
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
 
+const COLORS = {
+    highlight: "#a3284d", // wine-light
+    bar: "#52525b",       // zinc-600
+    grid: "#272832",      // card-border
+    axis: "#a1a1aa",      // zinc-400
+};
+
 const DAY_LABELS: Record<string, string> = {
     MONDAY: "Mon", TUESDAY: "Tue", WEDNESDAY: "Wed", THURSDAY: "Thu",
     FRIDAY: "Fri", SATURDAY: "Sat", SUNDAY: "Sun",
@@ -51,13 +58,6 @@ const toIsoDate = (d: Date) =>
 const formatDate = (iso: string) => {
     const [y, m, d] = iso.split("-");
     return `${d}.${m}.${y}`;
-};
-
-const COLORS = {
-    highlight: "#a3284d", // wine-light
-    bar: "#52525b",       // zinc-600
-    grid: "#272832",      // card-border
-    axis: "#a1a1aa",      // zinc-400
 };
 
 
