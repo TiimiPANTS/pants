@@ -257,4 +257,39 @@ class TableListControllerTest {
                                 .isEqualTo(HttpStatus.NOT_FOUND);
         }
 
+
+        @Test
+        void create_whenIdMissing_returnsBadRequest() {
+                TableList tableList = new TableList();
+
+                ResponseEntity<?> response =
+                                tableListController.create(tableList);
+
+                assertErrorResponse(
+                                response,
+                                HttpStatus.BAD_REQUEST,
+                                "Reservation ID and Table ID are required"
+                );
+
+                verify(tableListRepository, never()).save(any());
+        }
+
+        @Test
+        void create_whenTableIdMissing_returnsBadRequest() {
+                TableList tableList = new TableList();
+                tableList.setId(new TableListId(1, null));
+
+                ResponseEntity<?> response =
+                                tableListController.create(tableList);
+
+                assertErrorResponse(
+                                response,
+                                HttpStatus.BAD_REQUEST,
+                                "Reservation ID and Table ID are required"
+                );
+
+                verify(tableListRepository, never()).save(any());
+        }
+
+
 }
