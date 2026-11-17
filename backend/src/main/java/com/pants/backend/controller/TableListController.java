@@ -92,9 +92,19 @@ public class TableListController {
             @ApiResponse(responseCode = "404", description = "Reservation or table not found", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))),
             @ApiResponse(responseCode = "409", description = "Table already reserved for that time", content = @Content(mediaType = "application/json", schema = @Schema(implementation = ErrorResponse.class))) })
     @PostMapping
-        public ResponseEntity<?> create(@RequestBody TableList tableList) {
-        // muutetaan datatyyppi Integer, kosk primary key on vaan numeroit. Tää tekee
-        // postgrest nopeemmaan
+    public ResponseEntity<?> create(@RequestBody TableList tableList) {
+        if (tableList == null ||
+            tableList.getId() == null ||
+            tableList.getId().getReservationId() == null ||
+            tableList.getId().getTableId() == null) {
+
+            return ResponseEntity.badRequest()
+                .body(new ErrorResponse(
+                    400,
+                    "Reservation ID and Table ID are required"
+                ));
+        }
+
         Integer reservationId = tableList.getId().getReservationId();
         Integer tableId = tableList.getId().getTableId();
 
