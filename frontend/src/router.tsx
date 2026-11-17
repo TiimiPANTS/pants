@@ -9,6 +9,7 @@ import { OwnerDashboardPage } from "./pages/OwnerDashboardPage.tsx";
 import { CancelReservationPage } from "./pages/CancelReservationPage.tsx";
 import EditUser from "./pages/EditUser.tsx";
 import AddUser from "./pages/AddUser";
+import { AnalyticsPage } from "./pages/AnalyticsPage.tsx";
 
 const router = createBrowserRouter([
   {
@@ -50,7 +51,11 @@ const router = createBrowserRouter([
   {
     path: "/owner/adduser",
     element: <AddUser />,
-}
+},
+{
+  path: "/owner/analytics",
+  element: <AnalyticsPage />,
+},
 ]);
 
 export default router;
