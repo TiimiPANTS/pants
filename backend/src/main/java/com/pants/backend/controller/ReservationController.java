@@ -21,6 +21,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.dto.ReservationResponse;
+import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.service.ReservationService;
 
@@ -93,6 +94,19 @@ public class ReservationController {
             reservationService.getReservationAvailability(from, to)
         );
     }
+
+    // GET /api/reservations/stats?weekStart=2026-11-16 , OWNER AND ADMIN
+@Operation(
+    summary = "Get weekly reservation statistics",
+    description = "Returns busiest day, busiest time and reservation count for the week"
+)
+@GetMapping("/stats")
+public ResponseEntity<ReservationStatsDTO> getWeeklyStats(
+    @RequestParam(required = false) LocalDate weekStart
+) {
+    LocalDate date = weekStart != null ? weekStart : LocalDate.now();
+    return ResponseEntity.ok(reservationService.getWeeklyStats(date));
+}
 
     // GET /api/reservations/{id}
     @Operation(

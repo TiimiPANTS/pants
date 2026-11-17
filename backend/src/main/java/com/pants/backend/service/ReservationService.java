@@ -6,14 +6,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
 import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
 
 import com.pants.backend.dto.CustomerDTO;
+import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.dto.ReservationAvailabilityDTO;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.entity.Customer;
@@ -86,6 +91,58 @@ public class ReservationService {
 
         return availability;
     }
+
+    public ReservationStatsDTO getWeeklyStats(LocalDate anyDayOfWeek) {
+    // Viikko alkaa aina maanantaista
+    LocalDate monday = anyDayOfWeek.with(
+        TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    LocalDate nextMonday = monday.plusDays(7);
+
+    List<Reservation> reservations = reservationRepository
+        .findByDatetimeGreaterThanEqualAndDatetimeLessThan(
+            monday.atStartOfDay(),
+            nextMonday.atStartOfDay())
+        .stream()
+        .filter(r -> r.getStatus() == null
+            || !Integer.valueOf(CANCELLED_STATUS_ID).equals(r.getStatus().getId()))
+        .toList();
+
+    // Kaikki viikonpäivät mukaan, myös ne joilla ei ole varauksia
+    Map<String, Long> byDay = new LinkedHashMap<>();
+    for (DayOfWeek day : DayOfWeek.values()) {
+        byDay.put(day.name(), 0L);
+    }
+
+    // TreeMap pitää kellonajat järjestyksessä ("12:00" < "18:00")
+    Map<String, Long> byTime = new TreeMap<>();
+
+    for (Reservation r : reservations) {
+        byDay.merge(r.getDatetime().getDayOfWeek().name(), 1L, Long::sum);
+        if (r.getStartTime() != null) {
+            byTime.merge(r.getStartTime().toString(), 1L, Long::sum);
+        }
+    }
+
+    String busiestDay = reservations.isEmpty() ? null : findMaxKey(byDay);
+    String busiestTime = byTime.isEmpty() ? null : findMaxKey(byTime);
+
+    return new ReservationStatsDTO(
+        monday,
+        nextMonday.minusDays(1),
+        reservations.size(),
+        busiestDay,
+        busiestTime,
+        byDay,
+        byTime
+    );
+}
+
+private String findMaxKey(Map<String, Long> map) {
+    return map.entrySet().stream()
+        .max(Map.Entry.comparingByValue())
+        .map(Map.Entry::getKey)
+        .orElse(null);
+}
 
     private List<LocalTime> getReservationTimes(LocalDate date) {
         if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
