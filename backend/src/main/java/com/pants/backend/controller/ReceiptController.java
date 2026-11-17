@@ -3,6 +3,8 @@ package com.pants.backend.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -31,188 +33,196 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 
-
 @RestController
 @RequestMapping("/api/receipts")
-@Tag(name = "Receipt API", description = "Endpoints for managing receipts")
-
+@Tag(
+    name = "Receipt API",
+    description = "Endpoints for managing receipts"
+)
 public class ReceiptController {
+
+    // Logger for error handling
+    private static final Logger logger =
+        LoggerFactory.getLogger(ReceiptController.class);
 
     private final ReceiptRepository receiptRepository;
     private final ReservationRepository reservationRepository;
     private final ReceiptService receiptService;
 
     public ReceiptController(
-            ReceiptRepository receiptRepository,
-            ReservationRepository reservationRepository, ReceiptService receiptService) {
+        ReceiptRepository receiptRepository,
+        ReservationRepository reservationRepository,
+        ReceiptService receiptService
+    ) {
         this.receiptRepository = receiptRepository;
         this.reservationRepository = reservationRepository;
         this.receiptService = receiptService;
     }
 
-    //SWAGGER
-     @Operation(
-            summary = "Get all receipts",
-            description = "Returns a list of all receipts"
+    // SWAGGER
+    @Operation(
+        summary = "Get all receipts",
+        description = "Returns a list of all receipts"
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "200",
-                    description = "All receipts found successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ReceiptDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "No receipts found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
+        @ApiResponse(
+            responseCode = "200",
+            description = "All receipts found successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReceiptDTO.class)
             )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "No receipts found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
     })
-
     @GetMapping
-    public ResponseEntity<?> getAllReceipts(){
+    public ResponseEntity<?> getAllReceipts() {
         List<Receipt> receipts = receiptRepository.findAll();
 
-        if(receipts.isEmpty()) {
+        if (receipts.isEmpty()) {
             return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(404, "No receipts found"));
         }
 
         List<ReceiptDTO> receiptDTOs = receipts.stream()
-                .map(this::toDto)
-                .toList();
+            .map(this::toDto)
+            .toList();
 
         return ResponseEntity.ok(receiptDTOs);
-
     }
 
     @Operation(
         summary = "Get receipt by ID",
         description = "Returns a receipt by its ID"
-)
-@ApiResponses(value = {
+    )
+    @ApiResponses(value = {
         @ApiResponse(
-                responseCode = "200",
-                description = "Receipt found successfully",
-                content = @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ReceiptDTO.class)
-                )
+            responseCode = "200",
+            description = "Receipt found successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReceiptDTO.class)
+            )
         ),
         @ApiResponse(
-                responseCode = "404",
-                description = "Receipt not found",
-                content = @Content(
-                        mediaType = "application/json",
-                        schema = @Schema(implementation = ErrorResponse.class)
-                )
+            responseCode = "404",
+            description = "Receipt not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
         )
-})
-
-@GetMapping("/{receiptId}")
-public ResponseEntity<?> getReceiptById(
-        @PathVariable Integer receiptId) {
-
-    Receipt receipt = receiptRepository
+    })
+    @GetMapping("/{receiptId}")
+    public ResponseEntity<?> getReceiptById(
+        @PathVariable Integer receiptId
+    ) {
+        Receipt receipt = receiptRepository
             .findById(receiptId)
             .orElse(null);
 
-    if (receipt == null) {
-        return ResponseEntity
+        if (receipt == null) {
+            return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse(404, "Receipt not found"));
+        }
+
+        return ResponseEntity.ok(toDto(receipt));
     }
 
-    return ResponseEntity.ok(toDto(receipt));
-}
-    //SWAGGER
-    @Operation(
-            summary= "Delete receipt by ID",
-            description = "Deletes a receipt by its ID"
-    )
-    @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "204",
-                    description = "Receipt deleted succesfully"
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Receipt not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            )
-    })
-
-    @DeleteMapping("/{receiptId}")
-    public ResponseEntity<?> deleteReceipt(
-            @PathVariable Integer receiptId) {
-
-            if (!receiptRepository.existsById(receiptId)) {
-                return ResponseEntity
-                        .status(HttpStatus.NOT_FOUND)
-                        .body(new ErrorResponse(404, "Receipt not found"));
-            }
-            
-            receiptRepository.deleteById(receiptId);
-
-            return ResponseEntity.noContent().build();
-
-            }
-    
     // SWAGGER
     @Operation(
-            summary = "Create receipt",
-            description = "Creates a receipt for an existing reservation"
+        summary = "Delete receipt by ID",
+        description = "Deletes a receipt by its ID"
     )
     @ApiResponses(value = {
-            @ApiResponse(
-                    responseCode = "201",
-                    description = "Receipt created successfully",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ReceiptDTO.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "404",
-                    description = "Reservation not found",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
-            ),
-            @ApiResponse(
-                    responseCode = "500",
-                    description = "Receipt created but email sending failed",
-                    content = @Content(
-                            mediaType = "application/json",
-                            schema = @Schema(implementation = ErrorResponse.class)
-                    )
+        @ApiResponse(
+            responseCode = "204",
+            description = "Receipt deleted succesfully"
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Receipt not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
             )
+        )
     })
-    
+    @DeleteMapping("/{receiptId}")
+    public ResponseEntity<?> deleteReceipt(
+        @PathVariable Integer receiptId
+    ) {
+        if (!receiptRepository.existsById(receiptId)) {
+            return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Receipt not found"));
+        }
 
+        receiptRepository.deleteById(receiptId);
+
+        return ResponseEntity.noContent().build();
+    }
+
+    // SWAGGER
+    @Operation(
+        summary = "Create receipt",
+        description = "Creates a receipt for an existing reservation"
+    )
+    @ApiResponses(value = {
+        @ApiResponse(
+            responseCode = "201",
+            description = "Receipt created successfully",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ReceiptDTO.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "404",
+            description = "Reservation not found",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        ),
+        @ApiResponse(
+            responseCode = "500",
+            description = "Receipt created but email sending failed",
+            content = @Content(
+                mediaType = "application/json",
+                schema = @Schema(implementation = ErrorResponse.class)
+            )
+        )
+    })
     @PostMapping("/{reservationId}")
     public ResponseEntity<?> createReceipt(
-                        @PathVariable Integer reservationId,
-                        @RequestHeader(value = "X-Reservation-Token", required = false) String editToken) {
+        @PathVariable Integer reservationId,
+        @RequestHeader(
+            value = "X-Reservation-Token",
+            required = false
+        ) String editToken
+    ) {
 
         Reservation reservation = reservationRepository
-                .findById(reservationId)
-                .orElse(null);
+            .findById(reservationId)
+            .orElse(null);
 
-                if (reservation == null || editToken == null || !editToken.equals(reservation.getEditToken())) {
+        if (reservation == null ||
+            editToken == null ||
+            !editToken.equals(reservation.getEditToken())) {
+
             return ResponseEntity
-                    .status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse(404, "Reservation not found"));
+                .status(HttpStatus.NOT_FOUND)
+                .body(new ErrorResponse(404, "Reservation not found"));
         }
 
         Receipt receipt = new Receipt();
@@ -223,19 +233,30 @@ public ResponseEntity<?> getReceiptById(
 
         try {
             receiptService.sendReceipt(reservationId);
+
         } catch (Exception e) {
-            e.printStackTrace();
+
+            // Log the email sending error
+            logger.error(
+                "Failed to send receipt email for reservation {}",
+                reservationId,
+                e
+            );
 
             return ResponseEntity
-                    .status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new ErrorResponse(500, "Receipt created, but failed to send email"));
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(new ErrorResponse(
+                    500,
+                    "Receipt created, but failed to send email"
+                ));
         }
 
         return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(toDto(savedReceipt));
+            .status(HttpStatus.CREATED)
+            .body(toDto(savedReceipt));
     }
-        // uusi apumetodi, joka muuntaa Receipt-entiteetin DTO:ksi.
+
+    // Convert Receipt entity to ReceiptDTO
     private ReceiptDTO toDto(Receipt receipt) {
 
         ReceiptDTO receiptDTO = new ReceiptDTO();
@@ -245,7 +266,7 @@ public ResponseEntity<?> getReceiptById(
 
         Reservation reservation = receipt.getReservation();
 
-        // Tehdään ReservationDTO kuitin sisälle
+        // Create ReservationDTO
         ReservationDTO reservationDTO = new ReservationDTO();
 
         reservationDTO.setStartTime(reservation.getStartTime());
@@ -254,17 +275,20 @@ public ResponseEntity<?> getReceiptById(
         reservationDTO.setPartySize(reservation.getPartySize());
         reservationDTO.setDetails(reservation.getDetails());
 
-        // Tehdään CustomerDTO varauksen sisälle
+        // Create CustomerDTO
         CustomerDTO customerDTO = new CustomerDTO(
-                reservation.getCustomer().getId(),
-                reservation.getCustomer().getFirstname(),
-                reservation.getCustomer().getLastname(),
-                reservation.getCustomer().getEmail()
+            reservation.getCustomer().getId(),
+            reservation.getCustomer().getFirstname(),
+            reservation.getCustomer().getLastname(),
+            reservation.getCustomer().getEmail()
         );
 
         reservationDTO.setCustomer(customerDTO);
 
-        // Lisätään ReservationDTO ReceiptDTO:n sisälle
+        // Add CustomerDTO to ReservationDTO
+        reservationDTO.setCustomer(customerDTO);
+
+        // Add ReservationDTO to ReceiptDTO
         receiptDTO.setReservation(reservationDTO);
 
         return receiptDTO;
