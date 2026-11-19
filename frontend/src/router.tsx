@@ -10,6 +10,7 @@ import { CancelReservationPage } from "./pages/CancelReservationPage.tsx";
 import EditUser from "./pages/EditUser.tsx";
 import AddUser from "./pages/AddUser";
 import { AnalyticsPage } from "./pages/AnalyticsPage.tsx";
+import UserManagement from "./pages/UserManagement.tsx"
 
 const router = createBrowserRouter([
   {
@@ -36,11 +37,11 @@ const router = createBrowserRouter([
     path: "/confirmation",
     element: <ConfirmationPage />,
   },
-   {
+  {
     path: "/owner/reservations/:id/cancel",
     element: <CancelReservationPage />,
   },
-    {
+  {
     path: "/owner/reservations/:id/edit",
     element: <ReservationPage key="staff-edit" />,
   },
@@ -51,11 +52,15 @@ const router = createBrowserRouter([
   {
     path: "/owner/adduser",
     element: <AddUser />,
-},
-{
-  path: "/owner/analytics",
-  element: <AnalyticsPage />,
-},
+  },
+  {
+    path: "/owner/usermanagement",
+    element: <UserManagement />
+  },
+  {
+    path: "/owner/analytics",
+    element: <AnalyticsPage />,
+  },
 ]);
 
 export default router;
