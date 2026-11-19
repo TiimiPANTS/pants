@@ -126,10 +126,10 @@ export const OwnerDashboardPage = () => {
                         {Number(currentUserRole) !== 3 && currentUserRole !== null && (
                             <button
                                 type="button"
-                                onClick={() => navigate("/owner/adduser")}
+                                onClick={() => navigate("/owner/usermanagement")}
                                 className={headerButtonClass}
                             >
-                                Add new user
+                                User management
                             </button>
                         )}
 
