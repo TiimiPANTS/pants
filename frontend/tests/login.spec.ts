@@ -84,7 +84,7 @@ test('login form components are visible', async ({ page }) => {
     ).toBeVisible();
 
     await expect(
-        page.getByRole('link', { name: 'Back to reservations' })
+        page.getByRole('link', { name: 'Back to home page' })
     ).toBeVisible();
 });
 
