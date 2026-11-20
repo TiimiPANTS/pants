@@ -16,7 +16,7 @@ export const Header: FC<HeaderProps> = ({ logoUrl, restaurantName }) => {
         />
       </div>
 
-      <h1 className="font-headline text-3xl sm:text-4xl text-white font-bold tracking-tight mb-2">
+      <h1 className="font-headline text-4xl sm:text-5xl text-white font-normal italic mb-3">
         {restaurantName}
       </h1>
 
