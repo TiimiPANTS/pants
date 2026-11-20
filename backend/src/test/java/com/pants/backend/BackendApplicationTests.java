@@ -51,10 +51,14 @@ class BackendApplicationTests {
 
 		Reservation saved = reservationService.createReservation(dto);
 
-		assertThat(tableListRepository.findByIdReservationId(saved.getReservationId()))
-				.singleElement().satisfies(assignment ->
-						assertThat(tableRepository.findById(assignment.getId().getTableId())
-								.orElseThrow().getCapacity()).isEqualTo(expectedCapacity));
+		var assignments = tableListRepository.findByIdReservationId(saved.getReservationId());
+		int assignedSeats = assignments.stream()
+				.mapToInt(assignment -> tableRepository.findById(assignment.getId().getTableId())
+						.orElseThrow().getCapacity())
+				.sum();
+
+		assertThat(assignments).hasSize(partySize <= 6 ? 1 : 2);
+		assertThat(assignedSeats).isEqualTo(expectedCapacity);
 	}
 
 	@Test

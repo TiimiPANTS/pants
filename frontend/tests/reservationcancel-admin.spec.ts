@@ -1,7 +1,19 @@
 import { test, expect, type Page } from '@playwright/test';
+import { ADMIN_USER, mockJson } from './helpers/mockApi.ts';
+import {
+    DASHBOARD_URL,
+    bookingRow,
+    cancelBookingButtons,
+    cancelPageUrl,
+    reservationsTable,
+    showAllDates,
+} from './helpers/dashboardHelpers.ts';
 
-const sampleReservation = {
-    reservationId: 123,
+const RESERVATION_ID = 123;
+const GUEST_NAME = 'Test Customer';
+
+const confirmedReservation = {
+    reservationId: RESERVATION_ID,
     customer: {
         firstname: 'Test',
         lastname: 'Customer',
@@ -12,213 +24,112 @@ const sampleReservation = {
     datetime: '19.12.2026 10:00',
     partySize: 2,
     details: '',
-    status: {
-        name: 'CONFIRMED',
-    },
+    status: { name: 'CONFIRMED' },
+};
+
+const cancelledReservation = {
+    ...confirmedReservation,
+    status: { name: 'CANCELLED' },
+};
+
+const API = {
+    reservations: '**/api/reservations',
+    reservation: `**/api/reservations/${RESERVATION_ID}`,
+    cancel: `**/api/reservations/${RESERVATION_ID}/cancel`,
+    csrf: '**/api/auth/csrf',
+    currentUser: '**/api/users/me',
 };
 
 test.beforeEach(async ({ page }) => {
-
-    await page.route('**/api/reservations', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify([sampleReservation]),
-        });
-    });
-
-    await page.route('**/api/reservations/123', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify(sampleReservation),
-        });
-    });
-
-    await page.route('**/api/auth/csrf', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                headerName: 'X-CSRF-TOKEN',
-                token: 'test-csrf-token',
-            }),
-        });
-    });
-
-    await page.route('**/api/users/me', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                id: 1,
-                username: 'admin',
-                email: 'admin@test.com',
-                roleId: 1,
-            }),
-        });
-    });
+    await mockJson(page, API.reservations, [confirmedReservation]);
+    await mockJson(page, API.reservation, confirmedReservation);
+    await mockJson(page, API.csrf, { headerName: 'X-CSRF-TOKEN', token: 'test-csrf-token' });
+    await mockJson(page, API.currentUser, ADMIN_USER);
 });
 
-async function gotoDashboard(page: Page) {
-    const reservationsResponse = page.waitForResponse(
-        (response) =>
-            response.url().includes('/api/reservations') &&
-            !response.url().includes('/api/reservations/123') &&
-            response.ok()
+async function openDashboard(page: Page) {
+    const reservationsLoaded = page.waitForResponse(
+        (response) => response.url().endsWith('/api/reservations') && response.ok()
     );
 
-    await page.goto('/owner/dashboard');
-    await reservationsResponse;
+    await page.goto('/dashboard');
+    await reservationsLoaded;
+    await showAllDates(page);
 }
 
-async function gotoCancellationPage(page: Page) {
-    await gotoDashboard(page);
-
-    await page.getByRole('button', { name: 'Cancel' }).click();
-
-    await expect(page).toHaveURL(
-        /\/owner\/reservations\/123\/cancel$/
-    );
+async function openCancelPage(page: Page) {
+    await openDashboard(page);
+    await cancelBookingButtons(page).click();
+    await expect(page).toHaveURL(cancelPageUrl(RESERVATION_ID));
 }
 
-test('owner dashboard loads reservations successfully', async ({ page }) => {
-    await gotoDashboard(page);
+test.describe('Owner dashboard', () => {
+    test('lists reservations', async ({ page }) => {
+        await openDashboard(page);
 
-    await expect(page).toHaveURL(/\/owner\/dashboard$/);
+        await expect(page).toHaveURL(DASHBOARD_URL);
 
-    await expect(
-        page.getByRole('heading', { name: 'Reservations' })
-    ).toBeVisible();
-
-    await expect(page.getByText('#123')).toBeVisible();
-    await expect(page.getByText('Test Customer')).toBeVisible();
-});
-
-test('owner can open reservation cancellation page', async ({ page }) => {
-    await gotoCancellationPage(page);
-
-    await expect(
-        page.getByRole('heading', { name: 'Cancel reservation' })
-    ).toBeVisible();
-
-    await expect(page.getByText('#123')).toBeVisible();
-    await expect(page.getByText('Test Customer')).toBeVisible();
-
-    await expect(
-        page.getByText('Are you sure you want to cancel this reservation?')
-    ).toBeVisible();
-
-    await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'No' })).toBeVisible();
-});
-
-test('owner can go back without cancelling reservation', async ({ page }) => {
-    await gotoCancellationPage(page);
-
-    await page.getByRole('button', { name: 'No' }).click();
-
-    await expect(page).toHaveURL(/\/owner\/dashboard$/);
-});
-
-test('owner can successfully cancel a reservation', async ({ page }) => {
-
-    await page.route('**/api/reservations/123/cancel', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                message: 'Reservation cancelled successfully',
-            }),
-        });
+        const table = reservationsTable(page);
+        await expect(table.getByText(GUEST_NAME)).toBeVisible();
+        await expect(table.getByText(confirmedReservation.customer.email)).toBeVisible();
     });
 
-    await gotoCancellationPage(page);
+    test('shows a cancelled reservation without a Cancel action', async ({ page }) => {
+        await mockJson(page, API.reservations, [cancelledReservation]);
 
-    await page.getByRole('button', { name: 'Yes' }).click();
+        await openDashboard(page);
 
-    await expect(page).toHaveURL(/\/owner\/dashboard$/);
+        const row = bookingRow(page, GUEST_NAME);
+        await expect(row.getByText('Cancelled', { exact: true })).toBeVisible();
+        await expect(cancelBookingButtons(page)).toHaveCount(0);
+    });
 });
 
-test('cancelled reservation displays Cancelled instead of Cancel', async ({ page }) => {
+test.describe('Owner cancels a reservation', () => {
+    test('cancel page shows the reservation and asks for confirmation', async ({ page }) => {
+        await openCancelPage(page);
 
-    await page.unroute('**/api/reservations');
-
-    await page.route('**/api/reservations', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify([
-                {
-                    ...sampleReservation,
-                    status: {
-                        name: 'CANCELLED',
-                    },
-                },
-            ]),
-        });
+        await expect(page.getByRole('heading', { name: 'Cancel reservation' })).toBeVisible();
+        await expect(page.getByText(`#${RESERVATION_ID}`)).toBeVisible();
+        await expect(page.getByText(GUEST_NAME)).toBeVisible();
+        await expect(page.getByText('Are you sure you want to cancel this reservation?')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Yes' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'No' })).toBeVisible();
     });
 
-    await gotoDashboard(page);
+    test('choosing No returns to the dashboard', async ({ page }) => {
+        await openCancelPage(page);
 
-    await expect(page.getByText('Cancelled')).toBeVisible();
+        await page.getByRole('button', { name: 'No' }).click();
 
-    await expect(
-        page.getByRole('button', { name: 'Cancel' })
-    ).toHaveCount(0);
-});
-
-test('already cancelled reservation displays an information message', async ({ page }) => {
-
-    await page.unroute('**/api/reservations/123');
-
-    await page.route('**/api/reservations/123', async (route) => {
-        await route.fulfill({
-            status: 200,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                ...sampleReservation,
-                status: {
-                    name: 'CANCELLED',
-                },
-            }),
-        });
+        await expect(page).toHaveURL(DASHBOARD_URL);
     });
 
-    await gotoDashboard(page);
+    test('choosing Yes cancels and returns to the dashboard', async ({ page }) => {
+        await mockJson(page, API.cancel, { message: 'Reservation cancelled successfully' });
 
-    await page.getByRole('button', { name: 'Cancel' }).click();
+        await openCancelPage(page);
+        await page.getByRole('button', { name: 'Yes' }).click();
 
-    await expect(
-        page.getByText('This reservation is already cancelled.')
-    ).toBeVisible();
-
-    await expect(
-        page.getByRole('button', { name: 'Yes' })
-    ).toHaveCount(0);
-});
-
-test('cancellation error displays an error message', async ({ page }) => {
-
-    await page.route('**/api/reservations/123/cancel', async (route) => {
-        await route.fulfill({
-            status: 500,
-            contentType: 'application/json',
-            body: JSON.stringify({
-                message: 'Unable to cancel reservation.',
-            }),
-        });
+        await expect(page).toHaveURL(DASHBOARD_URL);
     });
 
-    await gotoCancellationPage(page);
+    test('an already cancelled reservation shows a notice instead of the confirmation', async ({ page }) => {
+        await mockJson(page, API.reservation, cancelledReservation);
 
-    await page.getByRole('button', { name: 'Yes' }).click();
+        await openCancelPage(page);
 
-    await expect(
-        page.getByText('Unable to cancel reservation.')
-    ).toBeVisible();
+        await expect(page.getByText('This reservation is already cancelled.')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Yes' })).toHaveCount(0);
+    });
 
-    await expect(page).toHaveURL(
-        /\/owner\/reservations\/123\/cancel$/
-    );
+    test('a server error is shown and the owner stays on the cancel page', async ({ page }) => {
+        await mockJson(page, API.cancel, { message: 'Unable to cancel reservation.' }, 500);
+
+        await openCancelPage(page);
+        await page.getByRole('button', { name: 'Yes' }).click();
+
+        await expect(page.getByText('Unable to cancel reservation.')).toBeVisible();
+        await expect(page).toHaveURL(cancelPageUrl(RESERVATION_ID));
+    });
 });

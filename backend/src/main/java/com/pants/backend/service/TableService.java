@@ -2,6 +2,8 @@ package com.pants.backend.service;
 
 import java.time.LocalDateTime;
 import java.time.LocalTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
@@ -15,8 +17,6 @@ import com.pants.backend.repository.RStatusRepository;
 import com.pants.backend.repository.TableListRepository;
 import com.pants.backend.repository.TableRepository;
 
-// Pöytien kapasiteettiin ja saatavuuteen liittyvä sovelluslogiikka:
-// mikä pöytä sopii tietylle henkilömäärälle ja onko se jo varattu kyseiselle ajalle
 @Service
 public class TableService {
 
@@ -37,7 +37,6 @@ public class TableService {
         this.rStatusRepository = rStatusRepository;
     }
 
-    // Riittääkö pöydän kapasiteetti annetulle henkilömäärälle?
     public boolean hasCapacityFor(Table table, int partySize) {
         return table.getCapacity() >= partySize;
     }
@@ -63,7 +62,51 @@ public class TableService {
                 .toList();
     }
 
-    // Onko pöytä vapaana annettuna päivänä ja kellonaikana, eli ei päällekkäistä varausta
+    public List<Table> findTableCombination(
+            int partySize,
+            LocalDateTime datetime,
+            LocalTime startTime,
+            LocalTime endTime
+    ) {
+        return findTableCombination(partySize, datetime, startTime, endTime, null);
+    }
+
+    public List<Table> findTableCombination(
+            int partySize,
+            LocalDateTime datetime,
+            LocalTime startTime,
+            LocalTime endTime,
+            Integer ignoreReservationId
+    ) {
+        List<Table> freeTables = tableRepository.findAll().stream()
+                .filter(table -> isAvailable(table.getId(), datetime, startTime, endTime, ignoreReservationId))
+                .sorted(Comparator.comparingInt(Table::getCapacity).reversed()
+                        .thenComparing(Table::getId))
+                .toList();
+
+        int totalSeats = freeTables.stream().mapToInt(Table::getCapacity).sum();
+        if (totalSeats < partySize) {
+            return List.of();
+        }
+
+        List<Table> remaining = new ArrayList<>(freeTables);
+        List<Table> chosen = new ArrayList<>();
+        int needed = partySize;
+        while (needed > 0) {
+            final int stillNeeded = needed;
+            Table next = remaining.stream()
+                    .filter(table -> table.getCapacity() >= stillNeeded)
+                    .min(Comparator.comparingInt(Table::getCapacity).thenComparing(Table::getId))
+                    .orElse(remaining.getFirst());
+            remaining.remove(next);
+            chosen.add(next);
+            needed -= next.getCapacity();
+        }
+
+        chosen.sort(Comparator.comparing(Table::getId));
+        return chosen;
+    }
+
     public boolean isAvailable(
             Integer tableId,
             LocalDateTime datetime,
@@ -122,7 +165,6 @@ public class TableService {
             return false;
         }
 
-        // Kaksi aikaväliä menevät päällekkäin jos kumpikin alkaa ennen kuin toinen päättyy
         return startTime.isBefore(existing.getEndTime()) && existing.getStartTime().isBefore(endTime);
     }
 }

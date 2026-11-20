@@ -40,7 +40,6 @@ export const ReservationPage: FC = () => {
     error,
     validationErrors,
     message,
-    handleGuestChange,
     handleInputChange,
     handleSubmit,
     isCancelling,
@@ -60,7 +59,7 @@ export const ReservationPage: FC = () => {
     }
 
     if (isStaffEdit) {
-      navigate("/owner/dashboard");
+      navigate("/dashboard");
       return;
     }
 
@@ -128,7 +127,7 @@ export const ReservationPage: FC = () => {
 
           {isLoading ? null : isAuthenticated ? (
             <Link
-              to="/owner/dashboard"
+              to="/dashboard"
               className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
             >
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
@@ -178,7 +177,6 @@ export const ReservationPage: FC = () => {
           <PartySizeSelector
             guestCount={guestCount}
             updateGuestCount={updateGuestCount}
-            handleGuestChange={handleGuestChange}
           />
 
           <TimeSlotSelector

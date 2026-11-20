@@ -1,4 +1,4 @@
-import { test, expect, type Page } from '@playwright/test';
+import { test, expect } from '@playwright/test';
 import {
     cancelReservationViaApi,
     chooseNextMonthDay,
@@ -10,6 +10,13 @@ import {
     reservationDate,
     reservationForm,
 } from './helpers/reservationHelpers.ts';
+import {
+    DASHBOARD_URL,
+    bookingRow,
+    cancelBookingButtons,
+    showAllDates,
+    signInAsOwner,
+} from './helpers/dashboardHelpers.ts';
 
 // System test: runs against the real frontend + backend + database (no mocks).
 // Owner credentials come from the backend seed (TestLoginConfig) unless overridden.
@@ -21,60 +28,59 @@ const RESERVATION_TIME = '15:00';
 
 test.describe.configure({ mode: 'serial' });
 
-async function loginAsOwner(page: Page) {
-    await page.goto('/login');
-    await page.getByLabel('Email').fill(OWNER_EMAIL);
-    await page.getByLabel('Password').fill(OWNER_PASSWORD);
-    await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page).toHaveURL(/\/owner\/dashboard$/);
-}
-
-test('reservation lifecycle: customer books, owner cancels, customer sees the cancellation', async ({ browser, request }) => {
-    // Unique email so the reservation row can be found reliably on the dashboard
+test('customer books, owner cancels, customer sees the cancellation', async ({ browser, request }) => {
+    // Unique email so the booking row can be found reliably on the dashboard
     const customerEmail = `system-${Date.now()}@example.com`;
 
-    // --- Customer makes a reservation in the UI ---
+    // Separate browser contexts = separate sessions, like two real users
     const customerContext = await browser.newContext();
-    const customer = await customerContext.newPage();
-
-    await openNewReservationPage(customer);
-    await chooseNextMonthDay(customer, reservationDate());
-    await chooseTime(customer, RESERVATION_TIME);
-    await fillContactDetails(customer, { firstName: 'System', lastName: 'Test', email: customerEmail });
-    await confirmReservation(customer);
-
-    await reservationForm(customer).editButton.click();
-    await expect(reservationForm(customer).editHeading).toBeVisible();
-    const editToken = editTokenFromUrl(customer);
-
-    // Separate browser context = separate session, like a real second user
     const ownerContext = await browser.newContext();
+    const customer = await customerContext.newPage();
     const owner = await ownerContext.newPage();
+    let editToken: string | undefined;
 
     try {
-        // --- Owner logs in and finds the reservation on the dashboard ---
-        await loginAsOwner(owner);
+        await test.step('customer books a table', async () => {
+            await openNewReservationPage(customer);
+            await chooseNextMonthDay(customer, reservationDate());
+            await chooseTime(customer, RESERVATION_TIME);
+            await fillContactDetails(customer, { firstName: 'System', lastName: 'Test', email: customerEmail });
+            await confirmReservation(customer);
 
-        const reservationRow = owner.getByRole('row').filter({ hasText: customerEmail });
-        await expect(reservationRow).toBeVisible();
-        await expect(reservationRow).toContainText('System Test');
+            await reservationForm(customer).editButton.click();
+            await expect(reservationForm(customer).editHeading).toBeVisible();
+            editToken = editTokenFromUrl(customer);
+        });
 
-        // --- Owner cancels the reservation ---
-        await reservationRow.getByRole('button', { name: 'Cancel' }).click();
-        await expect(owner.getByRole('heading', { name: 'Cancel reservation' })).toBeVisible();
-        await owner.getByRole('button', { name: 'Yes' }).click();
+        const row = bookingRow(owner, customerEmail);
 
-        await expect(owner).toHaveURL(/\/owner\/dashboard$/);
-        await expect(reservationRow.getByText('Cancelled')).toBeVisible();
-        await expect(reservationRow.getByRole('button', { name: 'Cancel' })).toHaveCount(0);
+        await test.step('owner finds the booking on the dashboard', async () => {
+            await signInAsOwner(owner, OWNER_EMAIL, OWNER_PASSWORD);
+            await showAllDates(owner);
 
-        // --- Customer reopens the edit link and sees the reservation is cancelled ---
-        await customer.goto(`/reserve/${editToken}`);
-        await expect(customer.getByRole('heading', { name: 'Reservation cancelled' })).toBeVisible();
-        await expect(customer.getByRole('button', { name: 'Cancel Reservation' })).toHaveCount(0);
+            await expect(row).toBeVisible();
+            await expect(row).toContainText('System Test');
+        });
+
+        await test.step('owner cancels the booking', async () => {
+            await cancelBookingButtons(row).click();
+            await expect(owner.getByRole('heading', { name: 'Cancel reservation' })).toBeVisible();
+            await owner.getByRole('button', { name: 'Yes' }).click();
+
+            await expect(owner).toHaveURL(DASHBOARD_URL);
+            await showAllDates(owner);
+            await expect(row.getByText('Cancelled', { exact: true })).toBeVisible();
+            await expect(cancelBookingButtons(row)).toHaveCount(0);
+        });
+
+        await test.step('customer sees the booking is cancelled', async () => {
+            await customer.goto(`/reserve/${editToken}`);
+            await expect(customer.getByRole('heading', { name: 'Reservation cancelled' })).toBeVisible();
+            await expect(customer.getByRole('button', { name: 'Cancel Reservation' })).toHaveCount(0);
+        });
     } finally {
-        // Safety net if the test fails before the owner cancels
-        await cancelReservationViaApi(request, editToken);
+        // Cleanup in case the test failed before the owner cancelled
+        if (editToken) await cancelReservationViaApi(request, editToken);
         await ownerContext.close();
         await customerContext.close();
     }

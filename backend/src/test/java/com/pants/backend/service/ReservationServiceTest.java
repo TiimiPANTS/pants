@@ -133,8 +133,6 @@ class ReservationServiceTest {
         verify(reservationRepository, never()).save(any());
     }
 
-    // cancelReservationByToken
-
     @Test
     void cancelByToken_whenConfirmed_setsStatusCancelled() {
         Reservation reservation = reservation("CONFIRMED", LocalDateTime.now().plusDays(2));
@@ -192,8 +190,6 @@ class ReservationServiceTest {
 
         verify(reservationRepository, never()).save(any());
     }
-
-        // cancelReservation (owner / admin)
 
     @Test
     void cancelById_whenConfirmed_setsStatusCancelled() {
@@ -262,8 +258,6 @@ class ReservationServiceTest {
         verify(reservationRepository, never()).save(any());
     }
 
-    // updateReservationByToken
-
     @Test
     void updateByToken_whenCancelled_throwsIllegalState() {
         Reservation reservation = reservation("CANCELLED", LocalDateTime.now().plusDays(2));
@@ -298,7 +292,27 @@ class ReservationServiceTest {
         List<ReservationAvailabilityDTO> availability =
                 reservationService.getReservationAvailability(date, date);
 
-        assertThat(availability.get(0).getAvailableCapacity()).isEqualTo(4);
+        assertThat(availability.get(0).getAvailableCapacity()).isEqualTo(44);
+    }
+
+    @Test
+    void getAvailability_allowsMoreThanTenGuestsInOneSlot() {
+        LocalDate date = LocalDate.of(2026, 10, 19);
+        LocalTime startTime = LocalTime.of(10, 0);
+        Reservation first = reservation("CONFIRMED", date.atTime(startTime));
+        first.setStartTime(startTime);
+        first.setPartySize(10);
+        Reservation second = reservation("CONFIRMED", date.atTime(startTime));
+        second.setStartTime(startTime);
+        second.setPartySize(8);
+
+        when(reservationRepository.findByDatetimeGreaterThanEqualAndDatetimeLessThan(any(), any()))
+                .thenReturn(List.of(first, second));
+
+        List<ReservationAvailabilityDTO> availability =
+                reservationService.getReservationAvailability(date, date);
+
+        assertThat(availability.get(0).getAvailableCapacity()).isEqualTo(32);
     }
 
     @Test

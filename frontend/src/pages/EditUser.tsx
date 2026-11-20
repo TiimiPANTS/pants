@@ -210,7 +210,7 @@ export default function EditUser() {
           <div className="flex items-center gap-5">
             <button
               type="button"
-              onClick={() => navigate("/owner/dashboard")}
+              onClick={() => navigate("/dashboard")}
               className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
             >
               Dashboard
