@@ -68,7 +68,7 @@ async function gotoDashboard(page: Page) {
             response.ok()
     );
 
-    await page.goto('/owner/dashboard');
+    await page.goto('/dashboard');
     await reservationsResponse;
 }
 

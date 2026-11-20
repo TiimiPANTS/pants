@@ -84,7 +84,7 @@ export const CancelReservationPage = () => {
                 throw new Error(body?.message ?? "Unable to cancel reservation.");
             }
 
-            navigate("/owner/dashboard");
+            navigate("/dashboard");
         } catch (cancelError) {
             setError(
                 cancelError instanceof Error
@@ -96,7 +96,7 @@ export const CancelReservationPage = () => {
     };
 
     const handleNo = () => {
-        navigate("/owner/dashboard");
+        navigate("/dashboard");
     };
 
     return (
