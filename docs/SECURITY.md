@@ -1,1 +1,0 @@
-Haavoittuvuudet ja porsaanreiät yms. tulee tänne.

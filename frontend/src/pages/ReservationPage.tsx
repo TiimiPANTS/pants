@@ -12,6 +12,11 @@ import { ContactDetails } from "../components/ContactDetails";
 import { useAuth } from "../hooks/useAuth";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
+import { openingHours } from "../utils/openingHours";
+
+// Same look as the home page's navbar Reserve pill.
+const topPill =
+  "inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ffb2bf]/70 px-5 text-[13px] font-semibold uppercase tracking-[0.16em] text-[#ffb2bf] transition-colors hover:border-wine-light hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light";
 
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
@@ -40,13 +45,15 @@ export const ReservationPage: FC = () => {
     error,
     validationErrors,
     message,
-    handleGuestChange,
     handleInputChange,
     handleSubmit,
     isCancelling,
     isCancelled,
     handleCancel,
   } = useReservation(token,id);
+
+  // The rest of the form opens once a time is chosen (edit mode already has one).
+  const showDetails = Boolean(selectedTime);
   const handleMonthChange = useCallback((month: Date) => {
     setAvailabilityMonth(month);
     void refreshAvailability(month);
@@ -60,7 +67,7 @@ export const ReservationPage: FC = () => {
     }
 
     if (isStaffEdit) {
-      navigate("/owner/dashboard");
+      navigate("/dashboard");
       return;
     }
 
@@ -115,36 +122,26 @@ export const ReservationPage: FC = () => {
   return (
     <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
       <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-36 flex flex-col">
-        <div className="mb-4 flex justify-between">
-          <Link
-            to="/"
-            className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
-          >
-            <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-              home
+        <div className="mb-4 flex items-center justify-between">
+          <Link to="/" className={`group ${topPill}`}>
+            <span
+              className="material-symbols-outlined text-[18px] transition-transform group-hover:-translate-x-0.5"
+              aria-hidden="true"
+            >
+              arrow_back
             </span>
-            Homepage
+            Home
           </Link>
 
-          {isLoading ? null : isAuthenticated ? (
+          {!isLoading && isAuthenticated && (
             <Link
-              to="/owner/dashboard"
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+              to="/dashboard"
+              className={topPill}
             >
               <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
                 person_outline
               </span>
               Dashboard
-            </Link>
-          ) : (
-            <Link
-              to="/login"
-              className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-card-border bg-card-bg px-4 text-sm font-semibold text-zinc-200 transition-colors hover:border-wine hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
-            >
-              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-                login
-              </span>
-              Staff sign in
             </Link>
           )}
 
@@ -153,6 +150,31 @@ export const ReservationPage: FC = () => {
           logoUrl={LePantsLogo}
           restaurantName="Le Pants"
         />
+
+        {/* Opening hours: three even columns, today's label in pink */}
+        <dl
+          aria-label="Opening hours"
+          className="-mt-2 mb-8 grid grid-cols-3 divide-x divide-card-border text-center"
+        >
+          {openingHours.map((row) => {
+            const isToday = row.match.includes(new Date().getDay());
+            return (
+              <div key={row.days} className="px-2">
+                <dt
+                  className={`text-[11px] font-medium uppercase tracking-[0.18em] ${
+                    isToday ? "text-[#ffb2bf]" : "text-zinc-400"
+                  }`}
+                >
+                  {row.short}
+                  {isToday && <span className="sr-only"> (today)</span>}
+                </dt>
+                <dd className="mt-1 text-sm tabular-nums text-zinc-200">
+                  {row.time === "Closed" ? "Closed" : row.time.replace(/ /g, "")}
+                </dd>
+              </div>
+            );
+          })}
+        </dl>
 
         <form
           id="reservationForm"
@@ -178,8 +200,12 @@ export const ReservationPage: FC = () => {
           <PartySizeSelector
             guestCount={guestCount}
             updateGuestCount={updateGuestCount}
-            handleGuestChange={handleGuestChange}
           />
+
+          <p className="text-sm text-zinc-400" role="note">
+            You can book a table for any time up to{" "}
+            <strong className="font-semibold text-white">17:00</strong>.
+          </p>
 
           <TimeSlotSelector
             selectedDay={selectedDay}
@@ -205,37 +231,53 @@ export const ReservationPage: FC = () => {
             </div>
           )}
 
-          <ContactDetails
-            form={form}
-            validationErrors={validationErrors}
-            handleInputChange={handleInputChange}
-          />
-
+          {/* Outside the reveal below, so load and cancel errors show before a time is picked */}
           {error && (
-            <p className="text-red-400 text-sm">
+            <p className="text-red-400 text-sm" role="alert">
               {error}
             </p>
           )}
 
           {message && (
-            <p className="text-green-400 text-sm">
+            <p className="text-green-400 text-sm" role="status">
               {message}
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
-            className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase rounded-xl transition-colors"
+          {/* Step 2: contact details and confirm appear only once a time is picked */}
+          {!showDetails && (
+            <p className="text-center text-sm text-zinc-400" role="status">
+              Pick a time above to add your details.
+            </p>
+          )}
+
+          <div
+            className={`reveal${showDetails ? " is-open" : ""}`}
+            aria-hidden={!showDetails}
+            inert={!showDetails}
           >
-            {isSubmitting
-              ? isEditMode
-                ? "Updating reservation..."
-                : "Creating reservation..."
-              : isEditMode
-                ? "Update Reservation"
-                : "Confirm Reservation"}
-          </button>
+            <div className="space-y-7">
+              <ContactDetails
+                form={form}
+                validationErrors={validationErrors}
+                handleInputChange={handleInputChange}
+              />
+
+              <button
+                type="submit"
+                disabled={isSubmitting || isAvailabilityLoading || Boolean(availabilityError)}
+                className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold uppercase rounded-xl transition-colors"
+              >
+                {isSubmitting
+                  ? isEditMode
+                    ? "Updating reservation..."
+                    : "Creating reservation..."
+                  : isEditMode
+                    ? "Update Reservation"
+                    : "Confirm Reservation"}
+              </button>
+            </div>
+          </div>
 
           {isEditMode && !isStaffEdit &&(
             <button

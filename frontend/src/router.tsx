@@ -1,5 +1,5 @@
 
-import { createBrowserRouter } from "react-router-dom";
+import { createBrowserRouter, Navigate } from "react-router-dom";
 
 import { HomePage } from "./pages/HomePage.tsx";
 import { ReservationPage } from "./pages/ReservationPage.tsx";
@@ -26,7 +26,7 @@ const router = createBrowserRouter([
     element: <LoginPage />,
   },
   {
-    path: "/owner/dashboard",
+    path: "/dashboard",
     element: <OwnerDashboardPage />,
   },
   {
@@ -46,7 +46,7 @@ const router = createBrowserRouter([
     element: <ReservationPage key="staff-edit" />,
   },
   {
-    path: "/owner/edituser",
+    path: "/edituser",
     element: <EditUser />,
   },
   {
@@ -58,9 +58,14 @@ const router = createBrowserRouter([
     element: <UserManagement />
   },
   {
-    path: "/owner/analytics",
+    path: "/analytics",
     element: <AnalyticsPage />,
   },
+  // Old paths, kept so existing bookmarks still work.
+  ...["dashboard", "analytics", "edituser"].map((name) => ({
+    path: `/owner/${name}`,
+    element: <Navigate to={`/${name}`} replace />,
+  })),
 ]);
 
 export default router;

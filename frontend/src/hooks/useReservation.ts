@@ -4,6 +4,8 @@ import { getCsrfHeaders } from "./csrf";
 import {
     formatDateKey,
     getAvailableTimes,
+    MAX_PARTY_SIZE,
+    MIN_PARTY_SIZE,
     parseEuropeanDate,
     type ReservationAvailability,
     type ReservationForm,
@@ -19,6 +21,7 @@ import { createReservationData } from "../utils/reservationData";
 
 
 const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+const AVAILABILITY_REFRESH_MS = 30000;
 
 // Parse a JSON body without throwing on empty/non-JSON responses
 async function readJson(response: Response) {
@@ -70,7 +73,12 @@ export function useReservation(token?: string, reservationId?:string) {
     } | null>(null);
     const availabilityRequestId = useRef(0);
 
-    const loadAvailability = useCallback(async (month: Date = new Date()) => {
+    const availabilityMonthRef = useRef<Date>(new Date());
+
+    const loadAvailability = useCallback(async (
+        month: Date = new Date(),
+        silent: boolean = false
+    ) => {
         const requestId = ++availabilityRequestId.current;
         const from = new Date(month.getFullYear(), month.getMonth(), 1);
         const to = new Date(month.getFullYear(), month.getMonth() + 1, 0);
@@ -78,9 +86,12 @@ export function useReservation(token?: string, reservationId?:string) {
             from: formatDateKey(from),
             to: formatDateKey(to),
         });
-        setIsAvailabilityLoading(true);
-        setAvailability([]);
-        setAvailabilityError(null);
+        if (!silent) {
+            availabilityMonthRef.current = month;
+            setIsAvailabilityLoading(true);
+            setAvailability([]);
+            setAvailabilityError(null);
+        }
 
         try {
             const response = await fetch(
@@ -108,7 +119,7 @@ export function useReservation(token?: string, reservationId?:string) {
                 setAvailabilityError(null);
             }
         } catch (error) {
-            if (requestId === availabilityRequestId.current) {
+            if (requestId === availabilityRequestId.current && !silent) {
                 setAvailabilityError(
                     error instanceof Error
                         ? error.message
@@ -116,11 +127,27 @@ export function useReservation(token?: string, reservationId?:string) {
                 );
             }
         } finally {
-            if (requestId === availabilityRequestId.current) {
+            if (requestId === availabilityRequestId.current && !silent) {
                 setIsAvailabilityLoading(false);
             }
         }
     }, []);
+
+    useEffect(() => {
+        const refreshQuietly = () => {
+            if (document.visibilityState === "visible") {
+                void loadAvailability(availabilityMonthRef.current, true);
+            }
+        };
+
+        const intervalId = window.setInterval(refreshQuietly, AVAILABILITY_REFRESH_MS);
+        document.addEventListener("visibilitychange", refreshQuietly);
+
+        return () => {
+            window.clearInterval(intervalId);
+            document.removeEventListener("visibilitychange", refreshQuietly);
+        };
+    }, [loadAvailability]);
 
     useEffect(() => {
         let active = true;
@@ -276,13 +303,9 @@ export function useReservation(token?: string, reservationId?:string) {
     const updateGuestCount = (value: number) => {
         const safeValue = Number.isNaN(value)
             ? 2
-            : Math.min(10, Math.max(1, value));
+            : Math.min(MAX_PARTY_SIZE, Math.max(MIN_PARTY_SIZE, value));
 
         setGuestCount(safeValue);
-    };
-
-    const handleGuestChange = (event: ChangeEvent<HTMLInputElement>) => {
-        updateGuestCount(Number.parseInt(event.target.value, 10));
     };
 
     const handleInputChange = (
@@ -472,7 +495,6 @@ export function useReservation(token?: string, reservationId?:string) {
         error,
         validationErrors,
         message,
-        handleGuestChange,
         handleInputChange,
         handleSubmit,
         isCancelling,
