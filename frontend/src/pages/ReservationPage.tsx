@@ -40,7 +40,6 @@ export const ReservationPage: FC = () => {
     error,
     validationErrors,
     message,
-    handleGuestChange,
     handleInputChange,
     handleSubmit,
     isCancelling,
@@ -178,7 +177,6 @@ export const ReservationPage: FC = () => {
           <PartySizeSelector
             guestCount={guestCount}
             updateGuestCount={updateGuestCount}
-            handleGuestChange={handleGuestChange}
           />
 
           <TimeSlotSelector
