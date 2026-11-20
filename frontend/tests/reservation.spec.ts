@@ -60,6 +60,11 @@ test('reservation page components are visible', async ({ page }) => {
     await expect(page.getByRole('heading', { name: '1. Select Date' })).toBeVisible();
     await expect(page.getByRole('heading', { name: '2. Party Size' })).toBeVisible();
     await expect(page.getByRole('heading', { name: '3. Select Time' })).toBeVisible();
+
+    // Contact details stay hidden until a time is picked
+    await expect(page.getByRole('heading', { name: '4. Contact Details' })).toBeHidden();
+    await selectReservationDate(page);
+    await selectReservationTime(page);
     await expect(page.getByRole('heading', { name: '4. Contact Details' })).toBeVisible();
 });
 
@@ -111,12 +116,12 @@ test('customer can successfully submit a reservation', async ({ page }) => {
     await expect(page.getByText('#PV-123')).toBeVisible();
 });
 
-test('empty reservation form displays date validation error', async ({ page }) => {
+test('confirm button is hidden until a time is selected', async ({ page }) => {
 
     await gotoReservationPage(page);
 
-    await page.getByRole('button', { name: 'Confirm Reservation', }).click();
-    await expect(page.getByText('Please select a date.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Confirm Reservation' })).toBeHidden();
+    await expect(page.getByText('Pick a time above to add your details.')).toBeVisible();
 
     await expect(page).toHaveURL(/\/reserve$/);
 });
