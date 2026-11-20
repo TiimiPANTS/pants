@@ -231,6 +231,19 @@ export const ReservationPage: FC = () => {
             </div>
           )}
 
+          {/* Outside the reveal below, so load and cancel errors show before a time is picked */}
+          {error && (
+            <p className="text-red-400 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+
+          {message && (
+            <p className="text-green-400 text-sm" role="status">
+              {message}
+            </p>
+          )}
+
           {/* Step 2: contact details and confirm appear only once a time is picked */}
           {!showDetails && (
             <p className="text-center text-sm text-zinc-400" role="status">
@@ -249,18 +262,6 @@ export const ReservationPage: FC = () => {
                 validationErrors={validationErrors}
                 handleInputChange={handleInputChange}
               />
-
-              {error && (
-                <p className="text-red-400 text-sm">
-                  {error}
-                </p>
-              )}
-
-              {message && (
-                <p className="text-green-400 text-sm">
-                  {message}
-                </p>
-              )}
 
               <button
                 type="submit"
