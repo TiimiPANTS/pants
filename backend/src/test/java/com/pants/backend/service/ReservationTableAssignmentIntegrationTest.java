@@ -33,7 +33,10 @@ import com.pants.backend.utils.TestDataFactory;
 class ReservationTableAssignmentIntegrationTest {
 
     @BeforeAll
-    static void removeExampleTables(@Autowired TableRepository tableRepository) {
+    static void removeExampleTables(
+            @Autowired TableRepository tableRepository,
+            @Autowired TableListRepository tableListRepository) {
+        tableListRepository.deleteAll();
         tableRepository.deleteAll();
     }
 
