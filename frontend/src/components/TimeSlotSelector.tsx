@@ -74,6 +74,7 @@ export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
               aria-label={`${time}, capacity for ${remainingCapacity} guests`}
               title={`${remainingCapacity} guests can be seated at this time`}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => setSelectedTime(time)}
               className={
                 isReserved

@@ -90,7 +90,7 @@ export const DatePicker: FC<DatePickerProps> = ({
       return (
         <DayButton
           {...props}
-          className="min-h-[44px] min-w-[60px] relative flex flex-col items-center justify-center rounded-lg bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40"
+          className="min-h-[44px] w-full relative flex flex-col items-center justify-center rounded-lg bg-zinc-900/40 text-zinc-500 cursor-not-allowed border border-zinc-800/40"
         >
           <span className="text-xs line-through">
             {props.day.date.getDate()}
@@ -164,15 +164,24 @@ export const DatePicker: FC<DatePickerProps> = ({
             ...bookedDates,
           ]}
           
+          // Seven equal columns that always fit the card (no fixed day widths,
+          // which pushed Sat/Sun off-screen on phones). Taps stay >= 44px tall.
           classNames={{
             month_caption: "hidden",
             button_previous: "hidden",
             button_next: "hidden",
 
+            months: "w-full max-w-none",
+            month: "w-full",
+            month_grid: "w-full table-fixed border-collapse",
+            weekday: "pb-2 text-center text-xs font-medium text-zinc-400",
+            day: "p-0.5 text-center",
             outside: "text-zinc-600",
-            today: "text-white font-bold bg-zinc-800 rounded-lg",
-            selected: "min-h-[44px] min-w-[60px] flex items-center justify-center text-sm font-bold text-white !bg-wine rounded-lg shadow-md ring-2 ring-wine-light/60",
-            day_button: "text-sm min-w-[60px] min-h-[44px] aria-disabled:line-through",
+            today: "text-white font-bold [&>button]:bg-zinc-800 [&>button]:rounded-lg",
+            selected:
+              "font-bold text-white [&>button]:!bg-wine [&>button]:rounded-lg [&>button]:shadow-md [&>button]:ring-2 [&>button]:ring-wine-light/60",
+            day_button:
+              "w-full min-h-[44px] rounded-lg text-sm flex items-center justify-center aria-disabled:line-through",
           }}
           components={{
             DayButton: CustomDayButton,

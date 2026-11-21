@@ -27,13 +27,15 @@
 
 ⭐ **Swagger API dokumentaatio:** https://pants-backend.2.rahtiapp.fi/swagger-ui/index.html#
 
-**Main branch deployment with Postgre**
-- Backend URL: https://pants-backend.2.rahtiapp.fi
-- Frontend URL: https://pants-frontend.onrender.com
+Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki (X määrä) käyttäjätarinat löytyvät backlogilta.
 
-Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy docs-kansiosta. Kaikki käyttäjätarinat backlogilla.
+Projektin koodaukseen ja dokumentoitiin on pääosin käytetty Github Copilot ilmaista opiskelijalisenssiä. Osalla ryhmäjäsenistä on käytössä Claude tai Codex tilaukset. Tilaukset
 
-Projektin koodaukseen ja dokumentoitiin on pääosin käytetty Github Copilot ilmaista opiskelijalisenssiä. Osalla ryhmäjäsenistä on käytössä Claude tai Codex tilaukset.
+---
+
+❤️ **Try out our app mobile or desktop!** https://pants-frontend.onrender.com
+
+(LISÄÄ YOUTUBE VIDEO)
 
 ---
 
@@ -62,6 +64,16 @@ Sovelluksen ensimmäisessä versiossa (MVP) käyttäjä voi tehdä seuraavia asi
 - Muokata tekemäänsä varausta ennen varauksen ajankohtaa suunnitelmien muuttuessa.  
 - Peruuttaa varauksensa, jolloin aika vapautuu muiden käyttöön.  
 - Vastaanottaa onnistuneesta varauksesta sähköpostivahvistuksen.  
+
+---
+### **Brändi: logo ja fontit**
+
+- **Logo:** `frontend/src/assets/LePantsLogo.svg`. Näytetään aina pyöreänä (`rounded-full` / `border-radius: 50%`).
+- **"Le Pants" -nimi:** [Playfair Display](https://fonts.google.com/specimen/Playfair+Display), **kursiivi, normaali paino (400)** – ei lihavointia. Sama tyyli kaikilla sivuilla (etusivu, varauslomake, henkilökunnan näkymä).
+  - Tailwind: `font-headline italic font-normal`
+  - CSS (etusivu): `font-family: var(--serif); font-style: italic;`
+- **Leipäteksti:** [Inter](https://fonts.google.com/specimen/Inter) (`font-sans`).
+- Fontit ladataan Google Fontsista tiedostossa `frontend/src/styles/index.css`, ja `--font-headline` / `--font-sans` määritellään samassa tiedostossa.
 
 ---
 ### **Lokaalin projektin ja testien käynnistys**
@@ -108,3 +120,5 @@ npm test
 *HUOM! Lataa Playwright riippuvuus vain ensimmäisellä kerralla!*
 
 
+---
+ARCITECTURE MD
