@@ -128,6 +128,58 @@ class TableServiceTest {
     }
 
     @Test
+    void findTableCombination_whenPartyNeedsTwoTables_combinesLargestFreeTables() {
+        LocalDateTime date = LocalDateTime.of(2026, 12, 1, 19, 0);
+        when(tableRepository.findAll()).thenReturn(List.of(
+                table(1, 2), table(2, 4), table(3, 4), table(4, 6), table(5, 6)));
+
+        List<Table> combination = tableService.findTableCombination(
+                10, date, LocalTime.of(19, 0), LocalTime.of(21, 0));
+
+        assertThat(combination).extracting(Table::getId).containsExactly(2, 4);
+    }
+
+    @Test
+    void findTableCombination_whenLargeTablesAreBooked_usesSmallerTables() {
+        stubCancelledStatus();
+        LocalDateTime date = LocalDateTime.of(2026, 12, 1, 19, 0);
+        when(tableRepository.findAll()).thenReturn(List.of(
+                table(1, 2), table(2, 4), table(3, 4), table(4, 6)));
+        when(tableListRepository.findByIdTableId(1)).thenReturn(List.of());
+        when(tableListRepository.findByIdTableId(2)).thenReturn(List.of());
+        when(tableListRepository.findByIdTableId(3)).thenReturn(List.of());
+        when(tableListRepository.findByIdTableId(4)).thenReturn(List.of(assignment(10, 4)));
+        when(reservationRepository.findAllById(List.of(10))).thenReturn(List.of(
+                reservation(10, date, LocalTime.of(18, 30), LocalTime.of(20, 30))));
+
+        List<Table> combination = tableService.findTableCombination(
+                8, date, LocalTime.of(19, 0), LocalTime.of(21, 0));
+
+        assertThat(combination).extracting(Table::getId).containsExactly(2, 3);
+    }
+
+    @Test
+    void findTableCombination_finishesWithSmallestTableThatCoversTheRest() {
+        LocalDateTime date = LocalDateTime.of(2026, 12, 1, 19, 0);
+        when(tableRepository.findAll()).thenReturn(List.of(
+                table(1, 2), table(2, 2), table(3, 6), table(4, 6)));
+
+        List<Table> combination = tableService.findTableCombination(
+                7, date, LocalTime.of(19, 0), LocalTime.of(21, 0));
+
+        assertThat(combination).extracting(Table::getId).containsExactly(1, 3);
+    }
+
+    @Test
+    void findTableCombination_whenFreeSeatsAreNotEnough_returnsEmpty() {
+        LocalDateTime date = LocalDateTime.of(2026, 12, 1, 19, 0);
+        when(tableRepository.findAll()).thenReturn(List.of(table(1, 2), table(2, 4)));
+
+        assertThat(tableService.findTableCombination(
+                10, date, LocalTime.of(19, 0), LocalTime.of(21, 0))).isEmpty();
+    }
+
+    @Test
     void isAvailable_whenThereAreNoAssignments_returnsTrue() {
         when(tableListRepository.findByIdTableId(1)).thenReturn(List.of());
 

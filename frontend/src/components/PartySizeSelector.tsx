@@ -1,16 +1,43 @@
+import { useState } from "react";
 import type { FC, ChangeEvent } from "react";
+import { MAX_PARTY_SIZE, MIN_PARTY_SIZE } from "../types/reservation";
 
 type PartySizeSelectorProps = {
   guestCount: number;
   updateGuestCount: (value: number) => void;
-  handleGuestChange: (event: ChangeEvent<HTMLInputElement>) => void;
 };
 
 export const PartySizeSelector: FC<PartySizeSelectorProps> = ({
   guestCount,
   updateGuestCount,
-  handleGuestChange,
 }) => {
+  const [draft, setDraft] = useState<string | null>(null);
+  const displayValue = draft ?? String(guestCount);
+
+  const step = (delta: number) => {
+    setDraft(null);
+    updateGuestCount(guestCount + delta);
+  };
+
+  const handleChange = (event: ChangeEvent<HTMLInputElement>) => {
+    const digits = event.target.value.replace(/\D/g, "").slice(0, 2);
+    setDraft(digits);
+
+    const parsed = Number.parseInt(digits, 10);
+    if (parsed >= MIN_PARTY_SIZE && parsed <= MAX_PARTY_SIZE) {
+      updateGuestCount(parsed);
+    }
+  };
+
+  const commit = () => {
+    const parsed = Number.parseInt(displayValue, 10);
+    const next = Number.isNaN(parsed)
+      ? guestCount
+      : Math.min(MAX_PARTY_SIZE, Math.max(MIN_PARTY_SIZE, parsed));
+    updateGuestCount(next);
+    setDraft(null);
+  };
+
   return (
     <section>
       <div className="flex items-center justify-between mb-2">
@@ -27,31 +54,45 @@ export const PartySizeSelector: FC<PartySizeSelectorProps> = ({
       <div className="flex items-center gap-3">
         <button
           type="button"
-          disabled={guestCount <= 1}
+          disabled={guestCount <= MIN_PARTY_SIZE}
           className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold enabled:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-default"
-          onClick={() => updateGuestCount(guestCount - 1)}
+          onClick={() => step(-1)}
         >
           −
         </button>
 
         <input
-          className="w-full h-12 bg-surface-input border border-zinc-700 rounded-xl px-4 text-center text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-wine"
-          max={10}
-          min={1}
+          className="w-full h-12 bg-surface-input border border-zinc-700 rounded-xl px-4 text-center text-lg font-bold text-white focus:outline-none focus:ring-2 focus:ring-wine [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          aria-label="Number of guests"
+          inputMode="numeric"
+          max={MAX_PARTY_SIZE}
+          min={MIN_PARTY_SIZE}
           type="number"
-          value={guestCount}
-          onChange={handleGuestChange}
+          value={displayValue}
+          onChange={handleChange}
+          onFocus={(event) => event.target.select()}
+          onBlur={commit}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.preventDefault();
+              commit();
+            }
+          }}
         />
 
         <button
           type="button"
-          disabled={guestCount >= 10}
+          disabled={guestCount >= MAX_PARTY_SIZE}
           className="w-12 h-12 bg-zinc-900 border border-zinc-700 rounded-xl text-xl font-bold enabled:hover:bg-zinc-800 transition-colors disabled:opacity-30 disabled:cursor-default"
-          onClick={() => updateGuestCount(guestCount + 1)}
+          onClick={() => step(1)}
         >
           +
         </button>
       </div>
+
+      <p className="mt-2 text-xs text-zinc-500">
+        Type a number or use + / −. Up to {MAX_PARTY_SIZE} guests.
+      </p>
     </section>
   );
 };

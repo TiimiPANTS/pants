@@ -16,6 +16,8 @@ import jakarta.validation.constraints.Size;
 
 public class ReservationDTO {
 
+    public static final int MAX_PARTY_SIZE = 50;
+
     @Valid 
     @NotNull
     private CustomerDTO customer;
@@ -38,7 +40,7 @@ public class ReservationDTO {
 
     @NotNull 
     @Min(1)
-    @Max(10)
+    @Max(MAX_PARTY_SIZE)
     @Schema(example = "2")
     private Integer partySize;
 
