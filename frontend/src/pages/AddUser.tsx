@@ -36,10 +36,12 @@ export default function AddUser() {
                 const roleId = Number(userData.roleId);
 
                 if (roleId !== 1 && roleId !== 2) {
-                    navigate("/owner/dashboard");
+                    navigate("/dashboard");
                     return;
                 }
 
+                setCurrentUserRole(roleId);
+                setIsLoading(false);
             } catch (error) {
                 console.error("Authentication check failed:", error);
                 navigate("/login");
@@ -122,6 +124,15 @@ export default function AddUser() {
         }
     };
 
+    // Don't show the form until we know the user may create accounts.
+    if (isLoading) {
+        return (
+            <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
+                <p className="text-sm text-zinc-400">Loading...</p>
+            </main>
+        );
+    }
+
     return (
         <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
             <div className="mx-auto max-w-7xl">
@@ -140,7 +151,7 @@ export default function AddUser() {
                     <div className="flex items-center gap-5">
                         <button
                             type="button"
-                            onClick={() => navigate("/owner/dashboard")}
+                            onClick={() => navigate("/dashboard")}
                             className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
                         >
                             Dashboard
