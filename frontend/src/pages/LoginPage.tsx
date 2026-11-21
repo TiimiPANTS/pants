@@ -76,7 +76,7 @@ export const LoginPage = () => {
                 responseData.role === "OWNER" ||
                 responseData.role === "ADMIN"
             ) {
-                navigate("/owner/dashboard");
+                navigate("/dashboard");
             }
 
         } catch (loginError) {

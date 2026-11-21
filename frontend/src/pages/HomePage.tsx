@@ -102,7 +102,7 @@ export function HomePage() {
 
             {isLoading ? null : (
               <Link
-                to={isAuthenticated ? "/owner/dashboard" : "/login"}
+                to={isAuthenticated ? "/dashboard" : "/login"}
                 className="homepage__icon-button homepage__login-link"
                 aria-label={isAuthenticated ? "Dashboard" : "Staff sign in"}
                 title={isAuthenticated ? "Dashboard" : "Staff sign in"}
