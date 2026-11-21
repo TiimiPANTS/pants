@@ -1,242 +1,141 @@
-DESIGN.md was generated with stitch.ai
+# Le Pants Design Rules
 
-Previous versions of UI/UX:
+Read this before changing any UI. It describes what the app **actually ships**. If code and this file disagree, fix one of them in the same change.
 
-- [Stitch v1](https://stitch.withgoogle.com/projects/16575207833716961824)
-- [Stitch v2](https://stitch.withgoogle.com/projects/427455009647000198)
-- [Stitch v3]()
+**The feel:** a calm, dark, candle-lit restaurant. Quiet confidence, lots of space, one accent colour. When unsure, remove something rather than add it.
 
-![design](assets/design.png)
+History: first drafts were made in Stitch ([v1](https://stitch.withgoogle.com/projects/16575207833716961824), [v2](https://stitch.withgoogle.com/projects/427455009647000198)), then refined with Claude.
 
-name: Le Pants Theme
-
-colors:
-  surface: '#131315'
-  surface-dim: '#131315'
-  surface-bright: '#0e0e4e'
-  surface-container-lowest: '#0e0e10'
-  surface-container-low: '#1c1b1d'
-  surface-container: '#201f21'
-  surface-container-high: '#2a2a2c'
-  surface-container-highest: '#353437'
-  on-surface: '#e5e1e4'
-  on-surface-variant: '#debfc3'
-  inverse-surface: '#e5e1e4'
-  inverse-on-surface: '#313032'
-  outline: '#a68a8d'
-  outline-variant: '#574144'
-  surface-tint: '#ffb2bf'
-  primary: '#ffb2bf'
-  on-primary: '#660027'
-  primary-container: '#9b1b44'
-  on-primary-container: '#ffaebb'
-  inverse-primary: '#ae2b51'
-  secondary: '#ffb2be'
-  on-secondary: '#660126'
-  secondary-container: '#88203e'
-  on-secondary-container: '#ff9cae'
-  tertiary: '#ffb2bf'
-  on-tertiary: '#660027'
-  tertiary-container: '#a00c44'
-  on-tertiary-container: '#ffadbc'
-  error: '#ffb4ab'
-  on-error: '#690005'
-  error-container: '#93000a'
-  on-error-container: '#ffdad6'
-  primary-fixed: '#ffd9de'
-  primary-fixed-dim: '#ffb2bf'
-  on-primary-fixed: '#3f0015'
-  on-primary-fixed-variant: '#8d0d3a'
-  secondary-fixed: '#ffd9de'
-  secondary-fixed-dim: '#ffb2be'
-  on-secondary-fixed: '#3f0015'
-  on-secondary-fixed-variant: '#851e3c'
-  tertiary-fixed: '#ffd9de'
-  tertiary-fixed-dim: '#ffb2bf'
-  on-tertiary-fixed: '#3f0015'
-  on-tertiary-fixed-variant: '#90003a'
-  background: '#131315'
-  on-background: '#e5e1e4'
-  surface-variant: '#353437'
-typography:
-  display-hero:
-    fontFamily: Playfair Display
-    fontSize: 72px
-    fontWeight: '600'
-    lineHeight: 80px
-    letterSpacing: -0.02em
-  display-hero-mobile:
-    fontFamily: Playfair Display
-    fontSize: 44px
-    fontWeight: '600'
-    lineHeight: 52px
-    letterSpacing: -0.01em
-  headline-xl:
-    fontFamily: Playfair Display
-    fontSize: 48px
-    fontWeight: '500'
-    lineHeight: 56px
-    letterSpacing: -0.015em
-  headline-xl-mobile:
-    fontFamily: Playfair Display
-    fontSize: 32px
-    fontWeight: '500'
-    lineHeight: 40px
-    letterSpacing: 0em
-  headline-lg:
-    fontFamily: Playfair Display
-    fontSize: 36px
-    fontWeight: '400'
-    lineHeight: 44px
-    letterSpacing: -0.01em
-  headline-lg-mobile:
-    fontFamily: Playfair Display
-    fontSize: 26px
-    fontWeight: '400'
-    lineHeight: 34px
-    letterSpacing: 0em
-  headline-md:
-    fontFamily: Playfair Display
-    fontSize: 24px
-    fontWeight: '500'
-    lineHeight: 32px
-    letterSpacing: 0em
-  body-lg:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 18px
-    fontWeight: '400'
-    lineHeight: 28px
-    letterSpacing: 0.01em
-  body-md:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 15px
-    fontWeight: '400'
-    lineHeight: 24px
-    letterSpacing: 0.005em
-  body-sm:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 13px
-    fontWeight: '400'
-    lineHeight: 20px
-    letterSpacing: 0.01em
-  label-caps:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 11px
-    fontWeight: '600'
-    lineHeight: 16px
-    letterSpacing: 0.18em
-  label-interactive:
-    fontFamily: Plus Jakarta Sans
-    fontSize: 14px
-    fontWeight: '500'
-    lineHeight: 20px
-    letterSpacing: 0.04em
-rounded:
-  sm: 0.125rem
-  DEFAULT: 0.25rem
-  md: 0.375rem
-  lg: 0.5rem
-  xl: 0.75rem
-  full: 9999px
-spacing:
-  gutter: 2rem
-  margin: 4rem
-  space-xs: 0.25rem
-  space-sm: 0.5rem
-  space-md: 1rem
-  space-lg: 1.75rem
-  space-xl: 3rem
 ---
 
-## Brand & Style
-The design system establishes a sultry, cinematic, and uncompromisingly high-end fine dining aesthetic. It merges old-world culinary indulgence with precision modern craftsmanship. The digital presence evokes the hushed, dramatic tension of an intimate Michelin-caliber evening: tactile materials, candlelight-level contrast, and deliberate theatrical restraint.
+## 1. Where things live
 
-The target audience encompasses epicureans, luxury hospitality travelers, and design-conscious patrons who value culinary theater, curated wine programs, and exclusivity. The interface must inspire anticipation, quiet confidence, and sensory immersion rather than commercial urgency.
+| What | File |
+| --- | --- |
+| Tailwind tokens (`wine`, `dark-bg`, `card-bg`, `card-border`, `surface-input`, `font-headline`, `font-sans`) and font loading | `frontend/src/styles/index.css` |
+| Home page styles (plain CSS, `home__*` classes, `--pink`, `--wine`, `--muted`…) | `frontend/src/styles/HomePage.css` |
+| Staff layout and shared staff button classes (`btn`, `primaryBtn`, `focusRing`) | `frontend/src/components/OwnerShell.tsx` |
+| Logo | `frontend/src/assets/LePantsLogo.svg` |
+| Photos | `frontend/src/assets/*.png / *.jpg` |
 
-The visual direction combines **Cinematic Dark-Mode Minimalism** with **Tactile Editorial Luxury**:
-- **Atmospheric Depths:** True-black foundation surfaces punctuated by layered charcoal and dark zinc cards, creating stage-lit focal points.
-- **Controlled Drama:** Monolithic typography contrasted with whispering micro-labels and sharp hairline partitions.
-- **Sensory Accents:** Sparing use of deep, velvety wine-red tones reserved strictly for primary actions, critical culinary highlights, and key interactive moments.
+---
 
-## Colors
-The palette is built upon deep ambient darkness punctuated by rich vinous reds and surgical typographic contrast.
+## 2. Colours
 
-### Palette Architecture
-- **Canvas Base (`#0A0A0C`):** The foundational absolute darkness for main page viewports.
-- **Surface Elevation 1 (`#121215`):** Recessed panels, modal underlays, and structural full-width sections.
-- **Surface Card / Elevation 2 (`#18181D`):** Elevated cards, elevated interactive trays, and floating menu panels.
-- **Brand Accent / Primary (`#9B1B44`):** Saturated, velvety vintage wine red. Dedicated to prominent CTAs, reservation actions, and curated highlights.
-- **Primary Deep (`#7A1434`):** Pressed states, gradient anchors, and subtle active indicators.
-- **Primary Bright Hover (`#B52252`):** Illuminated wine tone used exclusively for hover illumination and focused interaction.
-- **Text Dominance (`#FFFFFF`):** High-clarity white reserved for editorial titles, dish names, and critical prices.
-- **Text Body (`#E4E4E7`):** Refined zinc offering legible softness across multi-line copy and culinary narratives.
-- **Text Muted (`#A1A1AA`):** Subdued metallic zinc for categories, ingredients, provenance notes, and metadata.
-- **Hairline Borders (`#27272A` & `#3F3F46`):** Precision containment dividers providing structural definition without visual weight.
+Use only these. Don't invent new shades.
 
-## Typography
-The typographic rhythm balances editorial romanticism with brutal culinary utility. 
+| Role | Value | Use for |
+| --- | --- | --- |
+| Page background | `#121316` (`dark-bg`) | Every page |
+| Deep section | `#0E0F12` | Alternating home sections, footer |
+| Card | `#18191E` (`card-bg`) | Cards, panels |
+| Input | `#1F2027` (`surface-input`) | Form fields |
+| Hairline | `#272832` (`card-border`) | Borders, dividers |
+| Text | `#FFFFFF` / `#E4E4E7` | Headings / body |
+| Muted text | `#A1A1AA` (zinc-400) | Labels, secondary text. Never dimmer than this. |
+| **Wine** (accent) | `#9B1B44`, border/hover `#B52252` | Primary buttons only, active nav bar |
+| **Pink** (soft accent) | `#FFB2BF` | Prices, active nav link, outline buttons, small highlights |
+| Error | `text-red-400` | Error messages |
 
-- **Playfair Display** commands the titles, section preludes, and course announcements. Its high-contrast strokes and sculpted serifs channel luxury print publications and Michelin menus. Italics are used intentionally on hero keywords and French culinary expressions to add intimacy.
-- **Plus Jakarta Sans** provides a contemporary, geometrically refined foundation for tasting notes, booking forms, price listings, and structural UI elements. It maintains pristine legibility against low-luminance backdrops.
-- **Micro-Editorial Labels (`label-caps`):** Must always be set uppercase with wide letter tracking (`0.18em`), paired with subdued zinc (`#A1A1AA`) for course tiers, origin stamps, and dietary indicators.
+Rules:
+- **One accent at a time.** Wine is for the main action. Pink is for small highlights. If everything is coloured, nothing stands out.
+- **Section labels (eyebrows) are grey**, not pink.
+- No green/amber/red "traffic light" bars. Only exception: a small green dot for "Open now".
 
-## Layout & Spacing
-The layout model employs a 12-column responsive fluid grid with generous vertical cadence, allowing imagery and culinary prose ample breathing room.
+---
 
-### Breakpoints & Canvas Bounds
-- **Desktop (1200px+):** Max page container of 1440px. 12-column grid, `gutter: 2rem` (32px), `margin: 4rem` (64px). Vertical section spacing scales between `6rem` (96px) and `8rem` (128px) to establish museum-like pacing.
-- **Tablet (768px – 1199px):** 8-column grid, `gutter: 1.5rem` (24px), `margin: 2.5rem` (40px). Imagery stacks beneath or beside descriptions in alternating balance.
-- **Mobile (< 768px):** 4-column grid, `gutter: 1rem` (16px), `margin: 1.25rem` (20px). Full horizontal bleed for curated dish photography; narrative content stacks vertically with unified left alignment.
+## 3. Fonts
 
-Content must never feel crowded. Negative space functions as a structural tier of luxury, separating wine pairings, tasting journeys, and reservation flows into isolated sensory beats.
+| Font | Tailwind | Use for |
+| --- | --- | --- |
+| **Playfair Display, italic, weight 400** | `font-headline italic font-normal` | The "Le Pants" name, page titles, section headings, dish names, prices |
+| **Inter** | `font-sans` (default) | Everything else: body, forms, buttons, nav, tables, times |
 
-## Elevation & Depth
-Elevation is realized through low-key luminescence and razor-thin borders rather than aggressive drop shadows.
+Rules:
+- **"Le Pants" is always Playfair Display italic, regular weight.** Never bold, never Inter. Same on home page, reservation form, login and staff sidebar.
+- Never use Playfair for body text, form labels, tables or numbers in data.
+- Small labels: uppercase Inter, 11–13px, letter-spacing `0.14em`–`0.2em`, muted grey.
+- Data numbers (times, guests, KPIs): `tabular-nums`.
+- Minimum text: 14px (inputs 16px so iOS doesn't zoom).
 
-- **Surface Tiers:**
-  - `Level 0 (Canvas)`: `#0A0A0C`
-  - `Level 1 (Section Blocks)`: `#121215` with top hairline border (`1px solid #27272A`)
-  - `Level 2 (Cards & Overlays)`: `#18181D` with perimeter outline (`1px solid #27272A`)
-  - `Level 3 (Interactive Floating Panels)`: `#18181D` combined with a subtle inner highlight (`inset 0 1px 0 0 rgba(255, 255, 255, 0.05)`) and an ambient glow (`0 20px 40px -15px rgba(0, 0, 0, 0.7)`).
-- **Wine-Tinted Bloom:** Primary focal points and primary CTA buttons cast an ultra-soft, diffused wine shadow on hover: `0 8px 30px -4px rgba(155, 27, 68, 0.35)`.
-- **Glass Accents:** Navigation bars and sticky table reservation banners use a frosted glass composition (`background: rgba(10, 10, 12, 0.85)` with `backdrop-filter: blur(16px)` and bottom border `1px solid rgba(63, 63, 70, 0.4)`).
+---
 
-## Shapes
-The shape language favors architectural sharpness and subtle refinement (`roundedness: 1`). Fine dining demands geometric discipline over playful bubbles.
+## 4. Logo
 
-- **Base Radius (0.25rem / 4px):** Applied to input fields, subtle culinary badges, chips, and small control elements.
-- **Large Radius (0.5rem / 8px):** Applied to dish highlight cards, modal sheets, and atmosphere showcase frames.
-- **Pill Exception (Full Round / 9999px):** Applied exclusively to floating reservation CTAs and wine vintage tag pills to provide tactile ergonomics against otherwise sharp planar geometry.
+- `LePantsLogo.svg`, always in a **round** badge (`rounded-full`) with a thin border.
+- Shown next to or above the "Le Pants" wordmark (see fonts).
+- If the name is visible next to it, use `alt=""` so screen readers don't read the name twice.
 
-## Components
+---
 
-### Navigation Bar
-- **Architecture:** Fixed top header with frosted backdrop blur (`rgba(10, 10, 12, 0.85)`). Height: 80px desktop, 64px mobile.
-- **Logo:** High-contrast `#FFFFFF` typography pairing serif luxury display styling with wide kerning.
-- **Links:** Upper-case navigation items styled with `label-caps` in `#E4E4E7`, transitioning to `#FFFFFF` with a 1px wine-red underline indicator on active or hover states.
-- **Table Reservation CTA:** Wine Red `#9B1B44` button anchored on the far right.
+## 5. Buttons
 
-### Buttons
-- **Primary (Reservation / Booking):** Background `#9B1B44`, text `#FFFFFF`, border `1px solid #B52252`. Hover shifts background to `#B52252` with wine bloom elevation. Pressed transitions to `#7A1434`.
-- **Secondary / Ghost (Menu View, Wine List):** Background transparent, border `1px solid #3F3F46`, text `#E4E4E7`. Hover initiates background tint `rgba(255, 255, 255, 0.04)` and border transition to `#E4E4E7`.
-- **Text Link:** Editorial italic serif or uppercase tracked sans-serif paired with a directional hairline glyph (`→`), accented in `#B52252`.
+| Type | Look | When |
+| --- | --- | --- |
+| **Primary** | Wine `#9B1B44` fill, `#B52252` border, white text, **pill** (`rounded-full`), min 48px tall | The one main action on a screen (Reserve a table, Confirm, Sign in) |
+| **Outline pill** | Transparent, pink border and pink uppercase letter-spaced text, fills wine on hover | Navbar "Reserve", "← Home" on reservation form |
+| **Ghost (staff)** | Transparent, `1px #3F3F46` border, 4px radius, min 44px | Secondary staff actions |
+| **Text link** | Underlined or plain muted text | Tiny actions (e.g. "Staff" in footer) |
 
-### Culinary Highlight Cards
-- Surface background `#18181D` wrapped in a fine `1px solid #27272A` border.
-- Image aspect ratio locked at `4:5` or `16:10` with subtle zoom (`scale(1.03)`) on container hover.
-- Header row displaying course title in `headline-md` (`#FFFFFF`), right-aligned numeric pricing in tabular figures.
-- Body containing tasting notes in `body-sm` (`#E4E4E7`) over a bottom footer displaying origin badges and wine pairing recommendations in `#A1A1AA`.
+Rules:
+- One primary button per screen section. Don't repeat the same CTA in every section — the navbar already has Reserve.
+- Every interactive element: at least 44×44px touch area and a visible `:focus-visible` outline.
 
-### Chips & Dietary / Vintage Badges
-- Compact padding (`0.25rem 0.625rem`), border `1px solid #3F3F46`, background `rgba(24, 24, 29, 0.6)`.
-- Typography set to `label-caps` (`#A1A1AA`). Wine pairings adopt a soft wine tint border (`rgba(155, 27, 68, 0.4)`).
+---
 
-### Input Fields & Reservation Pickers
-- Canvas background `#121215`, border `1px solid #27272A`, text `#FFFFFF`.
-- Placeholder text in `#A1A1AA`.
-- Focus state reveals a precise outline transition to `1px solid #9B1B44` alongside an inner wine glow.
-- Date, time, and guest count pickers utilize pill segmented controls with `#18181D` active backgrounds.
+## 6. Photos
 
-### Story & Atmosphere Showcase
-- Asymmetric dual-column arrangement: left column anchored with oversized `headline-xl` serif quote; right column featuring high-grain monochrome and ambient-lit culinary photography.
-- Hairline architectural dividers (`#27272A`) frame tasting menu courses sequentially.
+- Dark, moody, low-light photos on dark backgrounds only. No bright daylight shots.
+- **No visible text, logos or branding from other businesses** in photos.
+- All feature photos use the **same 4:5 portrait crop** (`aspect-ratio: 4/5; object-fit: cover`), same radius (10px).
+- One photo per section. No collages, no staggered pairs, no text chips over food photos.
+- Every photo needs real `alt` text describing it (decorative backgrounds use `alt=""`).
+
+---
+
+## 7. Layout
+
+- **Mobile first.** Write base styles for phones, then add `@media (min-width: 720px)` / `1100px` for wider screens.
+- Home page order: Hero → Signature burger → Menu (text only) → Wine → Dessert → Find us → Footer.
+- Feature sections alternate image left / right on desktop; on phones the image sits above the text.
+- Generous space between sections. Don't put boxes around everything — use whitespace and thin hairlines.
+- Sticky header: anchor targets need `scroll-margin-top` equal to the header height.
+
+---
+
+## 8. Page-specific rules
+
+### Home page
+- Navbar: logo + "Le Pants" left, links centred (**Menu · Wine · Find us**), outline "Reserve" pill right. Active section link is pink with a wine underline.
+- Hero: one headline, one primary button, live opening status ("Open now · until 20:00").
+- Menu: printed-menu style text list with dotted leaders; prices in Inter, signature prices in Playfair pink.
+- Staff link is tiny and grey at the end of the copyright line. Never near the logo.
+
+### Reservation form
+- **Step by step.** Date → party size → time first. Contact details and Confirm stay hidden until a time is picked, then **slide open gently** (~0.7s, `.reveal` in `index.css`). Never auto-scroll the page.
+- Respect `prefers-reduced-motion` for all animation.
+- Seats: show the count **only for the selected time** ("18 seats free at 12:00"). Other time buttons show nothing, except a small "Few left" tag when ≤ 10 seats remain.
+- Friendly but professional, short copy. Example: "You can book a table for any time up to 17:00." Avoid overly personal phrases ("we'd love to see you").
+- No staff sign-in link on the customer form.
+
+### Login (staff)
+- Blurred, darkened dining-room photo behind a frosted card.
+- "Le Pants" + small "STAFF" label above the card; "Welcome back" in Playfair italic.
+
+### Staff area (`OwnerShell`)
+- Desktop: sticky left rail (`#121316`), collapsible. Active nav item: white text + 3px `#B52252` bar on the left, `aria-current="page"`.
+- Mobile: top bar + bottom tab bar (Bookings, Stats, Users, Account), active tab has a 3px `#B52252` bar on top.
+- Denser than guest pages, but same colours and fonts. Status badges always pair colour with text.
+
+---
+
+## 9. Don't
+
+- ❌ Bold Playfair, or "Le Pants" in Inter
+- ❌ Red filled badges/boxes for prices or "Today"
+- ❌ Numbers on every time slot, live clocks, blinking dots, traffic-light bars
+- ❌ Sudden pop-ins or automatic page scrolling
+- ❌ Repeating the same button in every section
+- ❌ Photos with other restaurants' branding, bright daylight photos, mismatched crops
+- ❌ Pink section labels everywhere; boxes around every block
+- ❌ Text dimmer than zinc-400, touch targets under 44px, removing focus outlines

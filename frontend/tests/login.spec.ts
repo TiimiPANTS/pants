@@ -42,7 +42,7 @@ test.describe('Login page', () => {
         await expect(page.getByLabel('Email')).toBeVisible();
         await expect(page.getByLabel('Password')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Sign in' })).toBeVisible();
-        await expect(page.getByRole('link', { name: 'Back to reservations' })).toBeVisible();
+        await expect(page.getByRole('link', { name: 'Back to home page' })).toBeVisible();
     });
 
     test('valid credentials open the dashboard and store the token', async ({ page }) => {
