@@ -1,4 +1,8 @@
 export type ReservationTime = string;
+
+export const MIN_PARTY_SIZE = 1;
+export const MAX_PARTY_SIZE = 50;
+
 export type ReservationAvailability = {
   date: string;
   startTime: ReservationTime;
