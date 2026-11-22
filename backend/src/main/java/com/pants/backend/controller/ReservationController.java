@@ -36,6 +36,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
+import com.pants.backend.service.ReceiptService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 @RestController
 @RequestMapping("/api/reservations")
 @Tag(
@@ -331,6 +335,7 @@ public ResponseEntity<ReservationStatsDTO> getWeeklyStats(
             )
         )
     })
+
     @PutMapping("/manage/{token}")
     public ResponseEntity<?> updateReservationByToken(
         @PathVariable String token,
