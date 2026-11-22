@@ -144,7 +144,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/api/users",
                                 "/api/users/**")
-                        .hasRole("ADMIN")
+                        .hasAnyRole("ADMIN", "OWNER")
 
                         // Delete reservations and receipts
                         .requestMatchers(
@@ -156,6 +156,12 @@ public class SecurityConfig {
                         // =====================================
                         // ADMIN AND OWNER
                         // =====================================
+
+                        // Reservation statistics
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations/stats")
+                        .hasAnyRole("ADMIN", "OWNER")
 
                         // View receipts
                         .requestMatchers(

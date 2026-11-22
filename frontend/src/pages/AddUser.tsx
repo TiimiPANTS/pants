@@ -11,7 +11,8 @@ export default function AddUser() {
     const [password, setPassword] = useState("");
     const [roleId, setRoleId] = useState("");
 
-    const [currentUserRole, setCurrentUserRole] = useState(null);
+    const [currentUserRole, setCurrentUserRole] = useState<number | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
     const [message, setMessage] = useState("");
     const [isError, setIsError] = useState(false);
 
@@ -32,8 +33,15 @@ export default function AddUser() {
                 }
 
                 const userData = await response.json();
-                setCurrentUserRole(userData.roleId);
+                const roleId = Number(userData.roleId);
 
+                if (roleId !== 1 && roleId !== 2) {
+                    navigate("/dashboard");
+                    return;
+                }
+
+                setCurrentUserRole(roleId);
+                setIsLoading(false);
             } catch (error) {
                 console.error("Authentication check failed:", error);
                 navigate("/login");
@@ -116,6 +124,15 @@ export default function AddUser() {
         }
     };
 
+    // Don't show the form until we know the user may create accounts.
+    if (isLoading) {
+        return (
+            <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
+                <p className="text-sm text-zinc-400">Loading...</p>
+            </main>
+        );
+    }
+
     return (
         <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
             <div className="mx-auto max-w-7xl">
@@ -134,7 +151,7 @@ export default function AddUser() {
                     <div className="flex items-center gap-5">
                         <button
                             type="button"
-                            onClick={() => navigate("/owner/dashboard")}
+                            onClick={() => navigate("/dashboard")}
                             className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
                         >
                             Dashboard
@@ -239,9 +256,16 @@ export default function AddUser() {
                             <button
                                 type="button"
                                 onClick={handleCreateUser}
-                                className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+                                className="mr-5 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
                             >
                                 Create user
+                            </button>
+                            <button
+                                type="button"
+                                onClick={() => navigate("/owner/usermanagement")}
+                                className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
+                            >
+                                Cancel
                             </button>
 
                             {message && (

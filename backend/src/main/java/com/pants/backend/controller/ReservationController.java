@@ -1,10 +1,12 @@
 package com.pants.backend.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.time.LocalDate;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -21,7 +23,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.pants.backend.dto.ErrorResponse;
 import com.pants.backend.dto.ReservationDTO;
 import com.pants.backend.dto.ReservationResponse;
+import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.entity.Reservation;
+import com.pants.backend.service.ReceiptService;
 import com.pants.backend.service.ReservationService;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -80,6 +84,7 @@ public class ReservationController {
         );
     }
 
+    // GET /api/reservations/availability
     @GetMapping("/availability")
     public ResponseEntity<?> getReservationAvailability(
         @RequestParam LocalDate from,
@@ -93,6 +98,19 @@ public class ReservationController {
             reservationService.getReservationAvailability(from, to)
         );
     }
+
+    // GET /api/reservations/stats?weekStart=2026-11-16 , OWNER AND ADMIN
+@Operation(
+    summary = "Get weekly reservation statistics",
+    description = "Returns busiest day, busiest time and reservation count for the week"
+)
+@GetMapping("/stats")
+public ResponseEntity<ReservationStatsDTO> getWeeklyStats(
+    @RequestParam(required = false) LocalDate weekStart
+) {
+    LocalDate date = weekStart != null ? weekStart : LocalDate.now();
+    return ResponseEntity.ok(reservationService.getWeeklyStats(date));
+}
 
     // GET /api/reservations/{id}
     @Operation(
@@ -195,9 +213,12 @@ public class ReservationController {
     })
     @PostMapping
     public ResponseEntity<?> createReservation(
-       @Valid @RequestBody ReservationDTO reservationDTO
+        @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
+            // Tarkistetaan varauksen ajat
+            validateReservationTimes(reservationDTO);
+
             Reservation savedReservation =
                 reservationService.createReservation(
                     reservationDTO
@@ -206,6 +227,7 @@ public class ReservationController {
             return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(new ReservationResponse(savedReservation));
+
         } catch (IllegalArgumentException e) {
             return badRequest(e.getMessage());
         } catch (IllegalStateException e) {
@@ -252,6 +274,9 @@ public class ReservationController {
         @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
+            // Tarkistetaan muokatun varauksen ajat
+            validateReservationTimes(reservationDTO);
+
             Reservation updatedReservation =
                 reservationService.updateReservation(
                     id,
@@ -259,6 +284,7 @@ public class ReservationController {
                 );
 
             return ResponseEntity.ok(updatedReservation);
+
         } catch (NoSuchElementException e) {
             return notFound(e.getMessage());
         } catch (IllegalArgumentException e) {
@@ -316,12 +342,16 @@ public class ReservationController {
         @Valid @RequestBody ReservationDTO reservationDTO
     ) {
         try {
+            // Tarkistetaan asiakkaan muokkaaman varauksen ajat
+            validateReservationTimes(reservationDTO);
+
             Reservation updatedReservation =
                 reservationService.updateReservationByToken(
                     token,
                     reservationDTO
                 );
 
+            // Lähetetään muokkausvahvistus sähköpostiin
             try {
                 receiptService.sendEditConfirmation(updatedReservation);
             } catch (Exception e) {
@@ -347,7 +377,7 @@ public class ReservationController {
         }
     }
 
-     // PATCH /api/reservations/manage/{token}/cancel
+    // PATCH /api/reservations/manage/{token}/cancel
     @Operation(
         summary = "Cancel reservation by edit token",
         description = "Lets the customer cancel their reservation using the edit token"
@@ -398,7 +428,7 @@ public class ReservationController {
         }
     }
 
-      // PATCH /api/reservations/{id}/cancel , OWNER AND ADMIN
+    // PATCH /api/reservations/{id}/cancel
     @Operation(
         summary = "Cancel reservation by ID",
         description = "Lets owner or admin cancel a reservation by its ID"
@@ -489,6 +519,30 @@ public class ReservationController {
                 "Successfully deleted reservation with id " + id
             )
         );
+    }
+
+    // VALIDATION
+    private void validateReservationTimes(ReservationDTO dto) {
+        if (dto.getDatetime() == null ||
+            dto.getStartTime() == null ||
+            dto.getEndTime() == null) {
+
+            throw new IllegalArgumentException(
+                "Reservation date, start time and end time are required"
+            );
+        }
+
+        if (!dto.getEndTime().isAfter(dto.getStartTime())) {
+            throw new IllegalArgumentException(
+                "End time must be after start time"
+            );
+        }
+
+        if (!dto.getDatetime().toLocalTime().equals(dto.getStartTime())) {
+            throw new IllegalArgumentException(
+                "Reservation datetime must match start time"
+            );
+        }
     }
 
     private ResponseEntity<ErrorResponse> notFound(String message) {

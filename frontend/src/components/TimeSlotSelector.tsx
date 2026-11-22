@@ -1,5 +1,5 @@
 import type { FC } from "react";
-import { getAvailableTimes, type ReservationTime, } from "../types/reservation";
+import { getAvailableTimes, type ReservationTime } from "../types/reservation";
 
 
 type TimeSlotSelectorProps = {
@@ -13,6 +13,9 @@ type TimeSlotSelectorProps = {
   availabilityError: string | null;
 };
 
+// Only mention seat counts when they are actually running low.
+const FEW_SEATS = 10;
+
 export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
   selectedDay,
   selectedTime,
@@ -25,7 +28,12 @@ export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
 }) => {
   const now = new Date();
   const availableTimes = getAvailableTimes(selectedDay);
-  
+  const showSeats = Boolean(selectedDay) && !isAvailabilityLoading && !availabilityError;
+
+  const selectedSeatsLeft = selectedTime
+    ? slotAvailableCapacities.get(selectedTime) ?? 0
+    : null;
+
   return (
     <section>
       <h2 className="text-xs uppercase tracking-widest font-bold text-zinc-300 flex items-center gap-2 mb-3">
@@ -66,6 +74,7 @@ export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
               aria-label={`${time}, capacity for ${remainingCapacity} guests`}
               title={`${remainingCapacity} guests can be seated at this time`}
               type="button"
+              aria-pressed={isSelected}
               onClick={() => setSelectedTime(time)}
               className={
                 isReserved
@@ -78,10 +87,35 @@ export const TimeSlotSelector: FC<TimeSlotSelectorProps> = ({
               }
             >
               {time}
+              {showSeats && !isDisabled && remainingCapacity <= FEW_SEATS && (
+                <span
+                  className={`block text-[10px] font-medium uppercase tracking-wider ${
+                    isSelected ? "text-white/80" : "text-[#ffb2bf]"
+                  }`}
+                >
+                  Few left
+                </span>
+              )}
             </button>
           );
         })}
       </div>
+      {showSeats && selectedTime && selectedSeatsLeft !== null && (
+        <div className="mt-3 text-sm" role="status" aria-live="polite">
+          {selectedSeatsLeft < guestCount && selectedTime !== currentReservationTime ? (
+            <p className="text-red-400">
+              Not enough seats for a party of {guestCount} at this time.
+            </p>
+          ) : (
+            <p className="text-zinc-300">
+              <span className="font-semibold text-white">
+                {selectedSeatsLeft} {selectedSeatsLeft === 1 ? "seat" : "seats"} free
+              </span>{" "}
+              at {selectedTime} · add your details below
+            </p>
+          )}
+        </div>
+      )}
       {isAvailabilityLoading && (
         <p className="mt-2 text-xs text-zinc-400" role="status">
           Checking reservation availability...

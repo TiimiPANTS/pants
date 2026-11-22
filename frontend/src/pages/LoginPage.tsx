@@ -2,6 +2,7 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
+import interiorImage from "../assets/interior.png";
 import LePantsLogo from "../assets/LePantsLogo.svg";
 
 type LoginResponse = {
@@ -72,11 +73,9 @@ export const LoginPage = () => {
 
             setUser(responseData);
 
-            if (
-                responseData.role === "OWNER" ||
-                responseData.role === "ADMIN"
-            ) {
-                navigate("/owner/dashboard");
+            // All staff roles work from the bookings dashboard.
+            if (["ADMIN", "OWNER", "EMPLOYEE"].includes(responseData.role ?? "")) {
+                navigate("/dashboard");
             }
 
         } catch (loginError) {
@@ -91,25 +90,41 @@ export const LoginPage = () => {
     };
 
     return (
-        <main className="antialiased min-h-screen flex items-center justify-center bg-dark-bg px-4 py-10 text-white font-sans selection:bg-wine selection:text-white">
+        <main className="relative isolate antialiased min-h-screen flex items-center justify-center overflow-hidden bg-dark-bg px-4 py-10 text-white font-sans selection:bg-wine selection:text-white">
+            {/* Dining room, softly blurred and darkened behind the card */}
+            <img
+                src={interiorImage}
+                alt=""
+                aria-hidden="true"
+                className="absolute inset-0 -z-20 h-full w-full scale-110 object-cover blur-md"
+            />
+            <div className="absolute inset-0 -z-10 bg-gradient-to-b from-dark-bg/80 via-dark-bg/70 to-dark-bg" aria-hidden="true" />
+
             <div className="w-full max-w-md">
                 <header className="flex flex-col items-center text-center mb-8">
-                    <div className="w-20 h-20 mb-4 overflow-hidden rounded-full border border-card-border bg-card-bg p-1 shadow-xl">
-                        <img
-                            alt="Le Pants logo"
-                            className="h-full w-full rounded-full object-cover"
-                            src={LePantsLogo}
-                        />
-                    </div>
-                    <p className="font-headline text-3xl font-bold text-white">Le Pants</p>
-                    <div className="mt-3 h-0.5 w-12 rounded-full bg-wine" />
+                    <Link
+                        to="/"
+                        className="flex flex-col items-center rounded-2xl focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-wine-light"
+                    >
+                        <span className="mb-4 h-20 w-20 overflow-hidden rounded-full border border-white/15 bg-card-bg p-1 shadow-xl">
+                            <img
+                                alt="Le Pants logo"
+                                className="h-full w-full rounded-full object-cover"
+                                src={LePantsLogo}
+                            />
+                        </span>
+                        <span className="font-headline text-4xl font-normal italic text-white">Le Pants</span>
+                    </Link>
+                    <span className="mt-2 text-[11px] font-medium uppercase tracking-[0.3em] text-zinc-400">
+                        Staff
+                    </span>
                 </header>
 
-                <section className="rounded-2xl border border-card-border bg-card-bg p-6 shadow-2xl sm:p-8">
+                <section className="rounded-3xl border border-white/10 bg-card-bg/70 p-6 shadow-2xl backdrop-blur-xl sm:p-9">
                     {user ? (
                         <div className="space-y-6 text-center" role="status" aria-live="polite">
                             <div>
-                                <p className="font-headline text-2xl font-semibold">Welcome back</p>
+                                <p className="font-headline text-3xl font-normal italic">Welcome back</p>
                                 <p className="mt-2 text-sm text-zinc-400">You are signed in as</p>
                                 <p className="mt-1 font-medium text-white">{user.email ?? email}</p>
                                 {user.role && (
@@ -118,7 +133,7 @@ export const LoginPage = () => {
                             </div>
                             <Link
                                 to="/reserve"
-                                className="flex min-h-12 w-full items-center justify-center rounded-xl bg-wine px-6 font-bold text-white transition-colors hover:bg-wine-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+                                className="flex min-h-12 w-full items-center justify-center rounded-full border border-[#B52252] bg-wine px-6 font-semibold text-white transition-colors hover:bg-wine-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
                             >
                                 Continue to reservations
                             </Link>
@@ -126,13 +141,13 @@ export const LoginPage = () => {
                     ) : (
                         <>
                             <div className="mb-7 text-center">
-                                <h1 className="font-headline text-2xl font-semibold text-white">Welcome back</h1>
-                                <p className="mt-2 text-sm text-zinc-400">Sign in to your account</p>
+                                <h1 className="font-headline text-3xl font-normal italic text-white">Welcome back</h1>
+                                <p className="mt-2 text-sm text-zinc-400">Sign in to manage bookings</p>
                             </div>
 
                             <form className="space-y-5" onSubmit={handleSubmit}>
                                 <div>
-                                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-zinc-200">
+                                    <label htmlFor="email" className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
                                         Email
                                     </label>
                                     <input
@@ -142,7 +157,7 @@ export const LoginPage = () => {
                                         autoComplete="username"
                                         value={email}
                                         onChange={(event) => setEmail(event.target.value)}
-                                        className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
+                                        className="min-h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-white outline-none transition focus:border-[#ffb2bf]/60 focus:ring-2 focus:ring-wine/30"
                                     />
                                     {validationErrors.email && (
                                        <p className="mt-1 text-sm text-red-400">
@@ -152,7 +167,7 @@ export const LoginPage = () => {
                                 </div>
 
                                 <div>
-                                    <label htmlFor="password" className="mb-2 block text-sm font-medium text-zinc-200">
+                                    <label htmlFor="password" className="mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400">
                                         Password
                                     </label>
                                     <input
@@ -162,7 +177,7 @@ export const LoginPage = () => {
                                         autoComplete="current-password"
                                         value={password}
                                         onChange={(event) => setPassword(event.target.value)}
-                                        className="min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-white outline-none transition focus:border-wine-light focus:ring-2 focus:ring-wine/30"
+                                        className="min-h-12 w-full rounded-xl border border-white/10 bg-black/30 px-4 text-white outline-none transition focus:border-[#ffb2bf]/60 focus:ring-2 focus:ring-wine/30"
                                     />
 
                                     {validationErrors.password && (
@@ -179,7 +194,7 @@ export const LoginPage = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="min-h-12 w-full rounded-xl bg-wine px-6 font-bold text-white transition-colors hover:bg-wine-hover disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
+                                    className="!mt-7 min-h-12 w-full rounded-full border border-[#B52252] bg-wine px-6 font-semibold text-white transition-colors hover:bg-[#B52252] disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light"
                                 >
                                     {isSubmitting ? "Signing in..." : "Sign in"}
                                 </button>
@@ -189,8 +204,8 @@ export const LoginPage = () => {
                 </section>
 
                 <p className="mt-6 text-center text-sm text-zinc-400">
-                    <Link className="transition-colors hover:text-white" to="/reserve">
-                        Back to reservations
+                    <Link className="inline-flex min-h-11 items-center px-2 transition-colors hover:text-white" to="/">
+                        Back to home page
                     </Link>
                 </p>
             </div>

@@ -6,9 +6,16 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
@@ -16,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.pants.backend.dto.CustomerDTO;
 import com.pants.backend.dto.ReservationAvailabilityDTO;
 import com.pants.backend.dto.ReservationDTO;
+import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.entity.Customer;
 import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
@@ -30,7 +38,7 @@ import com.pants.backend.repository.TableListRepository;
 public class ReservationService {
 
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final int MAX_GUESTS_PER_SLOT = 10;
+    private static final int MAX_GUESTS_PER_SLOT = 50;
     private static final int CANCELLED_STATUS_ID = 3;
 
     private final ReservationRepository reservationRepository;
@@ -86,6 +94,55 @@ public class ReservationService {
 
         return availability;
     }
+
+    public ReservationStatsDTO getWeeklyStats(LocalDate anyDayOfWeek) {
+    LocalDate monday = anyDayOfWeek.with(
+        TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY));
+    LocalDate nextMonday = monday.plusDays(7);
+
+    List<Reservation> reservations = reservationRepository
+        .findByDatetimeGreaterThanEqualAndDatetimeLessThan(
+            monday.atStartOfDay(),
+            nextMonday.atStartOfDay())
+        .stream()
+        .filter(r -> r.getStatus() == null
+            || !Integer.valueOf(CANCELLED_STATUS_ID).equals(r.getStatus().getId()))
+        .toList();
+
+    Map<String, Long> byDay = new LinkedHashMap<>();
+    for (DayOfWeek day : DayOfWeek.values()) {
+        byDay.put(day.name(), 0L);
+    }
+
+    Map<String, Long> byTime = new TreeMap<>();
+
+    for (Reservation r : reservations) {
+        byDay.merge(r.getDatetime().getDayOfWeek().name(), 1L, Long::sum);
+        if (r.getStartTime() != null) {
+            byTime.merge(r.getStartTime().toString(), 1L, Long::sum);
+        }
+    }
+
+    String busiestDay = reservations.isEmpty() ? null : findMaxKey(byDay);
+    String busiestTime = byTime.isEmpty() ? null : findMaxKey(byTime);
+
+    return new ReservationStatsDTO(
+        monday,
+        nextMonday.minusDays(1),
+        reservations.size(),
+        busiestDay,
+        busiestTime,
+        byDay,
+        byTime
+    );
+}
+
+private String findMaxKey(Map<String, Long> map) {
+    return map.entrySet().stream()
+        .max(Map.Entry.comparingByValue())
+        .map(Map.Entry::getKey)
+        .orElse(null);
+}
 
     private List<LocalTime> getReservationTimes(LocalDate date) {
         if (date.getDayOfWeek() == DayOfWeek.SUNDAY) {
@@ -153,28 +210,29 @@ public class ReservationService {
         return reservationRepository.findById(id).orElse(null);
     }
 
-    // Token
     public Reservation getReservationByToken(String token) {
         return reservationRepository
             .findByEditToken(token)
             .orElseThrow(() -> new NoSuchElementException("Reservation not found"));
     }
 
-    @Transactional // varmistaa, että asiakkaan ja varauksen tallennus onnistuvat yhdessä tai epäonnistuvat yhdessä.
+    @Transactional
     public Reservation createReservation(ReservationDTO dto) {
         validate(dto);
         RStatus confirmedStatus = lockConfirmedReservations();
         ensureSlotHasCapacity(dto, null);
-        Table selectedTable = findAvailableTable(dto, null);
-        Customer customer = findOrCreateCustomer(dto.getCustomer()); // jos sähköposti on jo tietokannassa, käyttää samaa asiakasta, jolloin duplikaatteja ei synny.
+        List<Table> selectedTables = findAvailableTables(dto, null);
+        Customer customer = findOrCreateCustomer(dto.getCustomer());
 
         Reservation reservation = new Reservation();
         applyDto(reservation, dto);
         reservation.setCustomer(customer);
         reservation.setStatus(confirmedStatus);
-        reservation.setEditToken(generateToken()); // TOKEN
+        reservation.setEditToken(generateToken());
         Reservation savedReservation = reservationRepository.save(reservation);
-        tableListRepository.save(new TableList(savedReservation.getReservationId(), selectedTable.getId()));
+        for (Table selectedTable : selectedTables) {
+            tableListRepository.save(new TableList(savedReservation.getReservationId(), selectedTable.getId()));
+        }
         return savedReservation;
     }
 
@@ -191,14 +249,13 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
-        Table selectedTable = findAvailableTable(dto, existingReservation.getReservationId());
+        List<Table> selectedTables = findAvailableTables(dto, existingReservation.getReservationId());
         Reservation updatedReservation = applyUpdate(existingReservation, dto);
-        updateTableAssignment(updatedReservation, selectedTable);
+        updateTableAssignment(updatedReservation, selectedTables);
         return updatedReservation;
     }
 
-     // TOKEN
-    @Transactional // varmistaa, että asiakkaan ja varauksen tallennus onnistuvat yhdessä tai epäonnistuvat yhdessä.
+    @Transactional
     public Reservation updateReservationByToken(String token, ReservationDTO dto) {
         Reservation existingReservation = getReservationByToken(token);
 
@@ -212,9 +269,9 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
-        Table selectedTable = findAvailableTable(dto, existingReservation.getReservationId());
+        List<Table> selectedTables = findAvailableTables(dto, existingReservation.getReservationId());
         Reservation updatedReservation = applyUpdate(existingReservation, dto);
-        updateTableAssignment(updatedReservation, selectedTable);
+        updateTableAssignment(updatedReservation, selectedTables);
         return updatedReservation;
     }
 
@@ -230,7 +287,6 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
 
         return true;
     }
-// TOKEN
     @Transactional
     public Reservation cancelReservationByToken(String token) {
         Reservation reservation = getReservationByToken(token);
@@ -242,7 +298,6 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return applyCancel(reservation);
     }
 
-    // OWNER / ADMIN
     @Transactional
     public Reservation cancelReservation(Integer id) {
         Reservation reservation = reservationRepository
@@ -273,29 +328,39 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return savedReservation;
     }
 
-    private Table findAvailableTable(ReservationDTO dto, Integer ignoreReservationId) {
-        List<Table> availableTables = ignoreReservationId == null
+    private List<Table> findAvailableTables(ReservationDTO dto, Integer ignoreReservationId) {
+        List<Table> singleTables = ignoreReservationId == null
             ? tableService.findAvailableTables(
                 dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime())
             : tableService.findAvailableTables(
                 dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime(), ignoreReservationId);
-        if (availableTables.isEmpty()) {
+        if (!singleTables.isEmpty()) {
+            return List.of(singleTables.getFirst());
+        }
+
+        List<Table> combination = tableService.findTableCombination(
+            dto.getPartySize(), dto.getDatetime(), dto.getStartTime(), dto.getEndTime(), ignoreReservationId);
+        if (combination.isEmpty()) {
             throw new IllegalStateException("No suitable tables available for this reservation");
         }
-        return availableTables.getFirst();
+        return combination;
     }
 
-    private void updateTableAssignment(Reservation reservation, Table selectedTable) {
-        boolean alreadyAssigned = false;
+    private void updateTableAssignment(Reservation reservation, List<Table> selectedTables) {
+        Set<Integer> selectedIds = selectedTables.stream().map(Table::getId).collect(Collectors.toSet());
+        Set<Integer> assignedIds = new HashSet<>();
         for (TableList assignment : tableListRepository.findByIdReservationId(reservation.getReservationId())) {
-            if (selectedTable.getId().equals(assignment.getId().getTableId())) {
-                alreadyAssigned = true;
+            Integer tableId = assignment.getId().getTableId();
+            if (selectedIds.contains(tableId)) {
+                assignedIds.add(tableId);
             } else {
                 tableListRepository.delete(assignment);
             }
         }
-        if (!alreadyAssigned) {
-            tableListRepository.save(new TableList(reservation.getReservationId(), selectedTable.getId()));
+        for (Integer tableId : selectedIds) {
+            if (!assignedIds.contains(tableId)) {
+                tableListRepository.save(new TableList(reservation.getReservationId(), tableId));
+            }
         }
     }
 
@@ -339,8 +404,9 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         if (dto.getPartySize() == null || dto.getPartySize() < 1) {
             throw new IllegalArgumentException("Party size must be at least 1");
         }
-        if (dto.getPartySize() > 10) {
-            throw new IllegalArgumentException("A reservation cannot exceed 10 guests");
+        if (dto.getPartySize() > ReservationDTO.MAX_PARTY_SIZE) {
+            throw new IllegalArgumentException(
+                "A reservation cannot exceed " + ReservationDTO.MAX_PARTY_SIZE + " guests");
         }
     }
 
@@ -356,7 +422,6 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return value == null || value.isBlank();
     }
 
-    // TOKEN
     private String generateToken() {
         byte[] bytes = new byte[32];
         RANDOM.nextBytes(bytes);
