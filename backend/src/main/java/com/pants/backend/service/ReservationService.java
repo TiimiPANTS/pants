@@ -4,6 +4,7 @@ import java.security.SecureRandom;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
@@ -40,6 +41,7 @@ public class ReservationService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int MAX_GUESTS_PER_SLOT = 50;
     private static final int CANCELLED_STATUS_ID = 3;
+    private static final ZoneId RESTAURANT_ZONE = ZoneId.of("Europe/Helsinki");
 
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
@@ -262,7 +264,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
             if ("CANCELLED".equals(existingReservation.getStatus().getName())) {
         throw new IllegalStateException("Cancelled reservations cannot be modified");
         }
-        if (existingReservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+        if (existingReservation.getDatetime().isBefore(LocalDateTime.now(RESTAURANT_ZONE).plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be modified");
         }
 
@@ -291,7 +293,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
     public Reservation cancelReservationByToken(String token) {
         Reservation reservation = getReservationByToken(token);
 
-        if (reservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+        if (reservation.getDatetime().isBefore(LocalDateTime.now(RESTAURANT_ZONE).plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be cancelled");
         }
 
