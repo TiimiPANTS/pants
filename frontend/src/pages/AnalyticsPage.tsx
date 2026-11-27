@@ -360,9 +360,9 @@ const BarChart = ({
                                     onClick={
                                         onSelect
                                             ? (_entry, index) => {
-                                                  const label = data[index]?.label ?? null;
-                                                  onSelect(label === selected ? null : label);
-                                              }
+                                                const label = data[index]?.label ?? null;
+                                                onSelect(label === selected ? null : label);
+                                            }
                                             : undefined
                                     }
                                     style={onSelect ? { cursor: "pointer" } : undefined}
@@ -531,9 +531,8 @@ const StartTimeCard = ({ counts, selectedDay, onSelectDay }: StartTimeCardProps)
                 type="button"
                 aria-pressed={active}
                 onClick={() => onSelectDay(value)}
-                className={`min-h-10 rounded-full border px-3.5 text-sm font-medium ${focusRing} ${
-                    active ? "border-[#B52252] bg-[#B52252]/20 text-white" : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
-                }`}
+                className={`min-h-10 rounded-full border px-3.5 text-sm font-medium ${focusRing} ${active ? "border-[#B52252] bg-[#B52252]/20 text-white" : "border-zinc-700 text-zinc-300 hover:bg-zinc-800"
+                    }`}
             >
                 {label}
             </button>
@@ -666,8 +665,8 @@ export const AnalyticsPage = () => {
     // slots so the gaps between busy times are visible.
     const timeData: ChartDatum[] = stats
         ? [...new Set([...ALL_SLOTS, ...Object.keys(stats.reservationsByTime)])]
-              .sort()
-              .map((time) => ({ label: time, fullLabel: time, value: stats.reservationsByTime[time] ?? 0 }))
+            .sort()
+            .map((time) => ({ label: time, fullLabel: time, value: stats.reservationsByTime[time] ?? 0 }))
         : [];
 
     const busiestDays = stats ? topKeys(stats.reservationsByDay) : [];
@@ -681,9 +680,9 @@ export const AnalyticsPage = () => {
 
     const guestDayData: ChartDatum[] = guests
         ? Object.entries(guests.guestsByDay).map(([day, value]) => ({
-              ...toChartDatum(day, value),
-              compare: lastWeekGuests?.guestsByDay[day] ?? 0,
-          }))
+            ...toChartDatum(day, value),
+            compare: lastWeekGuests?.guestsByDay[day] ?? 0,
+        }))
         : [];
     const topGuestDays = guests ? topKeys(guests.guestsByDay).map((d) => DAY_LABELS[d] ?? d) : [];
 
@@ -692,12 +691,30 @@ export const AnalyticsPage = () => {
         : [];
     const slotCounts = reservationRows ? computeSlotCounts(reservationRows, weekStart) : null;
 
+    const nextWeekStart = addDays(weekStart, 7);
+    const weeklyReservations = reservationRows?.filter(({ datetime }) => {
+        if (!datetime) return false;
+        const date = parseEuropeanDate(datetime);
+        return date >= weekStart && date < nextWeekStart;
+    });
+    const totalBookings = weeklyReservations?.length ?? 0;
+    const cancelledBookings = weeklyReservations?.filter(
+        (row) => row.status?.name === "CANCELLED",
+    ).length ?? 0;
+
+    const cancellationRate = totalBookings > 0
+        ? (cancelledBookings / totalBookings).toLocaleString("en-GB", {
+            style: "percent",
+            maximumFractionDigits: 1,
+        })
+        : "No reservations";
+
     const picked = dayData.find((d) => d.label === selectedDay);
     const dayReadout = picked
         ? `${picked.fullLabel}: ${picked.value} reservations${busiestDayLabels.includes(picked.label) ? " (busiest)" : ""}`
         : busiestDays.length
-          ? `Busiest: ${joinNames(busiestDayNames)} with ${topDayCount} reservations`
-          : "No reservations this week.";
+            ? `Busiest: ${joinNames(busiestDayNames)} with ${topDayCount} reservations`
+            : "No reservations this week.";
 
     const weekNav = (
         <div role="group" aria-label="Choose week" className="flex gap-2">
@@ -708,9 +725,8 @@ export const AnalyticsPage = () => {
                 type="button"
                 aria-pressed={isThisWeek}
                 onClick={() => setWeekStart(startOfWeek(new Date()))}
-                className={`min-h-12 flex-1 rounded border px-4 text-base font-medium md:flex-none ${focusRing} ${
-                    isThisWeek ? "border-[#B52252] bg-card-bg text-white" : "border-zinc-700 text-zinc-200 hover:bg-card-bg"
-                }`}
+                className={`min-h-12 flex-1 rounded border px-4 text-base font-medium md:flex-none ${focusRing} ${isThisWeek ? "border-[#B52252] bg-card-bg text-white" : "border-zinc-700 text-zinc-200 hover:bg-card-bg"
+                    }`}
             >
                 This week
             </button>
@@ -761,6 +777,14 @@ export const AnalyticsPage = () => {
                         />
                         <StatCard label="Busiest day" value={joinNames(busiestDayNames)} />
                     </div>
+                    {weeklyReservations && (
+                        <StatCard
+                            label={totalBookings > 0
+                                ? `Cancellation rate · ${cancelledBookings} of ${totalBookings} bookings cancelled`
+                                : "Cancellation rate"}
+                            value={cancellationRate}
+                        />
+                    )}
 
                     {/* Mobile: one column, most-checked first, the long start-time list last.
                         Desktop: day charts side by side; start times under reservations,
@@ -788,8 +812,8 @@ export const AnalyticsPage = () => {
                                 <p className="text-base text-zinc-300">
                                     {topGuestDays.length
                                         ? `Most guests: ${joinNames(
-                                              guestDayData.filter((d) => topGuestDays.includes(d.label)).map((d) => d.fullLabel),
-                                          )} with ${Math.max(...guestDayData.map((d) => d.value))}`
+                                            guestDayData.filter((d) => topGuestDays.includes(d.label)).map((d) => d.fullLabel),
+                                        )} with ${Math.max(...guestDayData.map((d) => d.value))}`
                                         : "No guests this week."}
                                 </p>
                             </BarChart>
