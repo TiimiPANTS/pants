@@ -19,11 +19,11 @@ export const DatePicker: FC<DatePickerProps> = ({
 
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [hasNavigated, setHasNavigated] = useState(false);
-  
+
   const displayedMonth =
     selectedDay && !hasNavigated ? selectedDay : currentMonth;
-  
-  
+
+
   const today = new Date();
   const firstAllowedMonth = new Date(
     today.getFullYear(),
@@ -31,11 +31,13 @@ export const DatePicker: FC<DatePickerProps> = ({
     1
   );
 
-  const isPreviousMonthDisabled = 
-  displayedMonth < firstAllowedMonth || 
-    displayedMonth.getFullYear() === firstAllowedMonth.getFullYear() && 
-    displayedMonth.getMonth() === firstAllowedMonth.getMonth();
-    
+  const previousMonth = new Date(
+    displayedMonth.getFullYear(),
+    displayedMonth.getMonth() - 1,
+    1
+  );
+  const isPreviousMonthDisabled = previousMonth < firstAllowedMonth;
+
 
   useEffect(() => {
     if (
@@ -51,21 +53,11 @@ export const DatePicker: FC<DatePickerProps> = ({
   }, [currentMonth, hasNavigated, onMonthChange, selectedDay]);
 
   const goToPreviousMonth = () => {
-    const month = new Date(
-      displayedMonth.getFullYear(),
-      displayedMonth.getMonth() - 1,
-      1
-    );
-
-    if (month < firstAllowedMonth) {
-      return;
-
-    }
+    if (isPreviousMonthDisabled) return;
 
     setHasNavigated(true);
-    setCurrentMonth(month);
-    onMonthChange(month);
-
+    setCurrentMonth(previousMonth);
+    onMonthChange(previousMonth);
   };
 
   const goToNextMonth = () => {
@@ -163,7 +155,7 @@ export const DatePicker: FC<DatePickerProps> = ({
             { dayOfWeek: [0] },
             ...bookedDates,
           ]}
-          
+
           // Seven equal columns that always fit the card (no fixed day widths,
           // which pushed Sat/Sun off-screen on phones). Taps stay >= 44px tall.
           classNames={{
