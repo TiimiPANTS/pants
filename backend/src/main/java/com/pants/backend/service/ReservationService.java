@@ -343,7 +343,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
                 .orElseThrow(() -> new IllegalStateException(
                     "Status with ID " + CANCELLED_STATUS_ID + " missing"))
         );
-
+        
         Reservation savedReservation = reservationRepository.save(reservation);
         if (savedReservation.getStatus() != null
                 && Integer.valueOf(CANCELLED_STATUS_ID).equals(savedReservation.getStatus().getId())) {
