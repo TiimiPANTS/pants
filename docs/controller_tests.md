@@ -17,6 +17,7 @@ The controller test classes use `@ExtendWith(MockitoExtension.class)`, `@Mock`, 
 | Test class | Mocked dependencies | Controller under test |
 | --- | --- | --- |
 | `CustomerControllerTest` | `CustomerRepository` | `CustomerController` |
+| `CustomerValidationTest` | `CustomerRepository` | `CustomerController` |
 | `ReservationControllerTest` | `ReservationService` | `ReservationController` |
 | `TableControllerTest` | `TableRepository` | `TableController` |
 | `TableListControllerTest` | `TableListRepository`, `ReservationRepository`, `TableRepository`, `TableService` | `TableListController` |
@@ -97,6 +98,31 @@ The paths below document the controller mappings. Expected statuses are asserted
 | `POST /api/tablelists` | `create_whenUnavailable_returnsConflict` | Table is occupied for the reservation time | Parents exist; capacity passes; availability returns `false` | `409 CONFLICT` | Checks conflict error and no save |
 | `POST /api/tablelists` | `create_whenValid_returnsCreated` | Reservation and table are valid, assignment is new, capacity and availability pass | Mocks return parent records, `false` for existing assignment, `true` for capacity/availability, and saved assignment | `201 CREATED` | Checks returned assignment and save |
 | `DELETE /api/tablelists/{reservationId}/{tableId}` | `delete_whenFound_returnsOk`; `delete_whenNotFound_returnsNotFound` | Composite-key assignment exists or is missing | `existsById()` returns `true` or `false` | `200 OK` / `404 NOT_FOUND` | Checks delete on success or not-found response |
+
+### CustomerValidationTest — Additional Field Validation
+
+**Base path:** `/api/customers`
+
+These tests also exercise `CustomerController`, but focus on field-specific validation rules beyond the null/blank required-field cases in `CustomerControllerTest`.
+
+| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `POST /api/customers` | `create_rejectsInvalidFirstname` (parameterized) | First name is one character, exceeds 50 characters, contains numbers, or contains a special character | No repository setup | `400 BAD_REQUEST` | Uses the parameter reason as an assertion description and verifies no repository save |
+| `POST /api/customers` | `create_acceptsValidFirstname` (parameterized) | First name is `Matti-Pekka`, `Äänekoski`, or `Ma` | `save()` returns the supplied customer with an ID | `201 CREATED` | Verifies repository save |
+| `POST /api/customers` | `create_rejectsInvalidLastname` (parameterized) | Last name is one character, contains numbers, or contains a special character | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
+| `POST /api/customers` | `create_rejectsInvalidEmail` (parameterized) | Email is `testi@`, `testi`, or `testi@example` | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
+| `POST /api/customers` | `create_rejectsTooLongEmail` | Email exceeds the accepted maximum length | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
+| `POST /api/customers` | `create_acceptsValidEmail` | Email address is valid | `save()` returns the supplied customer with an ID | `201 CREATED` | Verifies repository save |
+| `PUT /api/customers/{id}` | `update_rejectsInvalidFirstname` | Existing customer is updated with a first name containing numbers | `findById()` returns the existing customer; no save setup | `400 BAD_REQUEST` | Verifies no save and confirms the existing entity's first name remains unchanged |
+
+### GlobalExceptionHandler
+
+**Class:** `GlobalExceptionHandler`
+
+| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| Validation exception handler | `returnsBadRequestWithFieldNameAndMessage` | A single field validation error occurs for the `email` field | Adds an `email` field error with message `must be a well-formed email address` to a `BeanPropertyBindingResult` | `400 BAD_REQUEST` | Checks `ErrorResponse` status `400` and exact message: `Invalid data: email: must be a well-formed email address` |
+| Validation exception handler | `joinsMultipleFieldErrors` | Multiple field validation errors occur for `username` and `email` | Adds `username` and `email` field errors, both with message `must not be blank` | Response message is checked; status is not explicitly asserted | Checks exact joined message: `Invalid data: username: must not be blank, email: must not be blank` |
 
 ## 5. Key Edge Cases & Business Rules Validated
 
