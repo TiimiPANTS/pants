@@ -29,14 +29,14 @@ export async function fetchCurrentAccount(): Promise<Account | null> {
     }
 }
 
-/** PUT a JSON body with the CSRF header. Throws an ApiError with the server's message on failure. */
-async function putJson<T>(path: string, body: unknown, fallbackError: string): Promise<T> {
+/** Send a JSON body with the CSRF header. Throws an ApiError with the server's message on failure. */
+async function sendJson<T>(method: "POST" | "PUT", path: string, body: unknown, fallbackError: string): Promise<T> {
     const csrfResponse = await fetch(`${API_URL}/auth/csrf`, { credentials: "include" });
     if (!csrfResponse.ok) throw new ApiError(fallbackError, csrfResponse.status);
     const csrf = await csrfResponse.json();
 
     const response = await fetch(`${API_URL}${path}`, {
-        method: "PUT",
+        method,
         credentials: "include",
         headers: {
             "Content-Type": "application/json",
@@ -55,7 +55,8 @@ export async function updateAccount(
     changes: { username: string; email: string }
 ): Promise<Account> {
     // The backend sends a new token when the email changes, because the old one is tied to the old email.
-    const { token, ...account } = await putJson<Account & { token?: string }>(
+    const { token, ...account } = await sendJson<Account & { token?: string }>(
+        "PUT",
         `/users/${id}`,
         changes,
         "Could not update account information."
@@ -65,5 +66,9 @@ export async function updateAccount(
 }
 
 export async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
-    await putJson("/users/me/password", { currentPassword, newPassword }, "Could not update password.");
+    await sendJson("PUT", "/users/me/password", { currentPassword, newPassword }, "Could not update password.");
+}
+
+export async function createUser(user: Omit<Account, "id"> & { password: string }): Promise<void> {
+    await sendJson("POST", "/users", user, "Could not create user.");
 }

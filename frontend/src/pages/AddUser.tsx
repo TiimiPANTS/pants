@@ -1,282 +1,183 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
+import { ChevronLeft } from "../components/icons";
+import { FormFooter, SelectField, TextField, type FormStatus } from "../components/FormFields";
+import {
+    OwnerShell,
+    ROLE_ADMIN,
+    ROLE_EMPLOYEE,
+    ROLE_OWNER,
+    focusRing,
+    iconBtn,
+    secondaryBtn,
+    staffCard,
+} from "../components/OwnerShell";
+import { ApiError, createUser, fetchCurrentAccount } from "../services/accountApi";
+import {
+    PASSWORD_MIN,
+    USERNAME_MAX,
+    emailError,
+    hasErrors,
+    passwordLengthError,
+    usernameError,
+} from "../utils/accountValidation";
 
-const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+type Field = "username" | "email" | "password" | "roleId";
+type Values = Record<Field, string>;
+type Errors = Partial<Record<Field, string>>;
+
+const EMPTY: Values = { username: "", email: "", password: "", roleId: "" };
+
+const USERS_URL = "/owner/usermanagement";
+
+/** Expects username and email already trimmed. */
+const validate = ({ username, email, password, roleId }: Values): Errors => ({
+    username: usernameError(username),
+    email: emailError(email),
+    password: password ? passwordLengthError(password) : "Enter a password.",
+    roleId: roleId ? undefined : "Choose a role.",
+});
 
 export default function AddUser() {
     const navigate = useNavigate();
 
-    const [username, setUsername] = useState("");
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [roleId, setRoleId] = useState("");
-
-    const [currentUserRole, setCurrentUserRole] = useState<number | null>(null);
-    const [isLoading, setIsLoading] = useState(true);
-    const [message, setMessage] = useState("");
-    const [isError, setIsError] = useState(false);
+    const [myRole, setMyRole] = useState<number | null>(null);
+    const [values, setValues] = useState<Values>(EMPTY);
+    const [errors, setErrors] = useState<Errors>({});
+    const [status, setStatus] = useState<FormStatus>(null);
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
-        const checkUser = async () => {
-            try {
-                const response = await fetch(`${API_URL}/users/me`, {
-                    credentials: "include",
-                });
-
-                if (response.status === 401 || response.status === 403) {
-                    navigate("/login");
-                    return;
-                }
-
-                if (!response.ok) {
-                    throw new Error("Could not verify user.");
-                }
-
-                const userData = await response.json();
-                const roleId = Number(userData.roleId);
-
-                if (roleId !== 1 && roleId !== 2) {
-                    navigate("/dashboard");
-                    return;
-                }
-
-                setCurrentUserRole(roleId);
-                setIsLoading(false);
-            } catch (error) {
-                console.error("Authentication check failed:", error);
+        fetchCurrentAccount().then((me) => {
+            if (!me) {
                 navigate("/login");
+                return;
             }
-        };
-
-        checkUser();
+            const role = Number(me.roleId);
+            // Employees are signed in but may not create accounts.
+            if (role !== ROLE_ADMIN && role !== ROLE_OWNER) {
+                navigate("/dashboard");
+                return;
+            }
+            setMyRole(role);
+        });
     }, [navigate]);
 
-    const handleLogout = async () => {
+    const update = (field: Field, value: string) => {
+        setValues((current) => ({ ...current, [field]: value }));
+        setErrors((current) => ({ ...current, [field]: undefined }));
+    };
+
+    const handleSubmit = async (event: FormEvent) => {
+        event.preventDefault();
+        setStatus(null);
+
+        const user = { ...values, username: values.username.trim(), email: values.email.trim() };
+        const found = validate(user);
+        setErrors(found);
+        if (hasErrors(found)) return;
+
+        setSaving(true);
         try {
-            await fetch(`${API_URL}/auth/logout`, {
-                method: "POST",
-                credentials: "include",
-            });
+            await createUser({ ...user, roleId: Number(user.roleId) });
+            setValues(EMPTY);
+            setStatus({ ok: true, text: "User created successfully!" });
         } catch (error) {
-            console.error("Logout failed:", error);
+            // 409 Conflict: another account already uses this email.
+            if (error instanceof ApiError && error.status === 409) setErrors({ email: error.message });
+            else setStatus({ ok: false, text: error instanceof Error ? error.message : "Could not create user." });
         } finally {
-            navigate("/login");
+            setSaving(false);
         }
     };
 
-    const handleCreateUser = async () => {
-        setMessage("");
-        setIsError(false);
-
-        if (!username || !email || !password || !roleId) {
-            setIsError(true);
-            setMessage("Please fill in all fields.");
-            return;
-        }
-
-        try {
-            const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
-                credentials: "include",
-            });
-
-            if (!csrfResponse.ok) {
-                throw new Error("Could not get CSRF token.");
-            }
-
-            const csrfData = await csrfResponse.json();
-
-            const response = await fetch(`${API_URL}/users`, {
-                method: "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                    [csrfData.headerName]: csrfData.token,
-                },
-                body: JSON.stringify({
-                    username,
-                    email,
-                    password,
-                    roleId: Number(roleId),
-                }),
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Could not create user.");
-            }
-
-            setUsername("");
-            setEmail("");
-            setPassword("");
-            setRoleId("");
-
-            setIsError(false);
-            setMessage("User created successfully!");
-
-        } catch (error) {
-            console.error("Failed to create user:", error);
-            setIsError(true);
-            setMessage(
-                error instanceof Error
-                    ? error.message
-                    : "Could not create user."
-            );
-        }
-    };
-
-    // Don't show the form until we know the user may create accounts.
-    if (isLoading) {
-        return (
-            <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
-                <p className="text-sm text-zinc-400">Loading...</p>
-            </main>
-        );
-    }
+    const backToUsers = () => navigate(USERS_URL);
 
     return (
-        <main className="min-h-screen bg-dark-bg px-4 py-8 text-white sm:px-8">
-            <div className="mx-auto max-w-7xl">
+        <OwnerShell
+            active="users"
+            mobileHeader={
+                <div className="flex items-center gap-3">
+                    <button type="button" onClick={backToUsers} aria-label="Back to users" className={iconBtn}>
+                        <ChevronLeft />
+                    </button>
+                    <h1 className="text-[26px] font-semibold leading-8 text-white">New user</h1>
+                </div>
+            }
+        >
+            <header>
+                <button
+                    type="button"
+                    onClick={backToUsers}
+                    className={`-ml-1 hidden items-center gap-1 rounded pr-1 text-sm font-semibold text-zinc-300 hover:text-white md:inline-flex ${focusRing}`}
+                >
+                    <ChevronLeft />
+                    Users
+                </button>
+                <h1 className="hidden text-4xl font-medium leading-11 text-white md:block">New user</h1>
+                <p className="text-sm text-zinc-400 md:mt-1">Create a new user account</p>
+            </header>
 
-                {/* Page header */}
-                <header className="mb-8 flex items-center justify-between border-b border-card-border pb-6">
-                    <div>
-                        <h1 className="font-headline text-3xl font-semibold">
-                            New user
-                        </h1>
-                        <p className="mt-1 text-sm text-zinc-400">
-                            Create a new user account
-                        </p>
-                    </div>
-
-                    <div className="flex items-center gap-5">
-                        <button
-                            type="button"
-                            onClick={() => navigate("/dashboard")}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
-                        >
-                            Dashboard
-                        </button>
-
-                        <button
-                            type="button"
-                            onClick={handleLogout}
-                            className="rounded border border-card-border px-3 py-1.5 text-sm text-zinc-300 transition hover:bg-card-bg hover:text-white"
-                        >
-                            Log out
-                        </button>
-                    </div>
-                </header>
-
-                {/* Add user form */}
-                <section className="max-w-2xl rounded-xl border border-card-border bg-card-bg p-6">
-                    <h2 className="mb-6 font-headline text-xl font-semibold">
+            {myRole === null ? (
+                <p className="text-sm text-zinc-400">Loading…</p>
+            ) : (
+                <section aria-labelledby="new-user-h" className={`${staffCard} max-w-2xl`}>
+                    <h2 id="new-user-h" className="text-lg font-semibold text-white">
                         User information
                     </h2>
 
-                    <form className="space-y-5">
-                        {/* Username */}
-                        <div>
-                            <label
-                                htmlFor="username"
-                                className="mb-2 block text-sm text-zinc-300"
-                            >
-                                Username
-                            </label>
-                            <input
+                    <form noValidate className="flex flex-col gap-5" onSubmit={handleSubmit}>
+                        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2">
+                            <TextField
                                 id="username"
-                                type="text"
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                placeholder="Enter username"
-                                className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+                                label="Username"
+                                autoComplete="off"
+                                maxLength={USERNAME_MAX}
+                                value={values.username}
+                                onChange={(event) => update("username", event.target.value)}
+                                error={errors.username}
                             />
-                        </div>
-
-                        {/* Email */}
-                        <div>
-                            <label
-                                htmlFor="email"
-                                className="mb-2 block text-sm text-zinc-300"
-                            >
-                                Email address
-                            </label>
-                            <input
-                                id="email"
-                                type="email"
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                placeholder="Enter email address"
-                                className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-                            />
-                        </div>
-
-                        {/* Password */}
-                        <div>
-                            <label
-                                htmlFor="password"
-                                className="mb-2 block text-sm text-zinc-300"
-                            >
-                                Password
-                            </label>
-                            <input
-                                id="password"
-                                type="password"
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="Enter password"
-                                className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-                            />
-                        </div>
-
-                        {/* Role */}
-                        <div>
-                            <label
-                                htmlFor="role"
-                                className="mb-2 block text-sm text-zinc-300"
-                            >
-                                Role
-                            </label>
-                            <select
+                            <SelectField
                                 id="role"
-                                value={roleId}
-                                onChange={(e) => setRoleId(e.target.value)}
-                                className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white focus:border-white focus:outline-none"
+                                label="Role"
+                                value={values.roleId}
+                                onChange={(event) => update("roleId", event.target.value)}
+                                error={errors.roleId}
                             >
                                 <option value="">Select a role</option>
-                                {Number(currentUserRole) === 1 && (
-                                    <option value="1">Admin</option>
-                                )}
-                                <option value="2">Owner</option>
-                                <option value="3">Employee</option>
-                            </select>
+                                {myRole === ROLE_ADMIN && <option value={ROLE_ADMIN}>Admin</option>}
+                                <option value={ROLE_OWNER}>Owner</option>
+                                <option value={ROLE_EMPLOYEE}>Employee</option>
+                            </SelectField>
                         </div>
-
-                        {/* Create button and message */}
-                        <div className="pt-2">
-                            <button
-                                type="button"
-                                onClick={handleCreateUser}
-                                className="mr-5 rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-                            >
-                                Create user
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => navigate("/owner/usermanagement")}
-                                className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-                            >
+                        <TextField
+                            id="email"
+                            label="Email address"
+                            type="email"
+                            autoComplete="off"
+                            value={values.email}
+                            onChange={(event) => update("email", event.target.value)}
+                            hint="They sign in with this address."
+                            error={errors.email}
+                        />
+                        <TextField
+                            id="password"
+                            label="Password"
+                            type="password"
+                            autoComplete="new-password"
+                            value={values.password}
+                            onChange={(event) => update("password", event.target.value)}
+                            hint={`At least ${PASSWORD_MIN} characters. Share it with them privately.`}
+                            error={errors.password}
+                        />
+                        <FormFooter label="Create user" busyLabel="Creating…" busy={saving} status={status}>
+                            <button type="button" onClick={backToUsers} className={`${secondaryBtn} sm:self-start`}>
                                 Cancel
                             </button>
-
-                            {message && (
-                                <p className={`mt-3 text-sm ${isError ? "text-red-400" : "text-white"}`}>
-                                    {message}
-                                </p>
-                            )}
-                        </div>
+                        </FormFooter>
                     </form>
                 </section>
-            </div>
-        </main>
+            )}
+        </OwnerShell>
     );
 }
