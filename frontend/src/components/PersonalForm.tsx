@@ -1,81 +1,79 @@
-type PersonalFormProps = {
-  username: string;
-  email: string;
-  onUsernameChange: (value: string) => void;
-  onEmailChange: (value: string) => void;
-  onSave: () => void;
-  saveMessage: string;
-  saveError: boolean;
-};
+import { useState, type FormEvent } from "react";
+import { ApiError, updateAccount, type Account } from "../services/accountApi";
+import { FormFooter, TextField, type FormStatus } from "./FormFields";
+import { staffCard } from "./OwnerShell";
+import { USERNAME_MAX, emailError, hasErrors, usernameError } from "../utils/accountValidation";
 
-export default function PersonalForm({
-  username,
-  email,
-  onUsernameChange,
-  onEmailChange,
-  onSave,
-  saveMessage,
-  saveError,
-}: PersonalFormProps) {
-  return (
-    <section className="rounded-xl border border-card-border bg-card-bg p-6">
-      <h2 className="mb-6 font-headline text-xl font-semibold">
-        Personal information
-      </h2>
+type Field = "username" | "email";
+type Errors = Partial<Record<Field, string>>;
 
-      <form className="space-y-5">
-        <div>
-          <label
-            htmlFor="name"
-            className="mb-2 block text-sm text-zinc-300"
-          >
-            Username
-          </label>
-          <input
-            id="name"
-            type="text"
-            value={username}
-            onChange={(event) => onUsernameChange(event.target.value)}
-            placeholder="Enter username"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-          />
-        </div>
+export default function PersonalForm({ account }: { account: Account }) {
+    const [username, setUsername] = useState(account.username);
+    const [email, setEmail] = useState(account.email);
+    const [errors, setErrors] = useState<Errors>({});
+    const [status, setStatus] = useState<FormStatus>(null);
+    const [saving, setSaving] = useState(false);
 
-        <div>
-          <label
-            htmlFor="email"
-            className="mb-2 block text-sm text-zinc-300"
-          >
-            Email address
-          </label>
-          <input
-            id="email"
-            type="email"
-            value={email}
-            onChange={(event) => onEmailChange(event.target.value)}
-            placeholder="Enter email address"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-          />
-        </div>
+    const clearError = (field: Field) => setErrors((current) => ({ ...current, [field]: undefined }));
 
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={onSave}
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-          >
-            Save changes
-          </button>
+    const handleSubmit = async (event: FormEvent) => {
+        event.preventDefault();
+        setStatus(null);
 
-          {saveMessage && (
-            <p
-              className={`mt-3 text-sm ${saveError ? "text-red-400" : "text-white"}`}
-            >
-              {saveMessage}
-            </p>
-          )}
-        </div>
-      </form>
-    </section>
-  );
+        const changes = { username: username.trim(), email: email.trim() };
+        const found: Errors = { username: usernameError(changes.username), email: emailError(changes.email) };
+        setErrors(found);
+        if (hasErrors(found)) return;
+
+        setSaving(true);
+        try {
+            const updated = await updateAccount(account.id, changes);
+            setUsername(updated.username);
+            setEmail(updated.email);
+            setStatus({ ok: true, text: "Account information updated successfully" });
+        } catch (error) {
+            // 409 Conflict: another account already uses this email.
+            if (error instanceof ApiError && error.status === 409) setErrors({ email: error.message });
+            else setStatus({ ok: false, text: error instanceof Error ? error.message : "Could not update account information." });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <section aria-labelledby="personal-h" className={staffCard}>
+            <h2 id="personal-h" className="text-lg font-semibold text-white">
+                Personal information
+            </h2>
+
+            <form noValidate className="flex flex-col gap-5" onSubmit={handleSubmit}>
+                <TextField
+                    id="username"
+                    label="Username"
+                    autoComplete="username"
+                    maxLength={USERNAME_MAX}
+                    value={username}
+                    onChange={(event) => {
+                        setUsername(event.target.value);
+                        clearError("username");
+                    }}
+                    error={errors.username}
+                />
+                <TextField
+                    id="email"
+                    label="Email address"
+                    type="email"
+                    autoComplete="email"
+                    value={email}
+                    onChange={(event) => {
+                        setEmail(event.target.value);
+                        clearError("email");
+                    }}
+                    hint="You sign in with this address."
+                    error={errors.email}
+                />
+                <FormFooter label="Save changes" busyLabel="Saving…" busy={saving} status={status} />
+            </form>
+        </section>
+    );
 }

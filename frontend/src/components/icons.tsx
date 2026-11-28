@@ -67,6 +67,11 @@ export const NoteIcon = () => (
         <path d="M4 5h16v11H9l-5 4z" />
     </Icon>
 );
+export const ChevronDown = ({ className }: { className?: string }) => (
+    <Icon className={className}>
+        <path d="M5 9l7 7 7-7" />
+    </Icon>
+);
 export const ChevronLeft = () => (
     <Icon>
         <path d="M15 5l-7 7 7 7" />

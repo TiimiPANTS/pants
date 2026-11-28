@@ -5,10 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title></title>
 </head>
-<body style="margin: 0; padding: 32px 16px; background: #0A0A0C; color: #E4E4E7; font-family: Arial, Helvetica, sans-serif;">
+<body style="margin: 0; padding: 32px 16px; background: #121316; color: #E4E4E7; font-family: Arial, Helvetica, sans-serif;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
         <tr>
-            <td style="padding: 28px; background: #18181D; border: 1px solid #27272A;">
+            <td style="padding: 28px; background: #18191E; border: 1px solid #272832;">
                 <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom: 20px;">
                     <tr>
                         <td style="padding-right: 14px; vertical-align: middle;">
@@ -32,34 +32,89 @@
 
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse: collapse; font-size: 14px;">
                     <tr>
-                        <td width="38%" style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Reservation</td>
-                        <td style="padding: 11px 0; color: #FFFFFF; border-top: 1px solid #27272A;">#{{reservationId}}</td>
+                        <td width="38%" style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Reservation</td>
+                        <td style="padding: 11px 0; color: #FFFFFF; border-top: 1px solid #272832;">#{{reservationId}}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Name</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{customerName}}</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Name</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832;">{{customerName}}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Email</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{customerEmail}}</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Email</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832;">{{customerEmail}}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Date</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{reservationDate}}</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Date</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832;">{{reservationDate}}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Time</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{startTime}} – {{endTime}}</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Time</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832;">{{startTime}} – {{endTime}}</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A;">Party</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A;">{{partySize}} guests</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832;">Party</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832;">{{partySize}} guests</td>
                     </tr>
                     <tr>
-                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #27272A; border-bottom: 1px solid #27272A;">Notes</td>
-                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #27272A; border-bottom: 1px solid #27272A;">{{details}}</td>
+                        <td style="padding: 11px 0; color: #A1A1AA; border-top: 1px solid #272832; border-bottom: 1px solid #272832;">Notes</td>
+                        <td style="padding: 11px 0; color: #E4E4E7; border-top: 1px solid #272832; border-bottom: 1px solid #272832;">{{details}}</td>
                     </tr>
                 </table>
+
+                <!-- Reservation management buttons -->
+                <p style="margin: 24px 0 8px; color: #E4E4E7; font-size: 14px; line-height: 1.7;">
+                    Manage your reservation
+                </p>
+
+                <p style="margin: 0 0 16px; color: #A1A1AA; font-size: 13px; line-height: 1.7;">
+                    Remaining edits: {{remainingEdits}}
+                </p>
+
+                <!-- EDIT_LIMIT_START -->
+                <p style="margin: 0 0 16px; color: #A1A1AA; font-size: 13px; line-height: 1.7;">
+                    You have reached the maximum number of reservation edits.
+                    Please contact us if you need further changes.
+                </p>
+                <!-- EDIT_LIMIT_END -->
+
+                
+                <table role="presentation" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <!-- EDIT_BUTTON_START -->
+                        <td style="padding-right: 12px;">
+                            <a href="{{editUrl}}"
+                               style="display: inline-block;
+                                      padding: 12px 20px;
+                                      background: #8B1E3F;
+                                      color: #FFFFFF;
+                                      font-size: 14px;
+                                      font-weight: bold;
+                                      text-decoration: none;
+                                      border-radius: 12px;">
+                                Edit reservation
+                            </a>
+                        </td>
+                        <!-- EDIT_BUTTON_END -->
+
+                        <!-- CANCEL_BUTTON_START -->
+                        <td>
+                            <a href="{{cancelUrl}}"
+                               style="display: inline-block;
+                                      padding: 12px 20px;
+                                      border: 1px solid #8B1E3F;
+                                      color: #FFFFFF;
+                                      font-size: 14px;
+                                      font-weight: bold;
+                                      text-decoration: none;
+                                      border-radius: 12px;">
+                                Cancel reservation
+                            </a>
+                        </td>
+                        <!-- CANCEL_BUTTON_END -->
+                    </tr>
+                </table>
+
+
 
                 <p style="margin: 24px 0 0; color: #E4E4E7; font-size: 14px; line-height: 1.7;">
                     Need help? Contact us and we’ll be happy to assist.

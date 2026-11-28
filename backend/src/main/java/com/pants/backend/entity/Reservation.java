@@ -24,6 +24,9 @@ public class Reservation {
     @Column(name = "edit_token", unique = true, length = 64)
     private String editToken;
 
+    @Column(name = "edit_count", nullable = false, columnDefinition = "integer default 0")
+    private int editCount = 0;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "reservation_id")
@@ -126,10 +129,18 @@ public class Reservation {
     }
 
     public String getEditToken() {
-    return editToken;
+        return editToken;
     }
 
     public void setEditToken(String editToken) {
-    this.editToken = editToken;
+        this.editToken = editToken;
+    }
+
+    public int getEditCount() {
+        return editCount;
+    }
+
+    public void setEditCount(int editCount) {
+        this.editCount = editCount;
     }
 }

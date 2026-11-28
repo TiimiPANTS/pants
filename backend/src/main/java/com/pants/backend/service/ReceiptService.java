@@ -1,3 +1,4 @@
+
 package com.pants.backend.service;
 
 import java.io.IOException;
@@ -7,6 +8,7 @@ import java.time.format.DateTimeFormatter;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.pants.backend.entity.Reservation;
 import com.pants.backend.repository.ReservationRepository;
@@ -19,6 +21,12 @@ public class ReceiptService {
 
     private final ReservationRepository reservationRepository;
     private final EmailService emailService;
+
+    @Value("${app.frontend-url:}")
+    private String frontendUrl = "";
+
+    @Value("${app.reservation.max-edits:2}")
+    private int maxEdits = 2;
 
     public ReceiptService(
         ReservationRepository reservationRepository,
@@ -60,8 +68,56 @@ public class ReceiptService {
             reservation.getCustomer().getLastname()
         );
 
-        return loadTemplate(fileName)
+        int remainingEdits = Math.max(
+            0, maxEdits - reservation.getEditCount()
+        );
+
+        boolean hasManagementLink = frontendUrl != null
+            && !frontendUrl.isBlank()
+            && reservation.getEditToken() != null
+            && !reservation.getEditToken().isBlank();
+
+        String editUrl = hasManagementLink
+            ? frontendUrl.replaceAll("/+$", "")
+                + "/reserve/" + reservation.getEditToken()
+            : "";
+
+        String cancelUrl = hasManagementLink
+            ? editUrl + "?action=cancel"
+            : "";
+
+        String html = loadTemplate(fileName);
+
+        // Remove edit button when no edits remain
+        // or the management link is unavailable
+        if (remainingEdits == 0 || !hasManagementLink) {
+            html = html.replaceAll(
+                "(?s)<!-- EDIT_BUTTON_START -->.*?<!-- EDIT_BUTTON_END -->",
+                ""
+            );
+        }
+
+        // Remove edit limit message when edits remain
+        if (remainingEdits > 0) {
+            html = html.replaceAll(
+                "(?s)<!-- EDIT_LIMIT_START -->.*?<!-- EDIT_LIMIT_END -->",
+                ""
+            );
+        }
+
+        // Remove cancellation button if no valid link exists
+        if (!hasManagementLink) {
+            html = html.replaceAll(
+                "(?s)<!-- CANCEL_BUTTON_START -->.*?<!-- CANCEL_BUTTON_END -->",
+                ""
+            );
+        }
+
+        return html
             .replace("src=\"LePantsLogo.png\"", "src=\"cid:le-pants-logo\"")
+            .replace("{{editUrl}}", escape(editUrl))
+            .replace("{{cancelUrl}}", escape(cancelUrl))
+            .replace("{{remainingEdits}}", String.valueOf(remainingEdits))
             .replace("{{customerName}}", customerName)
             .replace("{{reservationId}}", escape(String.valueOf(reservation.getReservationId())))
             .replace("{{customerEmail}}", escape(reservation.getCustomer().getEmail()))
@@ -82,7 +138,9 @@ public class ReceiptService {
         try (var input = template.getInputStream()) {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
-            throw new IllegalStateException("Could not load email template: " + fileName, e);
+            throw new IllegalStateException(
+                "Could not load email template: " + fileName, e
+            );
         }
     }
 

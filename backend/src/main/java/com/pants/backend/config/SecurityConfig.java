@@ -48,7 +48,8 @@ public class SecurityConfig {
                         // Authentication
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/logout")
+                                "/api/auth/logout",
+                                "/api/auth/csrf")
                         .permitAll()
 
                         // Current authenticated user
@@ -156,12 +157,6 @@ public class SecurityConfig {
                         // ADMIN AND OWNER
                         // =====================================
 
-                        // Reservation statistics
-                        .requestMatchers(
-                                HttpMethod.GET,
-                                "/api/reservations/stats")
-                        .hasAnyRole("ADMIN", "OWNER")
-
                         // View receipts
                         .requestMatchers(
                                 HttpMethod.GET,
@@ -197,6 +192,13 @@ public class SecurityConfig {
                         // =====================================
                         // ADMIN, OWNER AND EMPLOYEE
                         // =====================================
+
+                        // Reservation statistics (analytics page)
+                        .requestMatchers(
+                                HttpMethod.GET,
+                                "/api/reservations/stats")
+                        .hasAnyRole(
+                                "ADMIN", "OWNER", "EMPLOYEE")
 
                         // View reservations
                         .requestMatchers(

@@ -1,8 +1,7 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { ADMIN_USER, mockJson } from './helpers/mockApi.ts';
 
 const LOGIN_URL = /\/login$/;
-const DASHBOARD_URL = /\/dashboard$/;
 const TEST_TOKEN = 'playwright-test-token';
 
 const OWNER_USER = {
@@ -30,7 +29,18 @@ const API = {
     currentUser: '**/api/users/me',
     createUser: '**/api/users',
     logout: '**/api/auth/logout',
+    reservations: '**/api/reservations',
+    tables: '**/api/tables',
+    tableLists: '**/api/tablelists',
 };
+
+// The dashboard loads these on arrival; unmocked, the real backend rejects
+// the fake token with 401 and the page bounces to /login.
+async function mockDashboardData(page: Page) {
+    await mockJson(page, API.reservations, []);
+    await mockJson(page, API.tables, []);
+    await mockJson(page, API.tableLists, []);
+}
 
 test.beforeEach(async ({ page }) => {
     await page.addInitScript((token) => {
@@ -70,10 +80,6 @@ test.describe('Add User page', () => {
         ).toBeVisible();
 
         await expect(
-            page.getByRole('button', { name: 'Dashboard' })
-        ).toBeVisible();
-
-        await expect(
             page.getByRole('button', { name: 'Log out' })
         ).toBeVisible();
     });
@@ -104,12 +110,13 @@ test.describe('Add User page', () => {
         await expect(page).toHaveURL(LOGIN_URL);
     });
 
-    test('redirects employee to dashboard', async ({ page }) => {
+    test('employee is sent to the bookings dashboard', async ({ page }) => {
         await mockJson(page, API.currentUser, EMPLOYEE_USER);
+        await mockDashboardData(page);
 
         await page.goto('/owner/adduser');
 
-        await expect(page).toHaveURL(DASHBOARD_URL);
+        await expect(page).toHaveURL(/\/dashboard$/);
     });
 
     test('allows admin to access add user page', async ({ page }) => {
@@ -136,12 +143,21 @@ test.describe('Add User page', () => {
         ).toBeVisible();
     });
 
-    test('dashboard button navigates to dashboard', async ({ page }) => {
+    test('back link navigates to user management', async ({ page }) => {
+        await mockDashboardData(page);
         await page.goto('/owner/adduser');
 
-        await page.getByRole('button', { name: 'Dashboard' }).click();
+        await page.getByRole('main').getByRole('button', { name: 'Users' }).click();
 
-        await expect(page).toHaveURL(DASHBOARD_URL);
+        await expect(page).toHaveURL(/\/owner\/usermanagement$/);
+    });
+
+    test('sidebar marks users as the current section', async ({ page }) => {
+        await page.goto('/owner/adduser');
+
+        await expect(
+            page.getByRole('complementary', { name: 'Sidebar' }).getByRole('button', { name: 'Users' })
+        ).toHaveAttribute('aria-current', 'page');
     });
 
     test('cancel button navigates to user management', async ({ page }) => {
@@ -231,70 +247,63 @@ test.describe('User information form', () => {
         ).toHaveValue('2');
     });
 
-    test('empty fields show validation error', async ({ page }) => {
+    test('empty fields show an error on each field', async ({ page }) => {
+        let requested = false;
+        await page.route(API.createUser, (route) => {
+            requested = true;
+            return route.fulfill({ status: 200, body: '{}' });
+        });
+
         await page.goto('/owner/adduser');
 
         await page.getByRole('button', { name: 'Create user' }).click();
 
-        await expect(
-            page.getByText('Please fill in all fields.')
-        ).toBeVisible();
+        await expect(page.getByText('Enter a username.')).toBeVisible();
+        await expect(page.getByText('Enter an email address.')).toBeVisible();
+        await expect(page.getByText('Enter a password.')).toBeVisible();
+        await expect(page.getByText('Choose a role.')).toBeVisible();
+        await expect(page.getByLabel('Username')).toHaveAttribute('aria-invalid', 'true');
+        expect(requested).toBe(false);
     });
 
-    test('missing username shows validation error', async ({ page }) => {
+    test('invalid email shows validation error', async ({ page }) => {
         await page.goto('/owner/adduser');
 
-        await page.getByLabel('Email address').fill(NEW_USER.email);
+        await page.getByLabel('Username').fill(NEW_USER.username);
+        await page.getByLabel('Email address').fill('not-an-email');
         await page.getByLabel('Password').fill(NEW_USER.password);
         await page.getByLabel('Role').selectOption('2');
 
         await page.getByRole('button', { name: 'Create user' }).click();
 
         await expect(
-            page.getByText('Please fill in all fields.')
+            page.getByText('Enter a valid email address, like name@example.com.')
         ).toBeVisible();
     });
 
-    test('missing email shows validation error', async ({ page }) => {
-        await page.goto('/owner/adduser');
-
-        await page.getByLabel('Username').fill(NEW_USER.username);
-        await page.getByLabel('Password').fill(NEW_USER.password);
-        await page.getByLabel('Role').selectOption('2');
-
-        await page.getByRole('button', { name: 'Create user' }).click();
-
-        await expect(
-            page.getByText('Please fill in all fields.')
-        ).toBeVisible();
-    });
-
-    test('missing password shows validation error', async ({ page }) => {
+    test('short password shows validation error', async ({ page }) => {
         await page.goto('/owner/adduser');
 
         await page.getByLabel('Username').fill(NEW_USER.username);
         await page.getByLabel('Email address').fill(NEW_USER.email);
+        await page.getByLabel('Password').fill('short');
         await page.getByLabel('Role').selectOption('2');
 
         await page.getByRole('button', { name: 'Create user' }).click();
 
-        await expect(
-            page.getByText('Please fill in all fields.')
-        ).toBeVisible();
+        await expect(page.getByText('Use at least 8 characters.')).toBeVisible();
     });
 
-    test('missing role shows validation error', async ({ page }) => {
+    test('editing a field clears its error', async ({ page }) => {
         await page.goto('/owner/adduser');
 
-        await page.getByLabel('Username').fill(NEW_USER.username);
-        await page.getByLabel('Email address').fill(NEW_USER.email);
-        await page.getByLabel('Password').fill(NEW_USER.password);
-
         await page.getByRole('button', { name: 'Create user' }).click();
+        await expect(page.getByText('Enter a username.')).toBeVisible();
 
-        await expect(
-            page.getByText('Please fill in all fields.')
-        ).toBeVisible();
+        await page.getByLabel('Username').fill('a');
+
+        await expect(page.getByText('Enter a username.')).toHaveCount(0);
+        await expect(page.getByText('Enter an email address.')).toBeVisible();
     });
 });
 
@@ -328,7 +337,7 @@ test.describe('Create user', () => {
     });
 
     test('sends correct data when creating user', async ({ page }) => {
-        let requestBody: any;
+        let requestBody: unknown;
 
         await page.route(API.createUser, async (route) => {
             requestBody = route.request().postDataJSON();
@@ -379,6 +388,27 @@ test.describe('Create user', () => {
         await expect(
             page.getByText('Email is already in use')
         ).toBeVisible();
+    });
+
+    test('shows a taken email on the email field', async ({ page }) => {
+        await mockJson(
+            page,
+            API.createUser,
+            { message: 'Email is already in use' },
+            409
+        );
+
+        await page.goto('/owner/adduser');
+
+        await page.getByLabel('Username').fill(NEW_USER.username);
+        await page.getByLabel('Email address').fill(NEW_USER.email);
+        await page.getByLabel('Password').fill(NEW_USER.password);
+        await page.getByLabel('Role').selectOption('2');
+
+        await page.getByRole('button', { name: 'Create user' }).click();
+
+        await expect(page.getByLabel('Email address')).toHaveAttribute('aria-invalid', 'true');
+        await expect(page.getByText('Email is already in use')).toBeVisible();
     });
 
     test('shows default error when server returns an error without a message', async ({ page }) => {
