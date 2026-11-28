@@ -1,3 +1,5 @@
+import { btn, fieldInput, fieldLabel, staffCard } from "./OwnerShell";
+
 type ChangePasswordFormProps = {
   currentPassword: string;
   newPassword: string;
@@ -22,80 +24,78 @@ export default function ChangePasswordForm({
   passwordError,
 }: ChangePasswordFormProps) {
   return (
-    <section className="rounded-xl border border-card-border bg-card-bg p-6">
-      <h2 className="mb-6 font-headline text-xl font-semibold">
-        Change password
-      </h2>
+    <section aria-labelledby="password-h" className={staffCard}>
+      <div>
+        <h2 id="password-h" className="text-lg font-semibold text-white">
+          Change password
+        </h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          Enter your current password, then choose a new one.
+        </p>
+      </div>
 
-      <form className="space-y-5">
+      <form
+        className="flex flex-col gap-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSubmit();
+        }}
+      >
         <div>
-          <label
-            htmlFor="currentPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
+          <label htmlFor="currentPassword" className={fieldLabel}>
             Current password
           </label>
           <input
             id="currentPassword"
             type="password"
+            autoComplete="current-password"
             placeholder="Enter current password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+            className={fieldInput}
             value={currentPassword}
-            onChange={(event) =>
-              onCurrentPasswordChange(event.target.value)
-            }
+            onChange={(event) => onCurrentPasswordChange(event.target.value)}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="newPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
+          <label htmlFor="newPassword" className={fieldLabel}>
             New password
           </label>
           <input
             id="newPassword"
             type="password"
+            autoComplete="new-password"
             placeholder="Enter new password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+            className={fieldInput}
             value={newPassword}
-            onChange={(event) =>
-              onNewPasswordChange(event.target.value)
-            }
+            onChange={(event) => onNewPasswordChange(event.target.value)}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="confirmPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
+          <label htmlFor="confirmPassword" className={fieldLabel}>
             Confirm new password
           </label>
           <input
             id="confirmPassword"
             type="password"
+            autoComplete="new-password"
             placeholder="Confirm new password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+            className={fieldInput}
             value={confirmPassword}
-            onChange={(event) =>
-              onConfirmPasswordChange(event.target.value)
-            }
+            onChange={(event) => onConfirmPasswordChange(event.target.value)}
           />
         </div>
 
-        <div className="pt-2">
-          <button
-            type="button"
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-            onClick={onSubmit}
-          >
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-4">
+          {/* Ghost button: "Save changes" is the page's one primary action. */}
+          <button type="submit" className={`${btn} min-h-12 sm:self-start`}>
             Update password
           </button>
+
           {passwordMessage && (
             <p
-              className={`mt-3 text-sm ${passwordError ? "text-red-400" : "text-white"}`}
+              role={passwordError ? "alert" : "status"}
+              className={`text-sm ${passwordError ? "text-red-400" : "text-zinc-200"}`}
             >
               {passwordMessage}
             </p>
