@@ -42,7 +42,7 @@ test.describe('Edit User page', () => {
         await expect(page.getByLabel('Username')).toHaveValue(TEST_USER.username);
         await expect(page.getByLabel('Email address')).toHaveValue(TEST_USER.email);
 
-        await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Bookings' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
     });
 
@@ -62,10 +62,10 @@ test.describe('Edit User page', () => {
         await expect(page).toHaveURL(LOGIN_URL);
     });
 
-    test('dashboard button navigates to dashboard', async ({ page }) => {
+    test('bookings link navigates to dashboard', async ({ page }) => {
         await page.goto('/edituser');
 
-        await page.getByRole('button', { name: 'Dashboard' }).click();
+        await page.getByRole('button', { name: 'Bookings' }).click();
 
         await expect(page).toHaveURL(/\/dashboard$/);
     });
@@ -105,7 +105,7 @@ test.describe('Personal information', () => {
             page,
             API.updateUser,
             { message: 'Email is already in use' },
-            400
+            409
         );
 
         await page.goto('/edituser');
@@ -140,6 +140,32 @@ test.describe('Personal information', () => {
     });
 });
 
+test.describe('Personal information validation', () => {
+    test('empty username and invalid email are caught before sending', async ({ page }) => {
+        await page.goto('/edituser');
+
+        await page.getByLabel('Username').fill('   ');
+        await page.getByLabel('Email address').fill('not-an-email');
+
+        await page.getByRole('button', { name: /save/i }).click();
+
+        await expect(page.getByText('Enter a username.')).toBeVisible();
+        await expect(page.getByText(/Enter a valid email address/)).toBeVisible();
+    });
+
+    test('changing email stores the new sign-in token', async ({ page }) => {
+        await mockJson(page, API.updateUser, { ...UPDATED_USER, token: 'new-token' });
+
+        await page.goto('/edituser');
+
+        await page.getByLabel('Email address').fill(UPDATED_USER.email);
+        await page.getByRole('button', { name: /save/i }).click();
+
+        await expect(page.getByText('Account information updated successfully')).toBeVisible();
+        expect(await page.evaluate(() => sessionStorage.getItem('jwt'))).toBe('new-token');
+    });
+});
+
 test.describe('Change password', () => {
     test('shows the password form', async ({ page }) => {
         await page.goto('/edituser');
@@ -155,9 +181,40 @@ test.describe('Change password', () => {
 
         await page.getByRole('button', { name: 'Update password' }).click();
 
-        await expect(
-            page.getByText('Please fill in all password fields.')
-        ).toBeVisible();
+        await expect(page.getByText('Enter your current password.')).toBeVisible();
+        await expect(page.getByText('Enter a new password.')).toBeVisible();
+        await expect(page.getByText('Enter the new password again.')).toBeVisible();
+        await expect(page.getByLabel('Current password')).toHaveAttribute('aria-invalid', 'true');
+    });
+
+    test('too short new password is caught before sending', async ({ page }) => {
+        let requested = false;
+        await page.route(API.changePassword, (route) => {
+            requested = true;
+            return route.fulfill({ status: 200, body: '{}' });
+        });
+
+        await page.goto('/edituser');
+
+        await page.getByLabel('Current password').fill('oldPassword123');
+        await page.getByLabel('New password', { exact: true }).fill('ab');
+        await page.getByLabel('Confirm new password').fill('ab');
+
+        await page.getByRole('button', { name: 'Update password' }).click();
+
+        await expect(page.getByText('Use at least 8 characters.')).toBeVisible();
+        expect(requested).toBe(false);
+    });
+
+    test('typing in a field clears its error', async ({ page }) => {
+        await page.goto('/edituser');
+
+        await page.getByRole('button', { name: 'Update password' }).click();
+        await expect(page.getByText('Enter your current password.')).toBeVisible();
+
+        await page.getByLabel('Current password').fill('x');
+
+        await expect(page.getByText('Enter your current password.')).toHaveCount(0);
     });
 
     test('different passwords show validation error', async ({ page }) => {

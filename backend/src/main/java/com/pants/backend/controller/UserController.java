@@ -5,7 +5,9 @@ import java.util.Map;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -21,10 +23,12 @@ import com.pants.backend.dto.PasswordChangeRequestDTO;
 import com.pants.backend.dto.UserDTO;
 import com.pants.backend.dto.UserRequestDTO;
 import com.pants.backend.dto.UserUpdateDTO;
+import com.pants.backend.dto.UserUpdateResponseDTO;
 import com.pants.backend.entity.Role;
 import com.pants.backend.entity.User;
 import com.pants.backend.repository.RoleRepository;
 import com.pants.backend.repository.UserRepository;
+import com.pants.backend.service.JwtService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -42,14 +46,17 @@ public class UserController {
         private final UserRepository userRepository;
         private final RoleRepository roleRepository;
         private final PasswordEncoder passwordEncoder;
+        private final JwtService jwtService;
 
         public UserController(
                         UserRepository userRepository,
                         RoleRepository roleRepository,
-                        PasswordEncoder passwordEncoder) {
+                        PasswordEncoder passwordEncoder,
+                        JwtService jwtService) {
                 this.userRepository = userRepository;
                 this.roleRepository = roleRepository;
                 this.passwordEncoder = passwordEncoder;
+                this.jwtService = jwtService;
         }
 
         @Operation(summary = "Get all users", description = "Returns a list of all users")
@@ -289,7 +296,14 @@ public class UserController {
 
                         User updatedUser = userRepository.save(existingUser);
 
-                        return ResponseEntity.ok(convertToDTO(updatedUser));
+                        // The JWT identifies the user by email. If the email changed, the old
+                        // token no longer matches anyone, so send back a new one.
+                        String newToken = updatedUser.getEmail().equals(loggedInEmail)
+                                        ? null
+                                        : issueTokenFor(updatedUser);
+
+                        return ResponseEntity.ok(
+                                        new UserUpdateResponseDTO(convertToDTO(updatedUser), newToken));
 
                 } catch (Exception e) {
                         return ResponseEntity
@@ -344,6 +358,15 @@ public class UserController {
 
                 return ResponseEntity.ok(
                                 Map.of("message", "Password updated successfully"));
+        }
+
+        private String issueTokenFor(User user) {
+                List<SimpleGrantedAuthority> authorities = user.getRole() == null
+                                ? List.of()
+                                : List.of(new SimpleGrantedAuthority("ROLE_" + user.getRole().getName()));
+
+                return jwtService.generateToken(
+                                new UsernamePasswordAuthenticationToken(user.getEmail(), null, authorities));
         }
 
         private UserDTO convertToDTO(User user) {

@@ -28,7 +28,7 @@
 
 ⭐ **API-dokumentaatio:** [Swagger UI](https://pants-backend.2.rahtiapp.fi/swagger-ui/index.html)
 
-Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy [docs-kansiosta](docs/). Kaikki 23 käyttäjätarinaa ja kehityskohteet löytyvät [backlogilta](https://github.com/orgs/TiimiPANTS/projects/1).
+Alkuperäinen projektisuunnitelma ja muu dokumentaatio löytyy [docs-kansiosta](docs/). Kaikki 25 käyttäjätarinaa ja kehityskohteet löytyvät [backlogilta](https://github.com/orgs/TiimiPANTS/projects/1).
 
 Projektin koodaukseen ja dokumentointiin on pääosin käytetty GitHub Copilotin ilmaista opiskelijalisenssiä. Osalla ryhmän jäsenistä oli käytössä Claude Pro- tai Codex Plus -tilaus (noin 22 €/kk). Lisäksi hyödynsimme Googlen Stitchiä käyttöliittymän suunnitteluun ja ElevenLabsia videon selostukseen. Selostuksen tekstin kirjoitimme itse.
 
@@ -36,7 +36,7 @@ Projektin koodaukseen ja dokumentointiin on pääosin käytetty GitHub Copilotin
 
 ❤️ **Kokeile sovellusta tietokoneella tai puhelimella:** https://pants-frontend.onrender.com
 
-(LISÄÄ YOUTUBE VIDEO)
+(YOUTUBE VIDEOLINKKI DEVISSÄ)
 
 ---
 

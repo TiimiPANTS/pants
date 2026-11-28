@@ -7,7 +7,7 @@ type HeaderProps = {
 
 export const Header: FC<HeaderProps> = ({ logoUrl, restaurantName }) => {
   return (
-    <header className="flex flex-col items-center text-center mb-7">
+    <header className="site-header flex flex-col items-center text-center mb-7">
       <div className="relative w-20 h-20 mb-3 rounded-full overflow-hidden p-0.5 bg-gradient-to-b from-zinc-700 to-zinc-900 shadow-xl border border-zinc-700/60">
         <img
           alt={`${restaurantName} logo`}

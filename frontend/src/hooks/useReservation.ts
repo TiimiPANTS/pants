@@ -18,22 +18,17 @@ import {
 
 import { createReservationData } from "../utils/reservationData";
 
+import {
+    fetchReservationAvailability,
+    fetchReservation,
+    saveReservation,
+    createReservationReceipt,
+    cancelReservation,
 
-const API_URL = `${import.meta.env.VITE_BACKEND_URL}/api`;
+} from "../services/reservationApi";
+
+
 const AVAILABILITY_REFRESH_MS = 30000;
-
-// Parse a JSON body without throwing on empty/non-JSON responses
-async function readJson(response: Response) {
-    const text = await response.text();
-    if (!text) {
-        return null;
-    }
-    try {
-        return JSON.parse(text);
-    } catch {
-        return null;
-    }
-}
 
 const emptyForm: ReservationForm = {
     firstName: "",
@@ -43,7 +38,7 @@ const emptyForm: ReservationForm = {
 };
 
 // Pass an edit token to load an existing reservation and update it instead of creating a new one
-export function useReservation(token?: string, reservationId?:string) {
+export function useReservation(token?: string, reservationId?: string) {
     const isStaffEdit = Boolean(reservationId);
     const isEditMode = Boolean(token) || isStaffEdit;
 
@@ -73,18 +68,18 @@ export function useReservation(token?: string, reservationId?:string) {
     const availabilityRequestId = useRef(0);
 
     const availabilityMonthRef = useRef<Date>(new Date());
-
+    //Loads availability for the selected month and updates the hook state.
+    //Silent refreshes preserve existing availibility without showin a loading indicator
     const loadAvailability = useCallback(async (
         month: Date = new Date(),
         silent: boolean = false
     ) => {
         const requestId = ++availabilityRequestId.current;
+
+        //Determine the first and last day of the selected month.
         const from = new Date(month.getFullYear(), month.getMonth(), 1);
         const to = new Date(month.getFullYear(), month.getMonth() + 1, 0);
-        const query = new URLSearchParams({
-            from: formatDateKey(from),
-            to: formatDateKey(to),
-        });
+
         if (!silent) {
             availabilityMonthRef.current = month;
             setIsAvailabilityLoading(true);
@@ -93,26 +88,12 @@ export function useReservation(token?: string, reservationId?:string) {
         }
 
         try {
-            const response = await fetch(
-                `${API_URL}/reservations/availability?${query.toString()}`
+
+            const reservations = await fetchReservationAvailability(
+                formatDateKey(from),
+                formatDateKey(to)
             );
-            if (!response.ok) {
-                throw new Error(`Unable to load availability (${response.status}).`);
-            }
-
-            const reservations = await readJson(response);
-            if (
-                !Array.isArray(reservations) ||
-                reservations.some(
-                    (reservation) =>
-                        typeof reservation?.date !== "string" ||
-                        typeof reservation?.startTime !== "string" ||
-                        typeof reservation?.availableCapacity !== "number"
-                )
-            ) {
-                throw new Error("The availability response was invalid.");
-            }
-
+            //Prevent outdated request from overwriting newer avalaibility data.
             if (requestId === availabilityRequestId.current) {
                 setAvailability(reservations);
                 setAvailabilityError(null);
@@ -166,30 +147,15 @@ export function useReservation(token?: string, reservationId?:string) {
             return;
         }
 
+        // Load the existing reservation and pupulate the edit form.
         const loadReservation = async () => {
             try {
-                const response = await fetch(
-                 reservationId
-                        ? `${API_URL}/reservations/${reservationId}`
-                        : `${API_URL}/reservations/manage/${token}`,
-                    { credentials: "include" }
-                );
 
-                if (response.status === 401 || response.status === 403) {
-                    throw new Error("You are not authorized to edit this reservation.");
-                }
-                if (!response.ok) {
-                    throw new Error("Reservation not found.");
-                }
+                const reservation = await fetchReservation(token, reservationId);
 
-                const reservation = await readJson(response);
-                if (!reservation) {
-                    throw new Error("Reservation not found.");
+                if (reservation.status?.name === "CANCELLED") {
+                    setIsCancelled(true);
                 }
-
-                if (reservation.status?.name === "CANCELLED") {   
-                    setIsCancelled(true);                         
-                }                                                 
 
                 const reservationDate = parseEuropeanDate(reservation.datetime);
                 setSelectedDay(reservationDate);
@@ -285,8 +251,8 @@ export function useReservation(token?: string, reservationId?:string) {
 
     const currentReservationTime =
         originalReservationSlot &&
-        selectedDay &&
-        originalReservationSlot.date === formatDateKey(selectedDay)
+            selectedDay &&
+            originalReservationSlot.date === formatDateKey(selectedDay)
             ? originalReservationSlot.time
             : undefined;
     const getRemainingCapacity = (time: ReservationTime) =>
@@ -345,66 +311,35 @@ export function useReservation(token?: string, reservationId?:string) {
         const errors = validateReservationForm(form);
 
 
-    setValidationErrors(errors);
+        setValidationErrors(errors);
 
-    if (Object.keys(errors).length > 0) {
-        return;
-    }
+        if (Object.keys(errors).length > 0) {
+            return;
+        }
 
         setIsSubmitting(true);
 
-    const reservationData = createReservationData(
-        form,
-        selectedDay,
-        selectedTime,
-        guestCount
-    );
+        const reservationData = createReservationData(
+            form,
+            selectedDay,
+            selectedTime,
+            guestCount
+        );
 
         try {
-            const url = isStaffEdit
-            ? `${API_URL}/reservations/${reservationId}`
-            : token
-                ? `${API_URL}/reservations/manage/${token}`
-                : `${API_URL}/reservations`;
+            // Create or update the reservation through the reservation API
 
-            const response = await fetch(url, {
-                method: isEditMode ? "PUT" : "POST",
-                credentials: "include",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify(reservationData),
-            });
-
-            if (!response.ok) {
-                const errorData = await readJson(response);
-                throw new Error(
-                    errorData?.message ||
-                    `Reservation failed: ${response.status}`
-                );
-            }
-
-            const savedReservation = await readJson(response);
-            if (!savedReservation) {
-                throw new Error(
-                    `Unexpected empty response from server (${response.status})`
-                );
-            }
+            const savedReservation = await saveReservation(
+                reservationData,
+                token,
+                reservationId
+            );
 
             if (!isEditMode) {
-                const receiptResponse = await fetch(
-                    `${API_URL}/receipts/${savedReservation.reservationId}`,
-                    {
-                        method: "POST",
-                        headers: {
-                            "X-Reservation-Token": savedReservation.editToken,
-                        },
-                    }
+                await createReservationReceipt(
+                    savedReservation.reservationId,
+                    savedReservation.editToken
                 );
-
-                if (!receiptResponse.ok) {
-                    throw new Error("Receipt creation failed");
-                }
 
                 setForm(emptyForm);
                 setGuestCount(2);
@@ -429,7 +364,7 @@ export function useReservation(token?: string, reservationId?:string) {
         }
     };
 
-        const handleCancel = async () => {
+    const handleCancel = async () => {
         if (!token) {
             return false;
         }
@@ -439,21 +374,8 @@ export function useReservation(token?: string, reservationId?:string) {
         setIsCancelling(true);
 
         try {
-            const response = await fetch(
-                `${API_URL}/reservations/manage/${token}/cancel`,
-                {
-                    method: "PATCH",
-                    credentials: "include",
-                }
-            );
 
-            if (!response.ok) {
-                const errorData = await readJson(response);
-                throw new Error(
-                    errorData?.message ||
-                    `Cancellation failed: ${response.status}`
-                );
-            }
+            await cancelReservation(token);
 
             setIsCancelled(true);
             setMessage("Your reservation has been cancelled.");

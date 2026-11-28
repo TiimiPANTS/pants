@@ -15,7 +15,7 @@ export const BUTTONS = {
 
 export const HEADINGS = {
     editReservation: 'Edit your reservation',
-    reservationConfirmed: 'Reservation Confirmed!',
+    reservationConfirmed: 'Reservation confirmed',
 } as const;
 
 export const TEXTBOXES = {

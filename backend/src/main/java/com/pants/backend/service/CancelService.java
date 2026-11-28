@@ -8,6 +8,7 @@ import java.util.Objects;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.HtmlUtils;
+import org.springframework.beans.factory.annotation.Value;
 
 import com.pants.backend.entity.Reservation;
 
@@ -18,6 +19,9 @@ public class CancelService {
     private static final DateTimeFormatter RESERVATION_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final EmailService emailService;
+    
+    @Value("${app.frontend-url:}")
+    private String frontendUrl = "";
 
     public CancelService(EmailService emailService) {
         this.emailService = emailService;
@@ -38,12 +42,31 @@ public class CancelService {
             "image/png");
     }
 
+    
     private String buildCancellationHtml(Reservation reservation) {
         String customerName = escape(
-            reservation.getCustomer().getFirstname() + " " + reservation.getCustomer().getLastname());
+            reservation.getCustomer().getFirstname() + " " +
+            reservation.getCustomer().getLastname());
 
-        return loadTemplate()
+        boolean hasBookingLink = frontendUrl != null
+            && !frontendUrl.isBlank();
+
+        String bookingUrl = hasBookingLink
+            ? frontendUrl.replaceAll("/+$", "") + "/reserve"
+            : "";
+
+        String html = loadTemplate();
+
+        if (!hasBookingLink) {
+            html = html.replaceAll(
+                "(?s)<!-- BOOKING_BUTTON_START -->.*?<!-- BOOKING_BUTTON_END -->",
+                ""
+            );
+        }
+
+        return html
             .replace("src=\"LePantsLogo.png\"", "src=\"cid:le-pants-logo\"")
+            .replace("{{bookingUrl}}", escape(bookingUrl))
             .replace("{{customerName}}", customerName)
             .replace("{{reservationId}}", escape(String.valueOf(reservation.getReservationId())))
             .replace("{{customerEmail}}", escape(reservation.getCustomer().getEmail()))
@@ -56,8 +79,10 @@ public class CancelService {
             .replace("{{details}}", escape(reservation.getDetails()));
     }
 
-    private String loadTemplate() {
+
+        private String loadTemplate() {
         ClassPathResource template = new ClassPathResource("templates/cancel-email.html");
+
         try (var input = template.getInputStream()) {
             return new String(input.readAllBytes(), StandardCharsets.UTF_8);
         } catch (IOException e) {
