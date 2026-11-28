@@ -48,8 +48,7 @@ public class SecurityConfig {
                         // Authentication
                         .requestMatchers(
                                 "/api/auth/login",
-                                "/api/auth/logout",
-                                "/api/auth/csrf")
+                                "/api/auth/logout")
                         .permitAll()
 
                         // Current authenticated user

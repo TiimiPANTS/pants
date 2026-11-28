@@ -29,7 +29,6 @@ const NEW_USER = {
 const API = {
     currentUser: '**/api/users/me',
     createUser: '**/api/users',
-    csrf: '**/api/auth/csrf',
     logout: '**/api/auth/logout',
 };
 
@@ -39,11 +38,6 @@ test.beforeEach(async ({ page }) => {
     }, TEST_TOKEN);
 
     await mockJson(page, API.currentUser, ADMIN_USER);
-
-    await mockJson(page, API.csrf, {
-        headerName: 'X-XSRF-TOKEN',
-        token: 'test-csrf-token',
-    });
 });
 
 test.describe('Add User page', () => {
@@ -110,12 +104,12 @@ test.describe('Add User page', () => {
         await expect(page).toHaveURL(LOGIN_URL);
     });
 
-    test('redirects employee to login', async ({ page }) => {
+    test('redirects employee to dashboard', async ({ page }) => {
         await mockJson(page, API.currentUser, EMPLOYEE_USER);
 
         await page.goto('/owner/adduser');
 
-        await expect(page).toHaveURL(LOGIN_URL);
+        await expect(page).toHaveURL(DASHBOARD_URL);
     });
 
     test('allows admin to access add user page', async ({ page }) => {

@@ -7,17 +7,13 @@ const API_BASE_URL = new URL(
     window.location.href
 );
 
-// Keep true while backend CSRF protection is enabled
-const USE_LEGACY_CSRF = false;
-
 // Check which API requests are public
 function isPublicRequest(path: string, method: string): boolean {
 
     // Authentication endpoints
     if (
         path === "/auth/login" ||
-        path === "/auth/logout" ||
-        path === "/auth/csrf"
+        path === "/auth/logout"
     ) {
         return true;
     }
@@ -116,30 +112,6 @@ export function installApiInterceptor(): void {
             }
 
             return response;
-        }
-
-        // Temporary compatibility with old CSRF requests
-        if (path === "/auth/csrf" && method === "GET") {
-
-            // Current backend: fetch real CSRF token
-            if (USE_LEGACY_CSRF) {
-                return originalFetch(input, init);
-            }
-
-            // Future stateless backend: CSRF is not required
-            // Return compatible data for old frontend code
-            return new Response(
-                JSON.stringify({
-                    headerName: "X-CSRF-TOKEN",
-                    token: "not-required",
-                }),
-                {
-                    status: 200,
-                    headers: {
-                        "Content-Type": "application/json",
-                    },
-                }
-            );
         }
 
         // Public endpoints do not need JWT
