@@ -20,7 +20,6 @@ const API = {
     currentUser: '**/api/users/me',
     updateUser: '**/api/users/1',
     changePassword: '**/api/users/me/password',
-    csrf: '**/api/auth/csrf',
     logout: '**/api/auth/logout',
 };
 
@@ -30,11 +29,6 @@ test.beforeEach(async ({ page }) => {
     }, TEST_TOKEN);
 
     await mockJson(page, API.currentUser, TEST_USER);
-
-    await mockJson(page, API.csrf, {
-        headerName: 'X-XSRF-TOKEN',
-        token: 'test-csrf-token',
-    });
 });
 
 test.describe('Edit User page', () => {

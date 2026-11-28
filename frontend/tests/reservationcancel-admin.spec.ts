@@ -36,14 +36,12 @@ const API = {
     reservations: '**/api/reservations',
     reservation: `**/api/reservations/${RESERVATION_ID}`,
     cancel: `**/api/reservations/${RESERVATION_ID}/cancel`,
-    csrf: '**/api/auth/csrf',
     currentUser: '**/api/users/me',
 };
 
 test.beforeEach(async ({ page }) => {
     await mockJson(page, API.reservations, [confirmedReservation]);
     await mockJson(page, API.reservation, confirmedReservation);
-    await mockJson(page, API.csrf, { headerName: 'X-CSRF-TOKEN', token: 'test-csrf-token' });
     await mockJson(page, API.currentUser, ADMIN_USER);
 });
 

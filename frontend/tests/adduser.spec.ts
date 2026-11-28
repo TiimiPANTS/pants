@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { ADMIN_USER, mockJson } from './helpers/mockApi.ts';
 
 const LOGIN_URL = /\/login$/;
@@ -28,10 +28,19 @@ const NEW_USER = {
 const API = {
     currentUser: '**/api/users/me',
     createUser: '**/api/users',
-    csrf: '**/api/auth/csrf',
     logout: '**/api/auth/logout',
     reservations: '**/api/reservations',
+    tables: '**/api/tables',
+    tableLists: '**/api/tablelists',
 };
+
+// The dashboard loads these on arrival; unmocked, the real backend rejects
+// the fake token with 401 and the page bounces to /login.
+async function mockDashboardData(page: Page) {
+    await mockJson(page, API.reservations, []);
+    await mockJson(page, API.tables, []);
+    await mockJson(page, API.tableLists, []);
+}
 
 test.beforeEach(async ({ page }) => {
     await page.addInitScript((token) => {
@@ -39,11 +48,6 @@ test.beforeEach(async ({ page }) => {
     }, TEST_TOKEN);
 
     await mockJson(page, API.currentUser, ADMIN_USER);
-
-    await mockJson(page, API.csrf, {
-        headerName: 'X-XSRF-TOKEN',
-        token: 'test-csrf-token',
-    });
 });
 
 test.describe('Add User page', () => {
@@ -108,8 +112,7 @@ test.describe('Add User page', () => {
 
     test('employee is sent to the bookings dashboard', async ({ page }) => {
         await mockJson(page, API.currentUser, EMPLOYEE_USER);
-        // The dashboard loads bookings next; without this it falls back to /login.
-        await mockJson(page, API.reservations, []);
+        await mockDashboardData(page);
 
         await page.goto('/owner/adduser');
 
@@ -141,6 +144,7 @@ test.describe('Add User page', () => {
     });
 
     test('back link navigates to user management', async ({ page }) => {
+        await mockDashboardData(page);
         await page.goto('/owner/adduser');
 
         await page.getByRole('main').getByRole('button', { name: 'Users' }).click();
@@ -333,7 +337,7 @@ test.describe('Create user', () => {
     });
 
     test('sends correct data when creating user', async ({ page }) => {
-        let requestBody: any;
+        let requestBody: unknown;
 
         await page.route(API.createUser, async (route) => {
             requestBody = route.request().postDataJSON();
