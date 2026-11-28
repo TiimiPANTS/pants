@@ -1,146 +1,113 @@
-# Backend Controller Test Documentation
+# Backend controller tests
 
-**Test Location:** `backend/src/test/java/com/pants/backend/controller`
+The controller tests are in [`backend/src/test/java/com/pants/backend/controller`](../backend/src/test/java/com/pants/backend/controller). They use JUnit 6, Mockito and AssertJ.
 
-**Tech Stack:** JUnit 5, Mockito, AssertJ (Java 21)
+They are plain unit tests: each controller is created with `@InjectMocks`, its repositories or services are mocked, and its methods are called directly. They check the returned status code and body, and whether the controller saved or deleted anything. They do **not** send real HTTP requests, so routes, JSON, request validation and security are not tested here (only `BackendApplicationTests` does that; see the end of this page).
 
-## 1. Scope & Purpose
+To run the backend tests, see the README.
 
-These tests check controller response behavior for customer, reservation, table, table-assignment and global exception-handling operations. They verify the returned `ResponseEntity` status and body and, where relevant, the interaction with a mocked repository or service.
+## CustomerController (`/api/customers`)
 
-The tests instantiate controllers with Mockito using `@InjectMocks` and invoke their methods directly. They are controller unit tests, not Spring MVC tests: they do not send HTTP requests and do not exercise route mapping, JSON serialization, request binding, validation filters, or security configuration.
+`CustomerControllerTest`
 
-## 2. Dependencies & Mocks
+| Test | Checks that |
+| :--- | :--- |
+| `getAll_whenCustomersExist_returnsOk` / `getAll_whenNoCustomers_returnsNotFound` | Listing customers returns 200 with the customers, or 404 when there are none. |
+| `getById_whenExists_returnsOk` / `getById_whenNotExists_returnsNotFound` | Fetching a customer returns 200, or 404 for a missing ID. |
+| `create_withValidData_returnsCreated` | A valid customer is saved and returned with 201. |
+| `create_withInvalidData_returnsBadRequest` (parameterized) | A null, empty or blank first name, last name or email returns 400 and nothing is saved. |
+| `create_whenRepositoryThrows_returnsBadRequest` | A duplicate email from the database returns 400. |
+| `update_withValidData_returnsOk` | A valid update is saved and returned with 200. |
+| `update_whenNotExists_returnsNotFound` / `update_whenNotExistsAndInvalidData_returnsNotFound` | Updating a missing customer returns 404, even when the data is also invalid. |
+| `update_withInvalidData_returnsBadRequest` (parameterized) | Blank required fields on update return 400 and nothing is saved. |
+| `delete_whenExists_returnsOk` / `delete_whenNotExists_returnsNotFound` | Deleting returns 200, or 404 without deleting when the customer is missing. |
 
-The controller test classes use `@ExtendWith(MockitoExtension.class)`, `@Mock`, and `@InjectMocks`.
+`CustomerValidationTest` checks the stricter field rules on create and update:
 
-| Test class | Mocked dependencies | Controller under test |
-| --- | --- | --- |
-| `CustomerControllerTest` | `CustomerRepository` | `CustomerController` |
-| `CustomerValidationTest` | `CustomerRepository` | `CustomerController` |
-| `ReservationControllerTest` | `ReservationService` | `ReservationController` |
-| `TableControllerTest` | `TableRepository` | `TableController` |
-| `TableListControllerTest` | `TableListRepository`, `ReservationRepository`, `TableRepository`, `TableService` | `TableListController` |
-| `GlobalExceptionHandlerTest` | None | `GlobalExceptionHandler` |
+| Test | Checks that |
+| :--- | :--- |
+| `create_rejectsInvalidFirstname` / `create_acceptsValidFirstname` (parameterized) | First names that are 1 character, over 50 characters, or contain numbers or special characters are rejected; names like `Matti-Pekka`, `Äänekoski` and `Ma` are accepted. |
+| `create_rejectsInvalidLastname` (parameterized) | Invalid last names are rejected. |
+| `create_rejectsInvalidEmail` / `create_rejectsTooLongEmail` / `create_acceptsValidEmail` | Malformed or too-long emails are rejected; a valid one is accepted. |
+| `update_rejectsInvalidFirstname` | An invalid first name on update returns 400 and the stored customer is unchanged. |
 
-The repository-backed controllers are tested with repository mocks; `ReservationController` delegates to a mocked service. For table assignments, the repository mocks supply reservation, table, and assignment lookups, while `TableService` supplies capacity and availability results.
+## ReservationController (`/api/reservations`)
 
-## 3. Test Data Preparation
+`ReservationControllerTest`. The service is mocked, so these tests mainly check that service results and exceptions are turned into the right status codes: not found → 404, invalid input → 400, not allowed → 409.
 
-Tests use small entities and DTOs created by local helper methods, including `createCustomer()`, `validDto()`, and `createReservation()`. `TableListControllerTest` also uses the shared `TestDataFactory` for reservations, tables, and table assignments. Stubs are generally configured inside each test to make the scenario-specific behavior explicit.
+| Test | Checks that |
+| :--- | :--- |
+| `getAll_*` | Listing returns 200 with reservations or an empty list. |
+| `getAvailability_returnsOnlyAvailabilityData` | Availability for a valid range returns 200 with the available capacity. |
+| `getAvailability_whenRangeExceedsLimit_returnsBadRequest` | A range longer than 31 days returns 400 without calling the service. |
+| `getById_*` / `getByToken_*` | Fetching by ID or edit token returns 200, or 404 when missing. |
+| `create_*` | Creating returns 201 with the edit token, or 400 for invalid data. |
+| `update_*` | Updating by ID returns 200, 404 or 400. |
+| `updateByToken_*` | Updating by edit token returns 200, 404, 400, or 409 when changes are no longer allowed. |
+| `cancelByToken_*` | Cancelling by token returns 200, 404, or 409 when already cancelled or too late. |
+| `cancelById_*` | Cancelling by ID returns 200 with status `CANCELLED`, 404, or 409 when already cancelled. |
+| `delete_*` | Deleting returns 200, or 404 when missing. |
 
-`CustomerControllerTest` uses the `invalidCustomers` method source to check null, empty, and whitespace-only first name, last name, and email values for create and update. Reservation tests use fixed date/time inputs for normal scenarios.
+## TableController (`/api/tables`)
 
-## 4. Test Case Matrix
+`TableControllerTest`
 
-The paths below document the controller mappings. Expected statuses are asserted from the returned `ResponseEntity`; they are not statuses observed from an HTTP client.
+| Test | Checks that |
+| :--- | :--- |
+| `getAll_*` / `getById_*` | Fetching tables returns 200, or 404 when there are none or the ID is missing. |
+| `create_whenValid_returnsCreated` / `create_whenRepositoryThrows_returnsBadRequest` | Creating returns 201, or 400 if saving fails. |
+| `update_whenFound_returnsOk` / `update_whenNotFound_returnsNotFound` | Updating changes table number and capacity, or returns 404 without saving. |
+| `delete_whenFound_returnsOk` / `delete_whenNotFound_returnsNotFound` | Deleting returns 200, or 404 without deleting. |
 
-### CustomerController
+## TableListController (`/api/tablelists`)
 
-**Base path:** `/api/customers`
+`TableListControllerTest`. Table assignments link a reservation to a table.
 
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET /api/customers` | `getAll_whenCustomersExist_returnsOk` | Customers exist | `findAll()` returns two customers | `200 OK` | Checks list size and mapped DTO fields |
-| `GET /api/customers` | `getAll_whenNoCustomers_returnsNotFound` | No customers exist | `findAll()` returns empty list | `404 NOT_FOUND` | Checks `ErrorResponse` status and message |
-| `GET /api/customers/{id}` | `getById_whenExists_returnsOk` | Requested customer exists | `findById()` returns customer | `200 OK` | Checks mapped customer DTO |
-| `GET /api/customers/{id}` | `getById_whenNotExists_returnsNotFound` | ID is missing | `findById()` returns empty | `404 NOT_FOUND` | Checks `ErrorResponse` |
-| `POST /api/customers` | `create_withValidData_returnsCreated` | Valid customer data | `save()` returns a customer | `201 CREATED` | Checks response DTO and captured entity values |
-| `POST /api/customers` | `create_withInvalidData_returnsBadRequest` (parameterized) | First name, last name, or email is null/blank | No repository setup | `400 BAD_REQUEST` | Checks field-specific error; verifies no save |
-| `POST /api/customers` | `create_whenRepositoryThrows_returnsBadRequest` | Persistence reports duplicate email | `save()` throws `DataIntegrityViolationException` | `400 BAD_REQUEST` | Checks translated error response |
-| `PUT /api/customers/{id}` | `update_withValidData_returnsOk` | Customer exists and input is valid | `findById()` and `save()` return existing entity | `200 OK` | Checks updated DTO fields and save |
-| `PUT /api/customers/{id}` | `update_whenNotExists_returnsNotFound`; `update_whenNotExistsAndInvalidData_returnsNotFound` | Customer ID is missing, including when data is invalid | `findById()` returns empty | `404 NOT_FOUND` | Checks not-found response; missing-customer case takes precedence over validation |
-| `PUT /api/customers/{id}` | `update_withInvalidData_returnsBadRequest` (parameterized) | First name, last name, or email is null/blank for an existing customer | `findById()` returns customer | `400 BAD_REQUEST` | Checks field-specific error and no save |
-| `DELETE /api/customers/{id}` | `delete_whenExists_returnsOk` | Customer exists | `existsById()` returns `true` | `200 OK` | Checks success message and `deleteById()` |
-| `DELETE /api/customers/{id}` | `delete_whenNotExists_returnsNotFound` | Customer is missing | `existsById()` returns `false` | `404 NOT_FOUND` | Checks error response and no delete |
+| Test | Checks that |
+| :--- | :--- |
+| `getAll_*` / `getById_*` | Fetching assignments returns 200, or 404 when missing. |
+| `create_whenIdMissing_returnsBadRequest` / `create_whenTableIdMissing_returnsBadRequest` | A missing reservation or table ID returns 400. |
+| `create_whenReservationMissing_returnsNotFound` / `create_whenTableMissing_returnsNotFound` | A reservation or table that doesn't exist returns 404. |
+| `create_whenAlreadyExists_returnsBadRequest` | A duplicate assignment returns 400. |
+| `create_whenCapacityTooSmall_returnsBadRequest` | A table too small for the party returns 400. |
+| `create_whenUnavailable_returnsConflict` | A table already booked at that time returns 409. |
+| `create_whenValid_returnsCreated` | A valid assignment is saved and returned with 201. |
+| `delete_whenFound_returnsOk` / `delete_whenNotFound_returnsNotFound` | Deleting returns 200, or 404. |
 
-### ReservationController
+None of the failing create cases save anything.
 
-**Base path:** `/api/reservations`
+## TableDTO validation
 
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET /api/reservations` | `getAll_whenReservationsExist_returnsOk`; `getAll_whenNoReservations_returnsOkWithEmptyList` | Reservations exist or list is empty | Service returns populated or empty list | `200 OK` | Checks returned records or empty list |
-| `GET /api/reservations/availability?from=...&to=...` | `getAvailability_returnsOnlyAvailabilityData` | Valid one-day range | Service returns availability DTOs | `200 OK` | Checks body and available capacity |
-| `GET /api/reservations/availability?from=...&to=...` | `getAvailability_whenRangeExceedsLimit_returnsBadRequest` | Range exceeds 32 days | No service setup | `400 BAD_REQUEST` | Checks service has no interactions |
-| `GET /api/reservations/{id}` | `getById_whenExists_returnsOk`; `getById_whenNotExists_returnsNotFound` | Reservation exists or service returns `null` | Service returns reservation or `null` | `200 OK` / `404 NOT_FOUND` | Checks body or error response |
-| `GET /api/reservations/manage/{token}` | `getByToken_whenExists_returnsOk`; `getByToken_whenNotExists_returnsNotFound` | Token resolves or lookup throws `NoSuchElementException` | Service returns reservation or throws | `200 OK` / `404 NOT_FOUND` | Checks `ReservationResponse` including edit token, or error response |
-| `POST /api/reservations` | `create_withValidData_returnsCreated`; `create_withInvalidData_returnsBadRequest` | Valid request or service rejects input | Service returns reservation or throws `IllegalArgumentException` | `201 CREATED` / `400 BAD_REQUEST` | Checks response wrapper/token or error response |
-| `PUT /api/reservations/{id}` | `update_withValidData_returnsOk`; `update_whenNotExists_returnsNotFound`; `update_withInvalidData_returnsBadRequest` | Update succeeds, target is missing, or input is invalid | Service returns reservation or throws `NoSuchElementException` / `IllegalArgumentException` | `200 OK` / `404 NOT_FOUND` / `400 BAD_REQUEST` | Checks response body or mapped error |
-| `PUT /api/reservations/manage/{token}` | `updateByToken_withValidData_returnsOk`; `updateByToken_whenNotExists_returnsNotFound`; `updateByToken_withInvalidData_returnsBadRequest`; `updateByToken_whenModificationNotAllowed_returnsConflict` | Token update succeeds, token missing, input invalid, or modification disallowed | Service returns reservation or throws the corresponding exception | `200 OK` / `404 NOT_FOUND` / `400 BAD_REQUEST` / `409 CONFLICT` | Checks response wrapper/token or error response |
-| `PATCH /api/reservations/manage/{token}/cancel` | `cancelByToken_whenExists_returnsOk`; `cancelByToken_whenNotExists_returnsNotFound`; `cancelByToken_whenAlreadyCancelled_returnsConflict`; `cancelByToken_whenTooLate_returnsConflict` | Cancellation succeeds, token missing, already cancelled, or too late | Service returns cancelled reservation or throws `NoSuchElementException` / `IllegalStateException` | `200 OK` / `404 NOT_FOUND` / `409 CONFLICT` | Checks cancelled state/token or mapped error |
-| `DELETE /api/reservations/{id}` | `delete_whenExists_returnsOk`; `delete_whenNotExists_returnsNotFound` | Delete succeeds or service reports no reservation | `deleteReservation()` returns `true` or `false` | `200 OK` / `404 NOT_FOUND` | Checks success message or not-found response |
+`TableDTOTest` (in `dto/`) runs Bean Validation directly on `TableDTO`, with no Spring or mocks.
 
-### TableController
+| Test | Checks that |
+| :--- | :--- |
+| `validate_whenFieldsValid_hasNoViolations` | Table number 1 and capacity 4 are valid. |
+| `validate_whenTableNumberZero_returnsTableNumberViolation` | Table number 0 gives "Table number must be at least 1". |
+| `validate_whenCapacityNegative_returnsCapacityViolation` | Capacity -2 gives "Capacity must be at least 1". |
+| `validate_whenFieldsMissing_returnsBothViolations` | An empty DTO gives "Table number is required" and "Capacity is required". |
 
-**Base path:** `/api/tables`
+## GlobalExceptionHandler
 
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET /api/tables` | `getAll_whenTablesExist_returnsOk`; `getAll_whenNoTablesExist_returnsNotFound` | Tables exist or list is empty | `findAll()` returns records or empty list | `200 OK` / `404 NOT_FOUND` | Checks response list or error response |
-| `GET /api/tables/{id}` | `getById_whenFound_returnsOk`; `getById_whenNotFound_returnsNotFound` | Table exists or is missing | `findById()` returns table or empty | `200 OK` / `404 NOT_FOUND` | Checks table or error response |
-| `POST /api/tables` | `create_whenValid_returnsCreated`; `create_whenRepositoryThrows_returnsBadRequest` | Save succeeds or repository throws | `save()` returns table or throws | `201 CREATED` / `400 BAD_REQUEST` | Checks saved table or translated error |
-| `PUT /api/tables/{id}` | `update_whenFound_returnsOk`; `update_whenNotFound_returnsNotFound` | Table exists or is missing | `findById()` returns table or empty; save is stubbed on success | `200 OK` / `404 NOT_FOUND` | Checks updated table number/capacity; verifies no save when missing |
-| `DELETE /api/tables/{id}` | `delete_whenFound_returnsOk`; `delete_whenNotFound_returnsNotFound` | Table exists or is missing | `existsById()` returns `true` or `false` | `200 OK` / `404 NOT_FOUND` | Checks success message/delete or verifies no delete |
+`GlobalExceptionHandlerTest`
 
-### TableListController
+| Test | Checks that |
+| :--- | :--- |
+| `returnsBadRequestWithFieldNameAndMessage` | A validation error returns 400 with a message like `Invalid data: email: must be a well-formed email address`. |
+| `joinsMultipleFieldErrors` | Several field errors are joined into one message. |
 
-**Base path:** `/api/tablelists`
+## Application startup (`BackendApplicationTests`)
 
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `GET /api/tablelists` | `getAll_whenTableListsExist_returnsOk`; `getAll_whenNoTableListsExist_returnsNotFound` | Assignments exist or list is empty | `findAll()` returns a list or empty list | `200 OK` / `404 NOT_FOUND` | Checks assignment list or error response |
-| `GET /api/tablelists/{reservationId}/{tableId}` | `getById_whenFound_returnsOk`; `getById_whenNotFound_returnsNotFound` | Composite key exists or is missing | `findById()` returns assignment or empty | `200 OK` / `404 NOT_FOUND` | Checks assignment or error response |
-| `POST /api/tablelists` | `create_whenReservationMissing_returnsNotFound` | Referenced reservation is missing | Reservation lookup returns empty | `404 NOT_FOUND` | Checks error and no table lookup or assignment save |
-| `POST /api/tablelists` | `create_whenTableMissing_returnsNotFound` | Referenced reservation exists, table is missing | Reservation lookup returns a record; table lookup returns empty | `404 NOT_FOUND` | Checks error and no assignment save |
-| `POST /api/tablelists` | `create_whenAlreadyExists_returnsBadRequest` | Composite-key assignment already exists | Parent records exist; `existsById()` returns `true` | `400 BAD_REQUEST` | Checks duplicate error and no save |
-| `POST /api/tablelists` | `create_whenCapacityTooSmall_returnsBadRequest` | Table capacity is below party size | Parent records exist; assignment absent; capacity check returns `false` | `400 BAD_REQUEST` | Checks capacity error and no save |
-| `POST /api/tablelists` | `create_whenUnavailable_returnsConflict` | Table is occupied for the reservation time | Parents exist; capacity passes; availability returns `false` | `409 CONFLICT` | Checks conflict error and no save |
-| `POST /api/tablelists` | `create_whenValid_returnsCreated` | Reservation and table are valid, assignment is new, capacity and availability pass | Mocks return parent records, `false` for existing assignment, `true` for capacity/availability, and saved assignment | `201 CREATED` | Checks returned assignment and save |
-| `DELETE /api/tablelists/{reservationId}/{tableId}` | `delete_whenFound_returnsOk`; `delete_whenNotFound_returnsNotFound` | Composite-key assignment exists or is missing | `existsById()` returns `true` or `false` | `200 OK` / `404 NOT_FOUND` | Checks delete on success or not-found response |
+This is the only backend test that starts the whole application with a real web server and nothing mocked.
 
-### CustomerValidationTest — Additional Field Validation
+| Test | Checks that |
+| :--- | :--- |
+| `contextLoads` | The application starts. |
+| `reservationAvailabilityIsPublic` | `GET /api/reservations/availability` works over real HTTP without logging in. |
+| `defaultStartupDataSupportsBookingWithoutCreatingTestTables` (parameterized) | Every party size from 1 to 10 can be booked with the default startup tables; parties up to 6 get one table, 7–10 get two. |
 
-**Base path:** `/api/customers`
+## Not yet tested
 
-These tests also exercise `CustomerController`, but focus on field-specific validation rules beyond the null/blank required-field cases in `CustomerControllerTest`.
-
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| `POST /api/customers` | `create_rejectsInvalidFirstname` (parameterized) | First name is one character, exceeds 50 characters, contains numbers, or contains a special character | No repository setup | `400 BAD_REQUEST` | Uses the parameter reason as an assertion description and verifies no repository save |
-| `POST /api/customers` | `create_acceptsValidFirstname` (parameterized) | First name is `Matti-Pekka`, `Äänekoski`, or `Ma` | `save()` returns the supplied customer with an ID | `201 CREATED` | Verifies repository save |
-| `POST /api/customers` | `create_rejectsInvalidLastname` (parameterized) | Last name is one character, contains numbers, or contains a special character | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
-| `POST /api/customers` | `create_rejectsInvalidEmail` (parameterized) | Email is `testi@`, `testi`, or `testi@example` | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
-| `POST /api/customers` | `create_rejectsTooLongEmail` | Email exceeds the accepted maximum length | No repository setup | `400 BAD_REQUEST` | Verifies no repository save |
-| `POST /api/customers` | `create_acceptsValidEmail` | Email address is valid | `save()` returns the supplied customer with an ID | `201 CREATED` | Verifies repository save |
-| `PUT /api/customers/{id}` | `update_rejectsInvalidFirstname` | Existing customer is updated with a first name containing numbers | `findById()` returns the existing customer; no save setup | `400 BAD_REQUEST` | Verifies no save and confirms the existing entity's first name remains unchanged |
-
-### GlobalExceptionHandler
-
-**Class:** `GlobalExceptionHandler`
-
-| Endpoint | Test method(s) | Scenario | Mock setup | Expected status | Assertions |
-| :--- | :--- | :--- | :--- | :--- | :--- |
-| Validation exception handler | `returnsBadRequestWithFieldNameAndMessage` | A single field validation error occurs for the `email` field | Adds an `email` field error with message `must be a well-formed email address` to a `BeanPropertyBindingResult` | `400 BAD_REQUEST` | Checks `ErrorResponse` status `400` and exact message: `Invalid data: email: must be a well-formed email address` |
-| Validation exception handler | `joinsMultipleFieldErrors` | Multiple field validation errors occur for `username` and `email` | Adds `username` and `email` field errors, both with message `must not be blank` | Response message is checked; status is not explicitly asserted | Checks exact joined message: `Invalid data: username: must not be blank, email: must not be blank` |
-
-## 5. Key Edge Cases & Business Rules Validated
-
-* Customer creation and update reject null, empty, and whitespace-only required fields; invalid input does not persist.
-* Updating a missing customer returns not-found before validating the submitted DTO.
-* Reservation availability rejects overlong date ranges before calling the service. The controller also guards against reversed ranges, but that case is not directly covered by the current tests.
-* Reservation controller maps missing-resource, invalid-input, and disallowed-state exceptions to not-found, bad-request, and conflict responses.
-* Table assignment creation checks parent existence, duplicate composite key, table capacity, and time availability in sequence; failure cases prevent assignment persistence.
-* Table and customer delete paths distinguish existing from missing records.
-
-## 6. Coverage Gaps & Follow-up
-
-* These unit tests do not prove the declared HTTP mappings, request/response JSON shape, path/query parameter binding, or Spring MVC validation. Add focused `@WebMvcTest` tests or HTTP integration tests for those requirements.
-* `ReservationControllerTest` does not currently exercise `createReservation` when the service throws `IllegalStateException` (the controller maps this to `409 CONFLICT`).
-* Availability tests cover a valid range and an overlong range, but do not directly cover `to` before `from` or the exact maximum 32-day boundary.
-* The controller test directory has no matching test classes for `AuthController`, `ReceiptController`, `TestController`, or `UserController`.
-* The tests use mocks in place of persistence and service implementations, so repository query behavior, transaction behavior, application wiring, and security filters are outside their scope.
-
-## 7. Assessment
-
-The current suites provide a useful focused check of controller decision branches and response construction, especially for not-found, invalid-input, and conflict cases. They are suitable as controller unit tests, but not sufficient by themselves to verify the API's externally observable HTTP contract. Keep the direct unit tests for fast branch coverage and add MVC or integration tests for routes, serialization, validation, and security as needed.
+- Real HTTP behaviour (routes, JSON, request validation, security) for everything except the availability endpoint. Protected endpoints are not checked to reject anonymous users.
+- `ReservationController`'s own time checks (`validateReservationTimes`), the 409 response when `create` or `update` (by ID) fails with `IllegalStateException`, availability with `to` before `from` or exactly 31 days, and `GET /api/reservations/stats`.
+- `AuthController`, `ReceiptController`, `TestController` and `UserController` have no tests.
