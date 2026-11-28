@@ -56,6 +56,7 @@ CREATE TABLE roles (
 CREATE TABLE reservations (
     reservation_id INTEGER GENERATED ALWAYS AS IDENTITY NOT NULL,
     edit_token VARCHAR(64) UNIQUE,
+    edit_count INTEGER NOT NULL DEFAULT 0,
     customer_id INTEGER NOT NULL,
     starttime TIME NOT NULL,
     endtime TIME,
