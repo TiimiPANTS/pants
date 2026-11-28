@@ -36,13 +36,13 @@ export const primaryBtn = `flex h-12 items-center justify-center gap-2 rounded-f
 // Card around a staff form or panel.
 export const staffCard = "flex flex-col gap-5 rounded-lg border border-card-border bg-card-bg p-5 md:p-6";
 
-type Section = "bookings" | "analytics" | "account";
+type Section = "bookings" | "analytics" | "users" | "account";
 
 const RAIL_KEY = "ownerShell.rail";
 
-const ROLE_ADMIN = 1;
-const ROLE_OWNER = 2;
-const ROLE_EMPLOYEE = 3;
+export const ROLE_ADMIN = 1;
+export const ROLE_OWNER = 2;
+export const ROLE_EMPLOYEE = 3;
 
 type Props = {
     active: Section;
@@ -92,7 +92,7 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
     const navItems = [
         { label: "Bookings", icon: <CalendarIcon />, to: "/dashboard", section: "bookings", show: true },
         { label: "Analytics", tabLabel: "Stats", icon: <ChartIcon />, to: "/analytics", section: "analytics", show: canSeeAnalytics },
-        { label: "Users", icon: <UsersIcon />, to: "/owner/usermanagement", section: null, show: canManageUsers },
+        { label: "Users", icon: <UsersIcon />, to: "/owner/usermanagement", section: "users", show: canManageUsers },
     ].filter((item) => item.show);
 
     const tabs = [
