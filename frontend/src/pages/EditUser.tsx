@@ -73,22 +73,11 @@ export default function EditUser() {
     }
 
     try {
-      const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
-        credentials: "include",
-      });
-
-      if (!csrfResponse.ok) {
-        throw new Error("Could not get CSRF token.");
-      }
-
-      const csrfData = await csrfResponse.json();
-
       const response = await fetch(`${API_URL}/users/${userId}`, {
         method: "PUT",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          [csrfData.headerName]: csrfData.token,
         },
         body: JSON.stringify({
           username,
@@ -145,22 +134,11 @@ export default function EditUser() {
     }
 
     try {
-      const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
-        credentials: "include",
-      });
-
-      if (!csrfResponse.ok) {
-        throw new Error("Could not get CSRF token.");
-      }
-
-      const csrfData = await csrfResponse.json();
-
       const response = await fetch(`${API_URL}/users/me/password`, {
         method: "PUT",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
-          [csrfData.headerName]: csrfData.token,
         },
         body: JSON.stringify({
           currentPassword,

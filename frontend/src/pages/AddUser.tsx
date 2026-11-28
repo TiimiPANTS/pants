@@ -75,22 +75,11 @@ export default function AddUser() {
         }
 
         try {
-            const csrfResponse = await fetch(`${API_URL}/auth/csrf`, {
-                credentials: "include",
-            });
-
-            if (!csrfResponse.ok) {
-                throw new Error("Could not get CSRF token.");
-            }
-
-            const csrfData = await csrfResponse.json();
-
             const response = await fetch(`${API_URL}/users`, {
                 method: "POST",
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    [csrfData.headerName]: csrfData.token,
                 },
                 body: JSON.stringify({
                     username,

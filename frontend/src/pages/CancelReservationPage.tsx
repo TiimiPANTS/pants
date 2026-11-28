@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { getCsrfHeaders } from "../hooks/csrf.ts";
 
 type Customer = {
     firstname: string;
@@ -70,7 +69,6 @@ export const CancelReservationPage = () => {
                 {
                     method: "PATCH",
                     credentials: "include",
-                    headers: await getCsrfHeaders(),
                 }
             );
 

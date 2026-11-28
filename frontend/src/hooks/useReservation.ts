@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
-import { getCsrfHeaders } from "./csrf";
 import {
     formatDateKey,
     getAvailableTimes,
@@ -373,7 +372,6 @@ export function useReservation(token?: string, reservationId?:string) {
                 credentials: "include",
                 headers: {
                     "Content-Type": "application/json",
-                    ...(isStaffEdit ? await getCsrfHeaders() : {}),
                 },
                 body: JSON.stringify(reservationData),
             });
