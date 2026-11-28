@@ -2,14 +2,11 @@ import { useState, type FormEvent } from "react";
 import { changePassword } from "../services/accountApi";
 import { FormFooter, TextField, type FormStatus } from "./FormFields";
 import { staffCard } from "./OwnerShell";
+import { PASSWORD_MIN, hasErrors, passwordLengthError } from "../utils/accountValidation";
 
 type Field = "currentPassword" | "newPassword" | "confirmPassword";
 type Passwords = Record<Field, string>;
 type Errors = Partial<Record<Field, string>>;
-
-// Same limits as the backend's PasswordChangeRequestDTO.
-const PASSWORD_MIN = 8;
-const PASSWORD_MAX = 72;
 
 // Message from UserController.changePassword.
 const WRONG_CURRENT_PASSWORD = "Current password is incorrect";
@@ -22,9 +19,10 @@ function validate({ currentPassword, newPassword, confirmPassword }: Passwords):
     if (!currentPassword) errors.currentPassword = "Enter your current password.";
 
     if (!newPassword) errors.newPassword = "Enter a new password.";
-    else if (newPassword.length < PASSWORD_MIN) errors.newPassword = `Use at least ${PASSWORD_MIN} characters.`;
-    else if (newPassword.length > PASSWORD_MAX) errors.newPassword = `Use at most ${PASSWORD_MAX} characters.`;
-    else if (newPassword === currentPassword) errors.newPassword = "New password must be different from current password.";
+    else
+        errors.newPassword =
+            passwordLengthError(newPassword) ??
+            (newPassword === currentPassword ? "New password must be different from current password." : undefined);
 
     if (!confirmPassword) errors.confirmPassword = "Enter the new password again.";
     else if (confirmPassword !== newPassword) errors.confirmPassword = "New passwords do not match.";
@@ -49,7 +47,7 @@ export default function ChangePasswordForm() {
 
         const found = validate(passwords);
         setErrors(found);
-        if (Object.keys(found).length > 0) return;
+        if (hasErrors(found)) return;
 
         setSaving(true);
         try {

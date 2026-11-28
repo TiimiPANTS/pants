@@ -2,26 +2,10 @@ import { useState, type FormEvent } from "react";
 import { ApiError, updateAccount, type Account } from "../services/accountApi";
 import { FormFooter, TextField, type FormStatus } from "./FormFields";
 import { staffCard } from "./OwnerShell";
+import { USERNAME_MAX, emailError, hasErrors, usernameError } from "../utils/accountValidation";
 
 type Field = "username" | "email";
 type Errors = Partial<Record<Field, string>>;
-
-// Same limits as the backend's UserUpdateDTO.
-const USERNAME_MAX = 50;
-const EMAIL_MAX = 254;
-const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-
-function validate(username: string, email: string): Errors {
-    const errors: Errors = {};
-
-    if (!username) errors.username = "Enter a username.";
-    else if (username.length > USERNAME_MAX) errors.username = `Use at most ${USERNAME_MAX} characters.`;
-
-    if (!email) errors.email = "Enter an email address.";
-    else if (!EMAIL_PATTERN.test(email) || email.length > EMAIL_MAX) errors.email = "Enter a valid email address, like name@example.com.";
-
-    return errors;
-}
 
 export default function PersonalForm({ account }: { account: Account }) {
     const [username, setUsername] = useState(account.username);
@@ -37,9 +21,9 @@ export default function PersonalForm({ account }: { account: Account }) {
         setStatus(null);
 
         const changes = { username: username.trim(), email: email.trim() };
-        const found = validate(changes.username, changes.email);
+        const found: Errors = { username: usernameError(changes.username), email: emailError(changes.email) };
         setErrors(found);
-        if (Object.keys(found).length > 0) return;
+        if (hasErrors(found)) return;
 
         setSaving(true);
         try {
