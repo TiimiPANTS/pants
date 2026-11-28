@@ -1,3 +1,5 @@
+import { fieldInput, fieldLabel, primaryBtn, staffCard } from "./OwnerShell";
+
 type PersonalFormProps = {
   username: string;
   email: string;
@@ -18,58 +20,62 @@ export default function PersonalForm({
   saveError,
 }: PersonalFormProps) {
   return (
-    <section className="rounded-xl border border-card-border bg-card-bg p-6">
-      <h2 className="mb-6 font-headline text-xl font-semibold">
-        Personal information
-      </h2>
+    <section aria-labelledby="personal-h" className={staffCard}>
+      <div>
+        <h2 id="personal-h" className="text-lg font-semibold text-white">
+          Personal information
+        </h2>
+        <p className="mt-1 text-sm text-zinc-400">
+          How you appear to other staff and where we send account emails.
+        </p>
+      </div>
 
-      <form className="space-y-5">
+      <form
+        className="flex flex-col gap-5"
+        onSubmit={(event) => {
+          event.preventDefault();
+          onSave();
+        }}
+      >
         <div>
-          <label
-            htmlFor="name"
-            className="mb-2 block text-sm text-zinc-300"
-          >
+          <label htmlFor="username" className={fieldLabel}>
             Username
           </label>
           <input
-            id="name"
+            id="username"
             type="text"
+            autoComplete="username"
             value={username}
             onChange={(event) => onUsernameChange(event.target.value)}
             placeholder="Enter username"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+            className={fieldInput}
           />
         </div>
 
         <div>
-          <label
-            htmlFor="email"
-            className="mb-2 block text-sm text-zinc-300"
-          >
+          <label htmlFor="email" className={fieldLabel}>
             Email address
           </label>
           <input
             id="email"
             type="email"
+            autoComplete="email"
             value={email}
             onChange={(event) => onEmailChange(event.target.value)}
             placeholder="Enter email address"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
+            className={fieldInput}
           />
         </div>
 
-        <div className="pt-2">
-          <button
-            type="button"
-            onClick={onSave}
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-          >
+        <div className="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:gap-4">
+          <button type="submit" className={`${primaryBtn} sm:self-start`}>
             Save changes
           </button>
 
           {saveMessage && (
             <p
-              className={`mt-3 text-sm ${saveError ? "text-red-400" : "text-white"}`}
+              role={saveError ? "alert" : "status"}
+              className={`text-sm ${saveError ? "text-red-400" : "text-zinc-200"}`}
             >
               {saveMessage}
             </p>

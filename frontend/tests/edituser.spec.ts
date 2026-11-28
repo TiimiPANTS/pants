@@ -48,7 +48,7 @@ test.describe('Edit User page', () => {
         await expect(page.getByLabel('Username')).toHaveValue(TEST_USER.username);
         await expect(page.getByLabel('Email address')).toHaveValue(TEST_USER.email);
 
-        await expect(page.getByRole('button', { name: 'Dashboard' })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Bookings' })).toBeVisible();
         await expect(page.getByRole('button', { name: 'Log out' })).toBeVisible();
     });
 
@@ -68,10 +68,10 @@ test.describe('Edit User page', () => {
         await expect(page).toHaveURL(LOGIN_URL);
     });
 
-    test('dashboard button navigates to dashboard', async ({ page }) => {
+    test('bookings link navigates to dashboard', async ({ page }) => {
         await page.goto('/edituser');
 
-        await page.getByRole('button', { name: 'Dashboard' }).click();
+        await page.getByRole('button', { name: 'Bookings' }).click();
 
         await expect(page).toHaveURL(/\/dashboard$/);
     });

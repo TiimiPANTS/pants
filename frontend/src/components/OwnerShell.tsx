@@ -33,7 +33,13 @@ const railGlow = {
 
 export const primaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-[#B52252] bg-[#9B1B44] px-5 text-base font-medium text-white transition hover:bg-wine-hover ${focusRing}`;
 
-type Section = "bookings" | "analytics";
+// Staff form fields: same label and input look as the login card.
+export const fieldLabel = "mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400";
+export const fieldInput =
+    "min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-base text-white placeholder:text-zinc-500 outline-none transition focus:border-[#ffb2bf]/60 focus:ring-2 focus:ring-wine/30";
+export const staffCard = "flex flex-col gap-5 rounded-lg border border-card-border bg-card-bg p-5 md:p-6";
+
+type Section = "bookings" | "analytics" | "account";
 
 const RAIL_KEY = "ownerShell.rail";
 
@@ -94,12 +100,20 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
 
     const tabs = [
         ...navItems.map((item) => ({ ...item, label: item.tabLabel ?? item.label })),
-        { label: "Account", icon: <AccountIcon />, to: "/edituser", section: null },
+        { label: "Account", icon: <AccountIcon />, to: "/edituser", section: "account" },
     ];
 
     const railLink = `flex min-h-10 items-center gap-3 rounded text-left text-base font-medium ${focusRing} ${
         collapsed ? "justify-center px-0" : "px-3"
     }`;
+    /** Rail button; the current page gets white text and a wine bar on the left. */
+    const railItem = (on: boolean) =>
+        `relative ${railLink} ${
+            on
+                ? "bg-white/[.04] text-white before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-[#B52252]"
+                : "text-zinc-300 hover:text-white"
+        }`;
+    const onAccount = active === "account";
     /** Collapsed rail shows icons only; keep the name for screen readers and as a hover tooltip. */
     const railLabel = (label: string) => (collapsed ? <span className="sr-only">{label}</span> : label);
 
@@ -170,11 +184,7 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
                                 onClick={() => navigate(item.to)}
                                 aria-current={on ? "page" : undefined}
                                 title={collapsed ? item.label : undefined}
-                                className={`relative ${railLink} ${
-                                    on
-                                        ? "bg-white/[.04] text-white before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-[#B52252]"
-                                        : "text-zinc-300 hover:text-white"
-                                }`}
+                                className={railItem(on)}
                             >
                                 {item.icon}
                                 {railLabel(item.label)}
@@ -186,8 +196,9 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
                     <button
                         type="button"
                         onClick={() => navigate("/edituser")}
+                        aria-current={onAccount ? "page" : undefined}
                         title={collapsed ? "My account" : undefined}
-                        className={`${railLink} text-zinc-300 hover:text-white`}
+                        className={railItem(onAccount)}
                     >
                         <AccountIcon />
                         {railLabel("My account")}
