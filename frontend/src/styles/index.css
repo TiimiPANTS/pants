@@ -74,3 +74,49 @@ input[type="number"] {
     transform: none;
   }
 }
+
+/* Form -> confirmation page transition (navigate(..., { viewTransition: true })).
+   The logo header and the card keep their place and reshape; the rest crossfades. */
+.site-header {
+  view-transition-name: site-header;
+}
+
+.reservation-card {
+  view-transition-name: reservation-card;
+}
+
+::view-transition-group(site-header),
+::view-transition-group(reservation-card) {
+  animation-duration: 0.55s;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* The two cards differ in height: clip instead of letting the taller one spill out */
+::view-transition-image-pair(reservation-card) {
+  overflow: hidden;
+  border-radius: 1rem;
+}
+
+/* The form's content fades out quickly; the confirmation fades in once the card has started reshaping */
+::view-transition-old(reservation-card) {
+  animation-duration: 0.2s;
+}
+
+::view-transition-new(reservation-card) {
+  animation-duration: 0.45s;
+  animation-delay: 0.1s;
+  animation-fill-mode: both;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.3s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}
