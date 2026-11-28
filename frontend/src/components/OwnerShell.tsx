@@ -32,6 +32,8 @@ const railGlow = {
 };
 
 export const primaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-[#B52252] bg-[#9B1B44] px-5 text-base font-medium text-white transition hover:bg-wine-hover ${focusRing}`;
+/** Outlined pill that sits next to primaryBtn, such as Cancel. */
+export const secondaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-zinc-700 px-5 text-base font-medium text-zinc-200 transition hover:bg-dark-bg ${focusRing}`;
 
 // Card around a staff form or panel.
 export const staffCard = "flex flex-col gap-5 rounded-lg border border-card-border bg-card-bg p-5 md:p-6";
@@ -86,12 +88,11 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
         navigate("/login");
     };
 
-    const canSeeAnalytics = role === ROLE_ADMIN || role === ROLE_OWNER;
     const canManageUsers = role !== null && role !== ROLE_EMPLOYEE;
 
     const navItems = [
         { label: "Bookings", icon: <CalendarIcon />, to: "/dashboard", section: "bookings", show: true },
-        { label: "Analytics", tabLabel: "Stats", icon: <ChartIcon />, to: "/analytics", section: "analytics", show: canSeeAnalytics },
+        { label: "Analytics", tabLabel: "Stats", icon: <ChartIcon />, to: "/analytics", section: "analytics", show: true },
         { label: "Users", icon: <UsersIcon />, to: "/owner/usermanagement", section: "users", show: canManageUsers },
     ].filter((item) => item.show);
 
