@@ -137,7 +137,7 @@ test.describe('Submitting a reservation', () => {
 
         await expect(page).toHaveURL(CONFIRMATION_URL);
         await expect(reservationForm(page).confirmedHeading).toBeVisible();
-        await expect(page.getByText(`#PV-${RESERVATION_ID}`)).toBeVisible();
+        await expect(page.getByText(String(RESERVATION_ID), { exact: true })).toBeVisible();
     });
 
     test('a server error is shown and the guest stays on the form', async ({ page }) => {

@@ -1,6 +1,6 @@
 import type { FC } from "react";
 import { useCallback, useState } from "react";
-import { Link, useNavigate, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom";
 
 import { useReservation } from "../hooks/useReservation";
 
@@ -9,18 +9,17 @@ import { DatePicker } from "../components/DatePicker";
 import { PartySizeSelector } from "../components/PartySizeSelector";
 import { TimeSlotSelector } from "../components/TimeSlotSelector";
 import { ContactDetails } from "../components/ContactDetails";
+import { reservationCard, topPill } from "../components/pageStyles";
 import { useAuth } from "../hooks/useAuth";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
 import { openingHours } from "../utils/openingHours";
 
-// Same look as the home page's navbar Reserve pill.
-const topPill =
-  "inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ffb2bf]/70 px-5 text-[13px] font-semibold uppercase tracking-[0.16em] text-[#ffb2bf] transition-colors hover:border-wine-light hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light";
-
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
   const { token, id } = useParams();
+  const [searchParams] = useSearchParams();
+  const isCancelMode = Boolean(token) && searchParams.get("action") === "cancel";
   const [availabilityMonth, setAvailabilityMonth] = useState(() => new Date());
   const { isAuthenticated } = useAuth();
 
@@ -75,6 +74,7 @@ export const ReservationPage: FC = () => {
       state: {
         reservation: savedReservation,
       },
+      viewTransition: true,
     });
   };
 
@@ -117,6 +117,47 @@ export const ReservationPage: FC = () => {
       </div>
     );
   }
+
+  if (isCancelMode) {
+    return (
+      <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center px-4">
+        <div className="bg-card-bg border border-card-border rounded-2xl p-7 text-center max-w-md w-full space-y-4">
+
+          <h2 className="text-xl font-bold">
+            Cancel your reservation
+          </h2>
+
+          <p className="text-zinc-300 text-sm">
+            Are you sure you want to cancel your reservation?
+          </p>
+
+          {error && (
+            <p className="text-red-400 text-sm" role="alert">
+              {error}
+            </p>
+          )}
+
+          <button
+            type="button"
+            onClick={cancelReservation}
+            disabled={isCancelling || isSubmitting}
+            className="w-full min-h-[48px] px-7 bg-wine hover:bg-wine-hover text-white font-bold uppercase rounded-xl disabled:opacity-50 transition-colors"
+          >
+            {isCancelling ? "Cancelling..." : "Cancel reservation"}
+          </button>
+
+          <Link
+            to="/"
+            className="block text-zinc-300 text-sm hover:text-white"
+          >
+            Back to home
+          </Link>
+
+        </div>
+      </div>
+    );
+  }
+
 
 
   return (
@@ -178,7 +219,7 @@ export const ReservationPage: FC = () => {
 
         <form
           id="reservationForm"
-          className="bg-card-bg border border-card-border rounded-2xl p-5 sm:p-7 shadow-2xl space-y-7"
+          className={`${reservationCard} space-y-7`}
           onSubmit={(event) => {
             event.preventDefault();
             submitReservation();

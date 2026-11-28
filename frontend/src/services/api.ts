@@ -51,6 +51,11 @@ function isPublicRequest(path: string, method: string): boolean {
     return false;
 }
 
+/** Replace the stored sign-in token, e.g. after the user changes their email. */
+export function storeJwt(token: string): void {
+    sessionStorage.setItem("jwt", token);
+}
+
 let installed = false;
 
 export function installApiInterceptor(): void {

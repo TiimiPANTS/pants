@@ -4,26 +4,29 @@ import java.security.SecureRandom;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.LocalTime;
 import java.time.temporal.ChronoUnit;
 import java.time.temporal.TemporalAdjusters;
 import java.util.Base64;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional; 
+import org.springframework.beans.factory.annotation.Value;
+
 
 import com.pants.backend.dto.CustomerDTO;
+import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.dto.ReservationAvailabilityDTO;
 import com.pants.backend.dto.ReservationDTO;
-import com.pants.backend.dto.ReservationStatsDTO;
 import com.pants.backend.entity.Customer;
 import com.pants.backend.entity.RStatus;
 import com.pants.backend.entity.Reservation;
@@ -40,6 +43,9 @@ public class ReservationService {
     private static final SecureRandom RANDOM = new SecureRandom();
     private static final int MAX_GUESTS_PER_SLOT = 50;
     private static final int CANCELLED_STATUS_ID = 3;
+    private static final ZoneId RESTAURANT_ZONE = ZoneId.of("Europe/Helsinki");
+    @Value("${app.reservation.max-edits:2}")
+    private int maxEdits = 2;
 
     private final ReservationRepository reservationRepository;
     private final CustomerRepository customerRepository;
@@ -255,25 +261,43 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
         return updatedReservation;
     }
 
+   
+    
     @Transactional
     public Reservation updateReservationByToken(String token, ReservationDTO dto) {
         Reservation existingReservation = getReservationByToken(token);
 
-            if ("CANCELLED".equals(existingReservation.getStatus().getName())) {
-        throw new IllegalStateException("Cancelled reservations cannot be modified");
+        if ("CANCELLED".equals(existingReservation.getStatus().getName())) {
+            throw new IllegalStateException("Cancelled reservations cannot be modified");
         }
-        if (existingReservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+
+        if (existingReservation.getDatetime().isBefore(LocalDateTime.now(RESTAURANT_ZONE).plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be modified");
+        }
+
+        // Check the maximum number of customer edits
+        if (existingReservation.getEditCount() >= maxEdits) {
+            throw new IllegalStateException(
+                "Maximum of " + maxEdits + " reservation edits reached"
+            );
         }
 
         validate(dto);
         lockConfirmedReservations();
         ensureSlotHasCapacity(dto, existingReservation.getReservationId());
         List<Table> selectedTables = findAvailableTables(dto, existingReservation.getReservationId());
+
+        // Increment the customer edit count
+        existingReservation.setEditCount(
+            existingReservation.getEditCount() + 1
+        );
+
         Reservation updatedReservation = applyUpdate(existingReservation, dto);
         updateTableAssignment(updatedReservation, selectedTables);
         return updatedReservation;
     }
+
+
 
     @Transactional
     public boolean deleteReservation(Integer id) {
@@ -291,7 +315,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
     public Reservation cancelReservationByToken(String token) {
         Reservation reservation = getReservationByToken(token);
 
-        if (reservation.getDatetime().isBefore(LocalDateTime.now().plusHours(1))) {
+        if (reservation.getDatetime().isBefore(LocalDateTime.now(RESTAURANT_ZONE).plusHours(1))) {
             throw new IllegalStateException("Reservation can no longer be cancelled");
         }
 
@@ -319,7 +343,7 @@ public Reservation updateReservation(Integer id, ReservationDTO dto) {
                 .orElseThrow(() -> new IllegalStateException(
                     "Status with ID " + CANCELLED_STATUS_ID + " missing"))
         );
-
+        
         Reservation savedReservation = reservationRepository.save(reservation);
         if (savedReservation.getStatus() != null
                 && Integer.valueOf(CANCELLED_STATUS_ID).equals(savedReservation.getStatus().getId())) {
