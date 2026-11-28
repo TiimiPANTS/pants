@@ -1,20 +1,81 @@
-Piirretään projektin arkkitehtuuri diagrammi lopussa. Voidaan selittää se täällä auki ja lisää kaikki suoraan README.md
+# Architecture
 
-- Tree directory eli puukaavio, tullaan lisäämään myöhemmin.
-- Mietitään luokkakaavion ja relaatiokaavio sijoittelua + tietohakemisto
-- Demovideo linkki?
-- Deployment link?
+```mermaid
+flowchart LR
+    customer(["Customer"])
+    staff(["Staff<br/>(ADMIN / OWNER / EMPLOYEE)"])
 
-# Class Diagram
-![classDiagram](assets/classDiagram.png)
+    subgraph render["Render"]
+        subgraph frontend["Frontend: React 19 + TypeScript (Vite)"]
+            pages["Pages<br/>Home, Reservation, Confirmation,<br/>Cancel, Login, Owner Dashboard,<br/>Analytics, User Management"]
+            hooks["Hooks<br/>useAuth, useReservation"]
+            api["services/api.ts<br/>global fetch wrapper,<br/>adds JWT from sessionStorage"]
+            pages --> hooks
+            pages --> api
+            hooks --> api
+        end
+    end
 
-# ER diagram
-![ERD](assets/ERD.png)
+    subgraph rahti["Rahti (Docker, Java 21)"]
+        subgraph backend["Backend: Spring Boot 4"]
+            security["Spring Security<br/>JWT resource server (stateless),<br/>CORS, role-based access<br/>(CSRF disabled)"]
+            controllers["REST controllers /api/*<br/>auth, reservations, customers,<br/>tables, tablelists, receipts, users"]
+            services["Services<br/>Reservation, Cancel, Table,<br/>Receipt, Email, Jwt, UserDetails"]
+            repos["Spring Data JPA repositories"]
+            swagger["Swagger UI / OpenAPI"]
+            security --> controllers --> services --> repos
+            controllers -- "direct (customers, tables,<br/>tablelists, receipts, users)" --> repos
+        end
+    end
 
+    subgraph pukki["Pukki"]
+        db[("PostgreSQL")]
+    end
+
+    h2[("H2 in-memory<br/>(local dev and tests)")]
+    mail["Mailtrap SMTP"]
+
+    customer --> pages
+    staff --> pages
+    api -- "HTTPS JSON<br/>Authorization: Bearer JWT" --> security
+    repos -- "JDBC (rahti profile)" --> db
+    repos -. "default / local profile" .-> h2
+    services -- "confirmation, edit and<br/>cancellation emails" --> mail
+    controllers -.- swagger
+
+    classDef actor fill:#fde68a,stroke:#b45309,color:#1f2937
+    classDef fe fill:#bae6fd,stroke:#0369a1,color:#0c4a6e
+    classDef be fill:#bbf7d0,stroke:#15803d,color:#14532d
+    classDef data fill:#ddd6fe,stroke:#6d28d9,color:#2e1065
+    classDef ext fill:#fecaca,stroke:#b91c1c,color:#7f1d1d
+
+    class customer,staff actor
+    class pages,hooks,api fe
+    class security,controllers,services,repos,swagger be
+    class db,h2 data
+    class mail ext
+
+    style render fill:#f0f9ff,stroke:#0369a1,color:#0c4a6e
+    style frontend fill:#e0f2fe,stroke:#0284c7,color:#0c4a6e
+    style rahti fill:#f0fdf4,stroke:#15803d,color:#14532d
+    style backend fill:#dcfce7,stroke:#16a34a,color:#14532d
+    style pukki fill:#f5f3ff,stroke:#6d28d9,color:#2e1065
+
+    linkStyle default stroke:#64748b,stroke-width:2px
+```
+
+| Layer | Technology | Deployed to |
+|---|---|---|
+| Frontend | React 19, TypeScript, Vite, Tailwind | Render |
+| Backend | Java 21, Spring Boot 4, Spring Security (JWT), Spring Data JPA | Rahti (Docker image from `Dockerfile`) |
+| Database | PostgreSQL (H2 in memory for local development and tests) | Pukki |
+| Email | Spring Mail over SMTP | Mailtrap |
+| CI | GitHub Actions: JUnit/Mockito backend tests, Playwright frontend tests | GitHub |
 
 # Data Dictionary
+![ERD](ERD.png)
 
-This dictionary reflects the PostgreSQL DDL in `backend/src/main/resources/db.sql`. Unquoted table and column names are stored in lowercase by PostgreSQL.
+This dictionary reflects the PostgreSQL DDL in `backend/src/main/resources/Pukki_Postgres_DDL.sql`. Unquoted table and column names are stored in lowercase by PostgreSQL.
 
 **Constraint notation:** `PK` = primary key; `FK` = foreign key; `UQ` = unique; `NN` = not null; `IDENTITY` = generated identity value.
 
@@ -25,9 +86,14 @@ Stores customer information.
 | Column | PostgreSQL type | Constraints | Description |
 |---|---|---|---|
 | `customer_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Customer identifier |
-| `firstname` | VARCHAR(100) | NN | Customer's first name |
-| `lastname` | VARCHAR(100) | NN | Customer's last name |
-| `email` | VARCHAR(255) | NN | Customer's email address; not unique in this schema |
+| `firstname` | TEXT | NN, CHECK | Customer's first name |
+| `lastname` | TEXT | NN, CHECK | Customer's last name |
+| `email` | TEXT | NN, CHECK | Customer's email address; not unique in this schema |
+
+The table has these CHECK constraints (values are checked after trimming surrounding whitespace):
+
+- `chk_customers_firstname` / `chk_customers_lastname`: 2–50 characters; only letters, spaces, apostrophes (`'`) and hyphens (`-`).
+- `chk_customers_email`: must look like `name@domain.tld` and contain no spaces.
 
 ## 2. reservations
 
@@ -41,11 +107,11 @@ Stores restaurant reservations.
 | `starttime` | TIME | NN | Reservation start time |
 | `endtime` | TIME | Nullable | Reservation end time |
 | `datetime` | TIMESTAMP | NN | Reservation date/time |
-| `party_size` | INTEGER | NN, CHECK > 0 | Number of guests |
+| `party_size` | INTEGER | NN, CHECK 1–10 | Number of guests |
 | `details` | TEXT | Nullable | Additional reservation notes |
 | `rstatus_id` | INTEGER | FK, NN | References `r_status.rstatus_id` |
 
-The table also has `CHECK (endtime IS NULL OR endtime >= starttime)`. Since `endtime` is nullable, the time-order check applies when an end time is provided. The schema currently has no trigger limiting active reservations per customer.
+The table also has `CHECK (party_size BETWEEN 1 AND 10)` and `CHECK (endtime IS NULL OR endtime >= starttime)`. Since `endtime` is nullable, the time-order check applies when an end time is provided. The schema currently has no trigger limiting active reservations per customer.
 
 ## 3. receipts
 
@@ -122,6 +188,8 @@ Lookup table for application roles.
 | `role_id` | INTEGER GENERATED ALWAYS AS IDENTITY | PK, NN | Role identifier |
 | `name` | VARCHAR(50) | UQ, NN | Unique role name |
 
+The seed data inserts `ADMIN`, `OWNER`, and `EMPLOYEE`.
+
 ## Relationships
 
 | Parent | Child | Relationship enforced by the schema |
@@ -150,4 +218,4 @@ PostgreSQL automatically creates indexes to enforce primary-key and unique const
 
 ## Overall Structure
 
-The database contains **9 tables** and supports reservation management (`customers`, `reservations`, `receipts`), table management (`reservations`, `tablelist`, `tables`, `r_status`, `t_status`), and user management (`roles`, `users`).
+The database contains **9 tables** and supports reservation management (`customers`, `reservations`, `r_status`, `receipts`), table management (`tables`, `t_status`, `tablelist`), and user management (`roles`, `users`).
