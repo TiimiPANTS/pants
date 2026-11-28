@@ -9,14 +9,11 @@ import { DatePicker } from "../components/DatePicker";
 import { PartySizeSelector } from "../components/PartySizeSelector";
 import { TimeSlotSelector } from "../components/TimeSlotSelector";
 import { ContactDetails } from "../components/ContactDetails";
+import { reservationCard, topPill } from "../components/pageStyles";
 import { useAuth } from "../hooks/useAuth";
 
 import LePantsLogo from "../assets/LePantsLogo.svg";
 import { openingHours } from "../utils/openingHours";
-
-// Same look as the home page's navbar Reserve pill.
-const topPill =
-  "inline-flex min-h-11 items-center gap-2 rounded-full border border-[#ffb2bf]/70 px-5 text-[13px] font-semibold uppercase tracking-[0.16em] text-[#ffb2bf] transition-colors hover:border-wine-light hover:bg-wine hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-wine-light";
 
 export const ReservationPage: FC = () => {
   const navigate = useNavigate();
@@ -77,6 +74,7 @@ export const ReservationPage: FC = () => {
       state: {
         reservation: savedReservation,
       },
+      viewTransition: true,
     });
   };
 
@@ -221,7 +219,7 @@ export const ReservationPage: FC = () => {
 
         <form
           id="reservationForm"
-          className="bg-card-bg border border-card-border rounded-2xl p-5 sm:p-7 shadow-2xl space-y-7"
+          className={`${reservationCard} space-y-7`}
           onSubmit={(event) => {
             event.preventDefault();
             submitReservation();

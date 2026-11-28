@@ -1,7 +1,10 @@
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import LePantsLogo from "../assets/LePantsLogo.svg";
 import { ConfirmationActions } from "../components/ConfirmationActions";
+import { Header } from "../components/Header";
+import { iconProps } from "../components/lineIconProps";
+import { reservationCard } from "../components/pageStyles";
 import { ReservationDetailsCard } from "../components/ReservationDetailsCard";
 import { parseEuropeanDate } from "../types/reservation";
 
@@ -31,146 +34,108 @@ function ConfirmationPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [copied, setCopied] = useState(false);
+  const copiedTimer = useRef<number | undefined>(undefined);
   const state = location.state as LocationState | null;
   const reservation = state?.reservation;
 
+  // The form is submitted from the bottom of a long page: open the confirmation at the top.
+  useLayoutEffect(() => {
+    window.scrollTo(0, 0);
+  }, []);
+
+  // Don't flip "Copied" back after the page has closed.
+  useEffect(() => () => window.clearTimeout(copiedTimer.current), []);
+
   if (!reservation) {
     return (
-      <div className="min-h-screen bg-[#121316] text-white flex items-center justify-center">
+      <div className="min-h-screen bg-dark-bg text-white flex items-center justify-center">
         <div className="text-center">
           <p className="mb-4">Reservation information not found.</p>
           <button
+            type="button"
             onClick={() => navigate("/")}
-            className="bg-[#8B1E3F] px-5 py-3 rounded-xl font-semibold"
+            className="bg-wine hover:bg-wine-hover px-5 py-3 rounded-xl font-semibold transition-colors"
           >
-            Back to reservation
+            Back to home
           </button>
         </div>
       </div>
     );
   }
 
-  const bookingReference = `#PV-${reservation.reservationId}`;
+  const reservationNumber = String(reservation.reservationId);
   const reservationDate = parseEuropeanDate(reservation.datetime);
   const formattedDate = reservationDate.toLocaleDateString("en-GB", {
     weekday: "long",
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
+    day: "numeric",
+    month: "long",
   });
   const formattedTime = reservation.startTime.substring(0, 5);
 
+  const guests = `${reservation.partySize} ${reservation.partySize === 1 ? "guest" : "guests"}`;
+
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(bookingReference);
+    try {
+      await navigator.clipboard.writeText(reservationNumber);
+    } catch {
+      return; // Clipboard blocked (permissions or insecure page): leave the button as it was
+    }
     setCopied(true);
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+    // Restart the timer, so a second click shows "Copied" for the full two seconds.
+    window.clearTimeout(copiedTimer.current);
+    copiedTimer.current = window.setTimeout(() => setCopied(false), 2000);
   };
 
   const handleShare = async () => {
-    const shareText = `
-Le Pants reservation
-${formattedDate}
-${formattedTime}
-${reservation.partySize} guests
-Reference: ${bookingReference}
-    `;
+    if (!navigator.share) {
+      return;
+    }
 
-    if (navigator.share) {
-      await navigator.share({
-        title: "Le Pants Reservation",
-        text: shareText,
-      });
+    const shareText = [
+      "Le Pants reservation",
+      formattedDate,
+      formattedTime,
+      guests,
+      `Reservation no. ${reservationNumber}`,
+    ].join("\n");
+
+    try {
+      await navigator.share({ title: "Le Pants Reservation", text: shareText });
+    } catch {
+      // The guest closed the share sheet, or the browser blocked it: nothing to do.
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#121316] text-gray-100 flex justify-center">
-      <div className="w-full max-w-md min-h-screen flex flex-col relative px-5 py-6 sm:py-8">
-        {/* Exit button */}
-        <div className="w-full flex items-center justify-end mb-2">
-          <button
-            aria-label="Exit"
-            onClick={() => navigate("/")}
-            className="text-gray-400 hover:text-white transition-colors p-2 rounded-full hover:bg-[#1A1B20]"
-            type="button"
-          >
-            <svg
-              className="w-6 h-6"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M6 18L18 6M6 6l12 12"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-          </button>
-        </div>
+    <div className="antialiased min-h-screen flex flex-col bg-dark-bg text-white font-sans selection:bg-wine selection:text-white">
+      <main className="flex-1 w-full max-w-xl mx-auto px-4 sm:px-6 pt-6 pb-12 flex flex-col">
+        <Header logoUrl={LePantsLogo} restaurantName="Le Pants" />
 
-        {/* Header */}
-        <header className="flex flex-col items-center text-center mt-1 mb-6">
-          <div className="relative w-16 h-16 rounded-full overflow-hidden shadow-lg border border-[#2D3039] p-0.5 bg-[#1A1B20]">
-            <img
-              alt="Le Pants logo"
-              className="w-full h-full object-cover rounded-full"
-              src={LePantsLogo}
-            />
-          </div>
-          <h1 className="text-3xl font-serif font-bold text-white tracking-tight mt-3">
-            Le Pants
-          </h1>
-          <div className="w-10 h-0.5 bg-[#8B1E3F] rounded-full mt-2" />
-        </header>
-
-        {/* Confirmation */}
-        <section className="flex flex-col items-center text-center mb-6">
-          <div className="w-14 h-14 rounded-full bg-[#8B1E3F]/20 border-2 border-[#8B1E3F] flex items-center justify-center mb-3 shadow-lg">
-            <svg
-              className="w-7 h-7 text-white"
-              fill="currentColor"
-              viewBox="0 0 20 20"
-            >
-              <path
-                fillRule="evenodd"
-                clipRule="evenodd"
-                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-              />
-            </svg>
-          </div>
-          <h2 className="text-2xl font-bold tracking-tight text-white mb-1.5">
-            Reservation Confirmed!
-          </h2>
-          <p className="text-gray-300 text-sm">
-            Here’s your reservation sent to your email.
-          </p>
-          <div className="mt-3.5 inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#1A1B20] border border-[#2D3039] text-xs">
-            <svg
-              className="w-4 h-4 text-[#8B1E3F]"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              viewBox="0 0 24 24"
-            >
-              <path
-                d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
-            </svg>
-            <span className="font-medium text-white">
+        <section className={reservationCard}>
+          {/* Status */}
+          <div className="flex flex-col items-center text-center mb-7">
+            <div className="w-14 h-14 rounded-full border-2 border-wine bg-wine/20 flex items-center justify-center text-white shadow-lg mb-4">
+              <svg className="w-7 h-7" {...iconProps} strokeWidth={2.4}>
+                <path d="M5 12.5l4.5 4.5L19 7.5" />
+              </svg>
+            </div>
+            <h2 className="font-headline text-3xl font-normal italic text-white">
+              Reservation confirmed
+            </h2>
+            <p className="mt-2 text-sm text-zinc-400">
+              We’ve sent the details to
+            </p>
+            <div className="mt-3 inline-flex items-center gap-2 max-w-full px-4 py-2 rounded-full border border-zinc-700 bg-surface-input text-sm font-medium text-white break-all">
+              <svg className="w-4 h-4 text-[#ffb2bf] shrink-0" {...iconProps}>
+                <rect x="3" y="5" width="18" height="14" rx="2" />
+                <path d="M3.5 6.5l8.5 6 8.5-6" />
+              </svg>
               {reservation.customer.email}
-            </span>
+            </div>
           </div>
-        </section>
 
-        <main className="w-full flex-1">
           <ReservationDetailsCard
-            bookingReference={bookingReference}
+            reservationNumber={reservationNumber}
             customerName={`${reservation.customer.firstname} ${reservation.customer.lastname}`}
             formattedDate={formattedDate}
             formattedTime={formattedTime}
@@ -179,13 +144,16 @@ Reference: ${bookingReference}
             copied={copied}
             onCopy={handleCopy}
           />
-        </main>
+        </section>
+
         <ConfirmationActions
           onExit={() => navigate("/")}
-          onEdit={() => navigate(`/reserve/${reservation.editToken}`)}
+          onEdit={() =>
+            navigate(`/reserve/${reservation.editToken}`, { viewTransition: true })
+          }
           onShare={handleShare}
         />
-      </div>
+      </main>
     </div>
   );
 }

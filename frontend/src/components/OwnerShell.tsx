@@ -32,14 +32,19 @@ const railGlow = {
 };
 
 export const primaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-[#B52252] bg-[#9B1B44] px-5 text-base font-medium text-white transition hover:bg-wine-hover ${focusRing}`;
+/** Outlined pill that sits next to primaryBtn, such as Cancel. */
+export const secondaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-zinc-700 px-5 text-base font-medium text-zinc-200 transition hover:bg-dark-bg ${focusRing}`;
 
-type Section = "bookings" | "analytics";
+// Card around a staff form or panel.
+export const staffCard = "flex flex-col gap-5 rounded-lg border border-card-border bg-card-bg p-5 md:p-6";
+
+type Section = "bookings" | "analytics" | "users" | "account";
 
 const RAIL_KEY = "ownerShell.rail";
 
-const ROLE_ADMIN = 1;
-const ROLE_OWNER = 2;
-const ROLE_EMPLOYEE = 3;
+export const ROLE_ADMIN = 1;
+export const ROLE_OWNER = 2;
+export const ROLE_EMPLOYEE = 3;
 
 type Props = {
     active: Section;
@@ -83,23 +88,30 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
         navigate("/login");
     };
 
-    const canSeeAnalytics = role === ROLE_ADMIN || role === ROLE_OWNER;
     const canManageUsers = role !== null && role !== ROLE_EMPLOYEE;
 
     const navItems = [
         { label: "Bookings", icon: <CalendarIcon />, to: "/dashboard", section: "bookings", show: true },
-        { label: "Analytics", tabLabel: "Stats", icon: <ChartIcon />, to: "/analytics", section: "analytics", show: canSeeAnalytics },
-        { label: "Users", icon: <UsersIcon />, to: "/owner/usermanagement", section: null, show: canManageUsers },
+        { label: "Analytics", tabLabel: "Stats", icon: <ChartIcon />, to: "/analytics", section: "analytics", show: true },
+        { label: "Users", icon: <UsersIcon />, to: "/owner/usermanagement", section: "users", show: canManageUsers },
     ].filter((item) => item.show);
 
     const tabs = [
         ...navItems.map((item) => ({ ...item, label: item.tabLabel ?? item.label })),
-        { label: "Account", icon: <AccountIcon />, to: "/edituser", section: null },
+        { label: "Account", icon: <AccountIcon />, to: "/edituser", section: "account" },
     ];
 
     const railLink = `flex min-h-10 items-center gap-3 rounded text-left text-base font-medium ${focusRing} ${
         collapsed ? "justify-center px-0" : "px-3"
     }`;
+    /** Rail button; the current page gets white text and a wine bar on the left. */
+    const railItem = (on: boolean) =>
+        `relative ${railLink} ${
+            on
+                ? "bg-white/[.04] text-white before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-[#B52252]"
+                : "text-zinc-300 hover:text-white"
+        }`;
+    const onAccount = active === "account";
     /** Collapsed rail shows icons only; keep the name for screen readers and as a hover tooltip. */
     const railLabel = (label: string) => (collapsed ? <span className="sr-only">{label}</span> : label);
 
@@ -170,11 +182,7 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
                                 onClick={() => navigate(item.to)}
                                 aria-current={on ? "page" : undefined}
                                 title={collapsed ? item.label : undefined}
-                                className={`relative ${railLink} ${
-                                    on
-                                        ? "bg-white/[.04] text-white before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:bg-[#B52252]"
-                                        : "text-zinc-300 hover:text-white"
-                                }`}
+                                className={railItem(on)}
                             >
                                 {item.icon}
                                 {railLabel(item.label)}
@@ -186,8 +194,9 @@ export const OwnerShell = ({ active, mobileHeader, showNewBookingFab = false, ch
                     <button
                         type="button"
                         onClick={() => navigate("/edituser")}
+                        aria-current={onAccount ? "page" : undefined}
                         title={collapsed ? "My account" : undefined}
-                        className={`${railLink} text-zinc-300 hover:text-white`}
+                        className={railItem(onAccount)}
                     >
                         <AccountIcon />
                         {railLabel("My account")}

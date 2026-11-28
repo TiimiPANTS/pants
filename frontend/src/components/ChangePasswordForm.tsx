@@ -1,107 +1,106 @@
-type ChangePasswordFormProps = {
-  currentPassword: string;
-  newPassword: string;
-  confirmPassword: string;
-  onCurrentPasswordChange: (value: string) => void;
-  onNewPasswordChange: (value: string) => void;
-  onConfirmPasswordChange: (value: string) => void;
-  onSubmit: () => void;
-  passwordMessage: string;
-  passwordError: boolean;
-};
+import { useState, type FormEvent } from "react";
+import { changePassword } from "../services/accountApi";
+import { FormFooter, TextField, type FormStatus } from "./FormFields";
+import { staffCard } from "./OwnerShell";
+import { PASSWORD_MIN, hasErrors, passwordLengthError } from "../utils/accountValidation";
 
-export default function ChangePasswordForm({
-  currentPassword,
-  newPassword,
-  confirmPassword,
-  onCurrentPasswordChange,
-  onNewPasswordChange,
-  onConfirmPasswordChange,
-  onSubmit,
-  passwordMessage,
-  passwordError,
-}: ChangePasswordFormProps) {
-  return (
-    <section className="rounded-xl border border-card-border bg-card-bg p-6">
-      <h2 className="mb-6 font-headline text-xl font-semibold">
-        Change password
-      </h2>
+type Field = "currentPassword" | "newPassword" | "confirmPassword";
+type Passwords = Record<Field, string>;
+type Errors = Partial<Record<Field, string>>;
 
-      <form className="space-y-5">
-        <div>
-          <label
-            htmlFor="currentPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
-            Current password
-          </label>
-          <input
-            id="currentPassword"
-            type="password"
-            placeholder="Enter current password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-            value={currentPassword}
-            onChange={(event) =>
-              onCurrentPasswordChange(event.target.value)
-            }
-          />
-        </div>
+// Message from UserController.changePassword.
+const WRONG_CURRENT_PASSWORD = "Current password is incorrect";
 
-        <div>
-          <label
-            htmlFor="newPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
-            New password
-          </label>
-          <input
-            id="newPassword"
-            type="password"
-            placeholder="Enter new password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-            value={newPassword}
-            onChange={(event) =>
-              onNewPasswordChange(event.target.value)
-            }
-          />
-        </div>
+const EMPTY: Passwords = { currentPassword: "", newPassword: "", confirmPassword: "" };
 
-        <div>
-          <label
-            htmlFor="confirmPassword"
-            className="mb-2 block text-sm text-zinc-300"
-          >
-            Confirm new password
-          </label>
-          <input
-            id="confirmPassword"
-            type="password"
-            placeholder="Confirm new password"
-            className="w-full rounded-lg border border-card-border bg-dark-bg px-4 py-2.5 text-white placeholder:text-zinc-500 focus:border-white focus:outline-none"
-            value={confirmPassword}
-            onChange={(event) =>
-              onConfirmPasswordChange(event.target.value)
-            }
-          />
-        </div>
+function validate({ currentPassword, newPassword, confirmPassword }: Passwords): Errors {
+    const errors: Errors = {};
 
-        <div className="pt-2">
-          <button
-            type="button"
-            className="rounded-lg bg-white px-5 py-2.5 text-sm font-medium text-black transition hover:bg-zinc-200"
-            onClick={onSubmit}
-          >
-            Update password
-          </button>
-          {passwordMessage && (
-            <p
-              className={`mt-3 text-sm ${passwordError ? "text-red-400" : "text-white"}`}
-            >
-              {passwordMessage}
-            </p>
-          )}
-        </div>
-      </form>
-    </section>
-  );
+    if (!currentPassword) errors.currentPassword = "Enter your current password.";
+
+    if (!newPassword) errors.newPassword = "Enter a new password.";
+    else
+        errors.newPassword =
+            passwordLengthError(newPassword) ??
+            (newPassword === currentPassword ? "New password must be different from current password." : undefined);
+
+    if (!confirmPassword) errors.confirmPassword = "Enter the new password again.";
+    else if (confirmPassword !== newPassword) errors.confirmPassword = "New passwords do not match.";
+
+    return errors;
+}
+
+export default function ChangePasswordForm() {
+    const [passwords, setPasswords] = useState<Passwords>(EMPTY);
+    const [errors, setErrors] = useState<Errors>({});
+    const [status, setStatus] = useState<FormStatus>(null);
+    const [saving, setSaving] = useState(false);
+
+    const update = (field: Field, value: string) => {
+        setPasswords((current) => ({ ...current, [field]: value }));
+        setErrors((current) => ({ ...current, [field]: undefined }));
+    };
+
+    const handleSubmit = async (event: FormEvent) => {
+        event.preventDefault();
+        setStatus(null);
+
+        const found = validate(passwords);
+        setErrors(found);
+        if (hasErrors(found)) return;
+
+        setSaving(true);
+        try {
+            await changePassword(passwords.currentPassword, passwords.newPassword);
+            setPasswords(EMPTY);
+            setStatus({ ok: true, text: "Password updated successfully!" });
+        } catch (error) {
+            const text = error instanceof Error ? error.message : "Could not update password.";
+            // The backend answers 400 for both bad input and a wrong current password; only the message tells them apart.
+            if (text === WRONG_CURRENT_PASSWORD) setErrors({ currentPassword: text });
+            else setStatus({ ok: false, text });
+        } finally {
+            setSaving(false);
+        }
+    };
+
+    return (
+        <section aria-labelledby="password-h" className={staffCard}>
+            <h2 id="password-h" className="text-lg font-semibold text-white">
+                Change password
+            </h2>
+
+            <form noValidate className="flex flex-col gap-5" onSubmit={handleSubmit}>
+                <TextField
+                    id="currentPassword"
+                    label="Current password"
+                    type="password"
+                    autoComplete="current-password"
+                    value={passwords.currentPassword}
+                    onChange={(event) => update("currentPassword", event.target.value)}
+                    error={errors.currentPassword}
+                />
+                <TextField
+                    id="newPassword"
+                    label="New password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwords.newPassword}
+                    onChange={(event) => update("newPassword", event.target.value)}
+                    hint={`At least ${PASSWORD_MIN} characters.`}
+                    error={errors.newPassword}
+                />
+                <TextField
+                    id="confirmPassword"
+                    label="Confirm new password"
+                    type="password"
+                    autoComplete="new-password"
+                    value={passwords.confirmPassword}
+                    onChange={(event) => update("confirmPassword", event.target.value)}
+                    error={errors.confirmPassword}
+                />
+                <FormFooter label="Update password" busyLabel="Updating…" busy={saving} status={status} />
+            </form>
+        </section>
+    );
 }
