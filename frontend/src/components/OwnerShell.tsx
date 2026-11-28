@@ -33,10 +33,7 @@ const railGlow = {
 
 export const primaryBtn = `flex h-12 items-center justify-center gap-2 rounded-full border border-[#B52252] bg-[#9B1B44] px-5 text-base font-medium text-white transition hover:bg-wine-hover ${focusRing}`;
 
-// Staff form fields: same label and input look as the login card.
-export const fieldLabel = "mb-2 block text-xs font-medium uppercase tracking-[0.14em] text-zinc-400";
-export const fieldInput =
-    "min-h-12 w-full rounded-lg border border-card-border bg-surface-input px-4 text-base text-white placeholder:text-zinc-500 outline-none transition focus:border-[#ffb2bf]/60 focus:ring-2 focus:ring-wine/30";
+// Card around a staff form or panel.
 export const staffCard = "flex flex-col gap-5 rounded-lg border border-card-border bg-card-bg p-5 md:p-6";
 
 type Section = "bookings" | "analytics" | "account";
